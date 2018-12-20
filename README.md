@@ -1,2 +1,2 @@
 # dei
-Main repository for data exchange insfrastructure
+Main repository for data exchange insfrastructure.
