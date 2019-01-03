@@ -1,8 +1,8 @@
-package com.example.dei.controllers;
+package pl.psnc.dei.controllers;
 
-import com.example.dei.constans.EuropeanaKeys;
-import com.example.dei.helpers.ResponseBuilder;
-import com.example.dei.helpers.ParameterStringBuilder;
+import pl.psnc.dei.constans.EuropeanaKeys;
+import pl.psnc.dei.helpers.ResponseBuilder;
+import pl.psnc.dei.helpers.ParameterStringBuilder;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 

@@ -1,4 +1,4 @@
-package com.example.dei;
+package pl.psnc.dei;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;

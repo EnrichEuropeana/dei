@@ -1,4 +1,4 @@
-package com.example.dei.helpers;
+package pl.psnc.dei.helpers;
 
 
 import org.springframework.web.bind.annotation.RequestMapping;

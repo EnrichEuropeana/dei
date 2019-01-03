@@ -1,4 +1,4 @@
-package com.example.dei.constans;
+package pl.psnc.dei.constans;
 
 public class EuropeanaKeys {
 
