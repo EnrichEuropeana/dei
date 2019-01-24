@@ -3,7 +3,6 @@ package pl.psnc.dei.controllers;
 import org.springframework.context.ApplicationContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import pl.psnc.dei.service.SearchService;
 
@@ -25,7 +24,7 @@ public class SearchController {
         }
         SearchService searchService = applicationContext.getBean(SearchService.class);
 
-        return searchService.search(query, qf);
+        return searchService.search(query, qf).block();
     }
 
 }

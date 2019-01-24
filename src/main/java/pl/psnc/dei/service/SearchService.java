@@ -1,17 +1,21 @@
 package pl.psnc.dei.service;
 
-import eu.europeana.api.client.EuropeanaApi2Client;
-import eu.europeana.api.client.model.EuropeanaApi2Results;
-import eu.europeana.api.client.search.query.Api2Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.client.WebClient;
+import pl.psnc.dei.exception.DEIHttpException;
+import pl.psnc.dei.request.RestRequestExecutor;
+import reactor.core.publisher.Mono;
 
-import java.io.IOException;
+import javax.annotation.PostConstruct;
 
 @Service
-public class SearchService {
+public class SearchService
+extends RestRequestExecutor {
 
     private static final Logger log = LoggerFactory.getLogger(SearchService.class);
 
@@ -24,32 +28,49 @@ public class SearchService {
     @Value("${search.api.profile}")
     private String searchApiProfile;
 
-    public String search(String query, String queryFilter) {
-        EuropeanaApi2Client searchClient = new EuropeanaApi2Client(searchApiUrl, apiKey);
-        Api2Query api2query = buildQuery(query, queryFilter);
-        try {
-            long start = System.currentTimeMillis();
-            EuropeanaApi2Results response = (EuropeanaApi2Results) searchClient.search(api2query);
-            log.info("Query time: " + String.valueOf(System.currentTimeMillis() - start) + " ms.");
-            if (response != null) {
-                return response.toJSON();
-            }
-        } catch (IOException e) {
-            log.error("Could not execute search API request.", e);
-        }
-        return "Error occurred during search...";
+    private String requestUrlPrefix;
+
+    public SearchService(WebClient.Builder webClientBuilder) {
+        configure(webClientBuilder);
     }
 
-    private Api2Query buildQuery(String query, String queryFilter) {
-        Api2Query api2Query = new Api2Query();
-        api2Query.setGeneralTerms(query);
-        if (queryFilter != null && !queryFilter.isEmpty()) {
-            String[] filters = queryFilter.split("&");
-            for (String filter : filters) {
-                api2Query.addQueryRefinement(filter);
+    @PostConstruct
+    private void configure() {
+        log.info("Will use {} url.", searchApiUrl);
+        setRootUri(searchApiUrl);
+        prepareUrlPrefix();
+    }
+
+    private void prepareUrlPrefix() {
+        requestUrlPrefix = "?wskey=" + apiKey +
+                "&profile=" + searchApiProfile + ",facets";
+    }
+
+    public Mono<String> search(String query, String queryFilter) {
+        String requestUrl = createRequestURL(query, queryFilter);
+
+        return webClient.get()
+                .uri(requestUrl, query, queryFilter)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .bodyToMono(String.class);
+    }
+
+    private String createRequestURL(String query, String queryFilter) {
+        StringBuilder requestUrl = new StringBuilder();
+
+        requestUrl.append(requestUrlPrefix);
+
+        if (!StringUtils.isEmpty(query)) {
+            if (!StringUtils.isEmpty(queryFilter)) {
+                requestUrl.append("&query={query}&qf={queryFilter}");
+            } else {
+                requestUrl.append("&query={query}");
             }
+        } else {
+            throw new IllegalStateException("Mandatory parameter (query) is missing");
         }
-        api2Query.setProfile(searchApiProfile);
-        return api2Query;
+        return requestUrl.toString();
     }
 }
