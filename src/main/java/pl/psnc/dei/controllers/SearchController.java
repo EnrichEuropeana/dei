@@ -17,14 +17,14 @@ public class SearchController {
         this.applicationContext = applicationContext;
     }
 
-    @GetMapping("/search")
+    @GetMapping(value = "/search", produces = "application/json")
     public String search(@RequestParam(value = "query") String query, @RequestParam(value = "qf", required = false) String qf) {
         if (query.isEmpty()) {
             query = QUERY_ALL;
         }
         SearchService searchService = applicationContext.getBean(SearchService.class);
 
-        return searchService.search(query, qf);
+        return searchService.search(query, qf).block();
     }
 
 }
