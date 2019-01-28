@@ -36,8 +36,8 @@ extends RestRequestExecutor {
 
     @PostConstruct
     private void configure() {
-        log.info("Will use {} url.", searchApiUrl);
         setRootUri(searchApiUrl);
+        log.info("Will use {} url.", searchApiUrl);
         prepareUrlPrefix();
     }
 
