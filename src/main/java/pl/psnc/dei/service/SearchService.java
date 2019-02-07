@@ -5,13 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriBuilder;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
+import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.net.URI;
+import java.util.List;
 
 @Service
 public class SearchService
@@ -25,10 +28,11 @@ extends RestRequestExecutor {
     @Value("${search.api.url}")
     private String searchApiUrl;
 
-    @Value("${search.api.profile}")
-    private String searchApiProfile;
+    @Value("#{'${search.api.predefined}'.split(',')}")
+    private List<String> searchApiPredefined;
 
-    private String requestUrlPrefix;
+    @Value("${search.api.iiif.query}")
+    private String searchApiIiifQuery;
 
     public SearchService(WebClient.Builder webClientBuilder) {
         configure(webClientBuilder);
@@ -38,39 +42,22 @@ extends RestRequestExecutor {
     private void configure() {
         setRootUri(searchApiUrl);
         log.info("Will use {} url.", searchApiUrl);
-        prepareUrlPrefix();
     }
 
-    private void prepareUrlPrefix() {
-        requestUrlPrefix = "?wskey=" + apiKey +
-                "&profile=" + searchApiProfile + ",facets";
-    }
-
-    public Mono<String> search(String query, String queryFilter) {
-        String requestUrl = createRequestURL(query, queryFilter);
-
+    public Mono<SearchResponse> search(String query, String queryFilter, String cursor) {
         return webClient.get()
-                .uri(requestUrl, query, queryFilter)
+                .uri(uriBuilder -> {
+                    uriBuilder.queryParam("wskey", apiKey);
+                    searchApiPredefined.forEach(s -> uriBuilder.query(s));
+                    return uriBuilder.queryParam("query", query)
+                        .queryParam("qf", queryFilter)
+                        .queryParam("qf", searchApiIiifQuery)
+                        .queryParam("cursor", cursor)
+                        .build();
+                })
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(String.class);
-    }
-
-    private String createRequestURL(String query, String queryFilter) {
-        StringBuilder requestUrl = new StringBuilder();
-
-        requestUrl.append(requestUrlPrefix);
-
-        if (!StringUtils.isEmpty(query)) {
-            if (!StringUtils.isEmpty(queryFilter)) {
-                requestUrl.append("&query={query}&qf={queryFilter}");
-            } else {
-                requestUrl.append("&query={query}");
-            }
-        } else {
-            throw new IllegalStateException("Mandatory parameter (query) is missing");
-        }
-        return requestUrl.toString();
+                .bodyToMono(SearchResponse.class);
     }
 }
