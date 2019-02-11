@@ -5,15 +5,14 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.util.UriBuilder;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
-import java.net.URI;
 import java.util.List;
 
 @Service
@@ -28,8 +27,8 @@ extends RestRequestExecutor {
     @Value("${search.api.url}")
     private String searchApiUrl;
 
-    @Value("#{'${search.api.predefined}'.split(',')}")
-    private List<String> searchApiPredefined;
+    @Value("#{'${search.api.predefined.parameters}'.split(',')}")
+    private List<String> searchApiPredefinedParameters;
 
     @Value("${search.api.iiif.query}")
     private String searchApiIiifQuery;
@@ -45,10 +44,11 @@ extends RestRequestExecutor {
     }
 
     public Mono<SearchResponse> search(String query, String queryFilter, String cursor) {
+        checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.queryParam("wskey", apiKey);
-                    searchApiPredefined.forEach(s -> uriBuilder.query(s));
+                    searchApiPredefinedParameters.forEach(s -> uriBuilder.query(s));
                     return uriBuilder.queryParam("query", query)
                         .queryParam("qf", queryFilter)
                         .queryParam("qf", searchApiIiifQuery)
@@ -59,5 +59,14 @@ extends RestRequestExecutor {
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(SearchResponse.class);
+    }
+
+    private void checkParameters(String query, String cursor) {
+        if (StringUtils.isEmpty(query)) {
+            throw new IllegalStateException("Mandatory parameter (query) is missing");
+        }
+        if (StringUtils.isEmpty(cursor)) {
+            throw new IllegalStateException("Cursor cannot be empty, it has to be either * or a value from previous request");
+        }
     }
 }
