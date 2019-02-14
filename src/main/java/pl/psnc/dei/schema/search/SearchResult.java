@@ -17,16 +17,6 @@ public class SearchResult {
 
     private String license;
 
-    public SearchResult(String imageURL, String title, String author, String issued, String provider, String format, String language, String license) {
-        this.imageURL = imageURL;
-        this.title = title;
-        this.author = author;
-        this.issued = issued;
-        this.provider = provider;
-        this.format = format;
-        this.language = language;
-        this.license = license;
-    }
 
     public String getImageURL() {
         return imageURL;

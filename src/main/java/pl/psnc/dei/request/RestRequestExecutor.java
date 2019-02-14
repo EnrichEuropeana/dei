@@ -11,9 +11,6 @@ public class RestRequestExecutor {
 
     protected WebClient webClient;
 
-    public RestRequestExecutor() {
-    }
-
     /**
      * Creates an instance of web client used by the executor.
      * @param webClientBuilder web client builder (by default automatically created by spring)

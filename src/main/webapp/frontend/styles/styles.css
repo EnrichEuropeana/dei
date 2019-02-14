@@ -1,0 +1,58 @@
+.facet-component {
+    margin-top: 0;
+    padding: 16px;
+    background-color: WhiteSmoke;
+    width: 25%;
+    max-width: 250px;
+}
+
+.refine-query-label {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.facet-box {
+    margin-top: 0;
+    margin-left: 10px;
+    text-wrap: avoid;
+}
+
+.search-results-component {
+    margin-left: 0;
+}
+
+.search-result-element {
+    margin-top: 5px;
+    margin-left: 0;
+    margin-bottom: 5px;
+    padding: 0;
+    background-color: lightsteelblue;
+    max-width:1000px;
+}
+
+.search-result-checkbox {
+    margin-left: 30px;
+}
+
+.metadata-label {
+    font-weight: bold;
+}
+
+.metadata-line {
+    margin-top: 0;
+}
+
+.metadata-image {
+    width: 100px;
+    height: 100px;
+}
+
+.query-form {
+    margin-top: 0;
+    max-width: 1000px;
+    max-height: 40px;
+}
+
+.search-field {
+    max-width: 1000px;
+}
