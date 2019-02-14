@@ -48,7 +48,7 @@ extends RestRequestExecutor {
         return webClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.queryParam("wskey", apiKey);
-                    searchApiPredefinedParameters.forEach(s -> uriBuilder.query(s));
+                    searchApiPredefinedParameters.forEach(uriBuilder::query);
                     return uriBuilder.queryParam("query", query)
                         .queryParam("qf", queryFilter)
                         .queryParam("qf", searchApiIiifQuery)

@@ -12,6 +12,7 @@ public class DEIHttpException extends Exception {
         return status;
     }
 
+    @Override
     public String toString() {
         return "HTTP status: " + status + " Reason: " + getMessage();
     }

@@ -1,8 +1,11 @@
 package pl.psnc.dei.response.search;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
@@ -14,27 +17,39 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "completeness",
         "country",
         "europeanaCollectionName",
-        "dcLanguage",
         "edmConceptPrefLabelLangAware",
+        "edmPlaceAltLabelLangAware",
+        "dcDescriptionLangAware",
+        "dcSubjectLangAware",
+        "dcTypeLangAware",
+        "edmIsShownBy",
+        "dcDescription",
         "edmConcept",
         "edmConceptLabel",
-        "edmDatasetName",
         "title",
-        "dcDescription",
         "rights",
         "edmIsShownAt",
+        "dctermsSpatial",
         "dataProvider",
         "dcTitleLangAware",
-        "dcTypeLangAware",
-        "dcLanguageLangAware",
+        "dcCreatorLangAware",
+        "dcContributorLangAware",
         "europeanaCompleteness",
+        "edmPlace",
+        "edmPlaceLabel",
+        "edmPlaceLatitude",
+        "edmPlaceLongitude",
+        "dcCreator",
+        "dcContributor",
         "edmPreview",
+        "edmPlaceLabelLangAware",
         "previewNoDistribute",
         "provider",
         "timestamp",
         "score",
         "language",
         "type",
+        "edmDatasetName",
         "guid",
         "link",
         "timestamp_created_epoch",
@@ -54,36 +69,58 @@ public class Item {
     private List<String> country = null;
     @JsonProperty("europeanaCollectionName")
     private List<String> europeanaCollectionName = null;
-    @JsonProperty("dcLanguage")
-    private List<String> dcLanguage = null;
     @JsonProperty("edmConceptPrefLabelLangAware")
     private Map<String,List<String>> edmConceptPrefLabelLangAware = null;
+    @JsonProperty("edmPlaceAltLabelLangAware")
+    private Map<String,List<String>> edmPlaceAltLabelLangAware;
+    @JsonProperty("dcDescriptionLangAware")
+    private Map<String,List<String>> dcDescriptionLangAware;
+    @JsonProperty("dcSubjectLangAware")
+    private Map<String,List<String>> dcSubjectLangAware;
+    @JsonProperty("dcTypeLangAware")
+    private Map<String,List<String>> dcTypeLangAware;
+    @JsonProperty("edmIsShownBy")
+    private List<String> edmIsShownBy = null;
+    @JsonProperty("dcDescription")
+    private List<String> dcDescription = null;
     @JsonProperty("edmConcept")
     private List<String> edmConcept = null;
     @JsonProperty("edmConceptLabel")
     private List<Map<String,String>> edmConceptLabel = null;
-    @JsonProperty("edmDatasetName")
-    private List<String> edmDatasetName = null;
     @JsonProperty("title")
     private List<String> title = null;
-    @JsonProperty("dcDescription")
-    private List<String> dcDescription = null;
     @JsonProperty("rights")
     private List<String> rights = null;
     @JsonProperty("edmIsShownAt")
     private List<String> edmIsShownAt = null;
+    @JsonProperty("dctermsSpatial")
+    private List<String> dctermsSpatial = null;
     @JsonProperty("dataProvider")
     private List<String> dataProvider = null;
     @JsonProperty("dcTitleLangAware")
     private Map<String,List<String>> dcTitleLangAware;
-    @JsonProperty("dcTypeLangAware")
-    private Map<String,List<String>> dcTypeLangAware;
-    @JsonProperty("dcLanguageLangAware")
-    private Map<String,List<String>> dcLanguageLangAware;
+    @JsonProperty("dcCreatorLangAware")
+    private Map<String,List<String>> dcCreatorLangAware;
+    @JsonProperty("dcContributorLangAware")
+    private Map<String,List<String>> dcContributorLangAware;
     @JsonProperty("europeanaCompleteness")
     private Integer europeanaCompleteness;
+    @JsonProperty("edmPlace")
+    private List<String> edmPlace = null;
+    @JsonProperty("edmPlaceLabel")
+    private List<Map<String,String>> edmPlaceLabel = null;
+    @JsonProperty("edmPlaceLatitude")
+    private List<String> edmPlaceLatitude = null;
+    @JsonProperty("edmPlaceLongitude")
+    private List<String> edmPlaceLongitude = null;
+    @JsonProperty("dcCreator")
+    private List<String> dcCreator = null;
+    @JsonProperty("dcContributor")
+    private List<String> dcContributor = null;
     @JsonProperty("edmPreview")
     private List<String> edmPreview = null;
+    @JsonProperty("edmPlaceLabelLangAware")
+    private Map<String,List<String>> edmPlaceLabelLangAware;
     @JsonProperty("previewNoDistribute")
     private Boolean previewNoDistribute;
     @JsonProperty("provider")
@@ -96,6 +133,8 @@ public class Item {
     private List<String> language = null;
     @JsonProperty("type")
     private String type;
+    @JsonProperty("edmDatasetName")
+    private List<String> edmDatasetName = null;
     @JsonProperty("guid")
     private String guid;
     @JsonProperty("link")
@@ -108,6 +147,8 @@ public class Item {
     private String timestampCreated;
     @JsonProperty("timestamp_update")
     private String timestampUpdate;
+    @JsonIgnore
+    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
 
     @JsonProperty("id")
     public String getId() {
@@ -159,16 +200,6 @@ public class Item {
         this.europeanaCollectionName = europeanaCollectionName;
     }
 
-    @JsonProperty("dcLanguage")
-    public List<String> getDcLanguage() {
-        return dcLanguage;
-    }
-
-    @JsonProperty("dcLanguage")
-    public void setDcLanguage(List<String> dcLanguage) {
-        this.dcLanguage = dcLanguage;
-    }
-
     @JsonProperty("edmConceptPrefLabelLangAware")
     public Map<String,List<String>> getEdmConceptPrefLabelLangAware() {
         return edmConceptPrefLabelLangAware;
@@ -177,6 +208,66 @@ public class Item {
     @JsonProperty("edmConceptPrefLabelLangAware")
     public void setEdmConceptPrefLabelLangAware(Map<String,List<String>> edmConceptPrefLabelLangAware) {
         this.edmConceptPrefLabelLangAware = edmConceptPrefLabelLangAware;
+    }
+
+    @JsonProperty("edmPlaceAltLabelLangAware")
+    public Map<String,List<String>> getEdmPlaceAltLabelLangAware() {
+        return edmPlaceAltLabelLangAware;
+    }
+
+    @JsonProperty("edmPlaceAltLabelLangAware")
+    public void setEdmPlaceAltLabelLangAware(Map<String,List<String>> edmPlaceAltLabelLangAware) {
+        this.edmPlaceAltLabelLangAware = edmPlaceAltLabelLangAware;
+    }
+
+    @JsonProperty("dcDescriptionLangAware")
+    public Map<String,List<String>> getDcDescriptionLangAware() {
+        return dcDescriptionLangAware;
+    }
+
+    @JsonProperty("dcDescriptionLangAware")
+    public void setDcDescriptionLangAware(Map<String,List<String>> dcDescriptionLangAware) {
+        this.dcDescriptionLangAware = dcDescriptionLangAware;
+    }
+
+    @JsonProperty("dcSubjectLangAware")
+    public Map<String,List<String>> getDcSubjectLangAware() {
+        return dcSubjectLangAware;
+    }
+
+    @JsonProperty("dcSubjectLangAware")
+    public void setDcSubjectLangAware(Map<String,List<String>> dcSubjectLangAware) {
+        this.dcSubjectLangAware = dcSubjectLangAware;
+    }
+
+    @JsonProperty("dcTypeLangAware")
+    public Map<String,List<String>> getDcTypeLangAware() {
+        return dcTypeLangAware;
+    }
+
+    @JsonProperty("dcTypeLangAware")
+    public void setDcTypeLangAware(Map<String,List<String>> dcTypeLangAware) {
+        this.dcTypeLangAware = dcTypeLangAware;
+    }
+
+    @JsonProperty("edmIsShownBy")
+    public List<String> getEdmIsShownBy() {
+        return edmIsShownBy;
+    }
+
+    @JsonProperty("edmIsShownBy")
+    public void setEdmIsShownBy(List<String> edmIsShownBy) {
+        this.edmIsShownBy = edmIsShownBy;
+    }
+
+    @JsonProperty("dcDescription")
+    public List<String> getDcDescription() {
+        return dcDescription;
+    }
+
+    @JsonProperty("dcDescription")
+    public void setDcDescription(List<String> dcDescription) {
+        this.dcDescription = dcDescription;
     }
 
     @JsonProperty("edmConcept")
@@ -199,16 +290,6 @@ public class Item {
         this.edmConceptLabel = edmConceptLabel;
     }
 
-    @JsonProperty("edmDatasetName")
-    public List<String> getEdmDatasetName() {
-        return edmDatasetName;
-    }
-
-    @JsonProperty("edmDatasetName")
-    public void setEdmDatasetName(List<String> edmDatasetName) {
-        this.edmDatasetName = edmDatasetName;
-    }
-
     @JsonProperty("title")
     public List<String> getTitle() {
         return title;
@@ -217,16 +298,6 @@ public class Item {
     @JsonProperty("title")
     public void setTitle(List<String> title) {
         this.title = title;
-    }
-
-    @JsonProperty("dcDescription")
-    public List<String> getDcDescription() {
-        return dcDescription;
-    }
-
-    @JsonProperty("dcDescription")
-    public void setDcDescription(List<String> dcDescription) {
-        this.dcDescription = dcDescription;
     }
 
     @JsonProperty("rights")
@@ -249,6 +320,16 @@ public class Item {
         this.edmIsShownAt = edmIsShownAt;
     }
 
+    @JsonProperty("dctermsSpatial")
+    public List<String> getDctermsSpatial() {
+        return dctermsSpatial;
+    }
+
+    @JsonProperty("dctermsSpatial")
+    public void setDctermsSpatial(List<String> dctermsSpatial) {
+        this.dctermsSpatial = dctermsSpatial;
+    }
+
     @JsonProperty("dataProvider")
     public List<String> getDataProvider() {
         return dataProvider;
@@ -269,24 +350,24 @@ public class Item {
         this.dcTitleLangAware = dcTitleLangAware;
     }
 
-    @JsonProperty("dcTypeLangAware")
-    public Map<String,List<String>> getDcTypeLangAware() {
-        return dcTypeLangAware;
+    @JsonProperty("dcCreatorLangAware")
+    public Map<String,List<String>> getDcCreatorLangAware() {
+        return dcCreatorLangAware;
     }
 
-    @JsonProperty("dcTypeLangAware")
-    public void setDcTypeLangAware(Map<String,List<String>> dcTypeLangAware) {
-        this.dcTypeLangAware = dcTypeLangAware;
+    @JsonProperty("dcCreatorLangAware")
+    public void setDcCreatorLangAware(Map<String,List<String>> dcCreatorLangAware) {
+        this.dcCreatorLangAware = dcCreatorLangAware;
     }
 
-    @JsonProperty("dcLanguageLangAware")
-    public Map<String,List<String>> getDcLanguageLangAware() {
-        return dcLanguageLangAware;
+    @JsonProperty("dcContributorLangAware")
+    public Map<String,List<String>> getDcContributorLangAware() {
+        return dcContributorLangAware;
     }
 
-    @JsonProperty("dcLanguageLangAware")
-    public void setDcLanguageLangAware(Map<String,List<String>> dcLanguageLangAware) {
-        this.dcLanguageLangAware = dcLanguageLangAware;
+    @JsonProperty("dcContributorLangAware")
+    public void setDcContributorLangAware(Map<String,List<String>> dcContributorLangAware) {
+        this.dcContributorLangAware = dcContributorLangAware;
     }
 
     @JsonProperty("europeanaCompleteness")
@@ -299,6 +380,66 @@ public class Item {
         this.europeanaCompleteness = europeanaCompleteness;
     }
 
+    @JsonProperty("edmPlace")
+    public List<String> getEdmPlace() {
+        return edmPlace;
+    }
+
+    @JsonProperty("edmPlace")
+    public void setEdmPlace(List<String> edmPlace) {
+        this.edmPlace = edmPlace;
+    }
+
+    @JsonProperty("edmPlaceLabel")
+    public List<Map<String,String>> getEdmPlaceLabel() {
+        return edmPlaceLabel;
+    }
+
+    @JsonProperty("edmPlaceLabel")
+    public void setEdmPlaceLabel(List<Map<String,String>> edmPlaceLabel) {
+        this.edmPlaceLabel = edmPlaceLabel;
+    }
+
+    @JsonProperty("edmPlaceLatitude")
+    public List<String> getEdmPlaceLatitude() {
+        return edmPlaceLatitude;
+    }
+
+    @JsonProperty("edmPlaceLatitude")
+    public void setEdmPlaceLatitude(List<String> edmPlaceLatitude) {
+        this.edmPlaceLatitude = edmPlaceLatitude;
+    }
+
+    @JsonProperty("edmPlaceLongitude")
+    public List<String> getEdmPlaceLongitude() {
+        return edmPlaceLongitude;
+    }
+
+    @JsonProperty("edmPlaceLongitude")
+    public void setEdmPlaceLongitude(List<String> edmPlaceLongitude) {
+        this.edmPlaceLongitude = edmPlaceLongitude;
+    }
+
+    @JsonProperty("dcCreator")
+    public List<String> getDcCreator() {
+        return dcCreator;
+    }
+
+    @JsonProperty("dcCreator")
+    public void setDcCreator(List<String> dcCreator) {
+        this.dcCreator = dcCreator;
+    }
+
+    @JsonProperty("dcContributor")
+    public List<String> getDcContributor() {
+        return dcContributor;
+    }
+
+    @JsonProperty("dcContributor")
+    public void setDcContributor(List<String> dcContributor) {
+        this.dcContributor = dcContributor;
+    }
+
     @JsonProperty("edmPreview")
     public List<String> getEdmPreview() {
         return edmPreview;
@@ -307,6 +448,16 @@ public class Item {
     @JsonProperty("edmPreview")
     public void setEdmPreview(List<String> edmPreview) {
         this.edmPreview = edmPreview;
+    }
+
+    @JsonProperty("edmPlaceLabelLangAware")
+    public Map<String,List<String>> getEdmPlaceLabelLangAware() {
+        return edmPlaceLabelLangAware;
+    }
+
+    @JsonProperty("edmPlaceLabelLangAware")
+    public void setEdmPlaceLabelLangAware(Map<String,List<String>> edmPlaceLabelLangAware) {
+        this.edmPlaceLabelLangAware = edmPlaceLabelLangAware;
     }
 
     @JsonProperty("previewNoDistribute")
@@ -369,6 +520,16 @@ public class Item {
         this.type = type;
     }
 
+    @JsonProperty("edmDatasetName")
+    public List<String> getEdmDatasetName() {
+        return edmDatasetName;
+    }
+
+    @JsonProperty("edmDatasetName")
+    public void setEdmDatasetName(List<String> edmDatasetName) {
+        this.edmDatasetName = edmDatasetName;
+    }
+
     @JsonProperty("guid")
     public String getGuid() {
         return guid;
@@ -427,6 +588,16 @@ public class Item {
     @JsonProperty("timestamp_update")
     public void setTimestampUpdate(String timestampUpdate) {
         this.timestampUpdate = timestampUpdate;
+    }
+
+    @JsonAnyGetter
+    public Map<String, Object> getAdditionalProperties() {
+        return this.additionalProperties;
+    }
+
+    @JsonAnySetter
+    public void setAdditionalProperty(String name, Object value) {
+        this.additionalProperties.put(name, value);
     }
 
 }

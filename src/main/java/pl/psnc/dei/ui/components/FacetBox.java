@@ -1,62 +1,53 @@
 package pl.psnc.dei.ui.components;
 
-import com.vaadin.flow.component.Text;
+import com.vaadin.flow.component.accordion.AccordionPanel;
 import com.vaadin.flow.component.checkbox.Checkbox;
-import com.vaadin.flow.component.icon.Icon;
-import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.dependency.StyleSheet;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-public class FacetBox extends VerticalLayout {
-    private Text name;
-
-    private Icon iconUp;
-
-    private Icon iconDown;
+@StyleSheet("frontend://styles/styles.css")
+public class FacetBox extends AccordionPanel {
+    private static final Map<String, String> FACET_LABELS;
 
     private List<Checkbox> values;
 
+    static {
+        FACET_LABELS = new HashMap<>();
+        FACET_LABELS.put("YEAR", "Year");
+        FACET_LABELS.put("RIGHTS", "Rights");
+        FACET_LABELS.put("DATA_PROVIDER", "Data provider");
+        FACET_LABELS.put("PROVIDER", "Provider");
+        FACET_LABELS.put("COLOURPALETTE", "Colour palette");
+        FACET_LABELS.put("COUNTRY", "Country");
+        FACET_LABELS.put("LANGUAGE", "Language");
+        FACET_LABELS.put("MIME_TYPE", "Mime type");
+        FACET_LABELS.put("TYPE", "Type");
+        FACET_LABELS.put("IMAGE_SIZE", "Image size");
+        FACET_LABELS.put("SOUND_DURATION", "Sound duration");
+        FACET_LABELS.put("REUSABILITY", "Reusability");
+        FACET_LABELS.put("VIDEO_DURATION", "Video duration");
+        FACET_LABELS.put("TEXT_FULLTEXT", "Has fulltext");
+        FACET_LABELS.put("LANDINGPAGE", "Landing page");
+        FACET_LABELS.put("MEDIA", "Media");
+        FACET_LABELS.put("THUMBNAIL", "Thumbnail");
+        FACET_LABELS.put("UGC", "UGC");
+        FACET_LABELS.put("IMAGE_ASPECTRATIO", "Image aspect ratio");
+        FACET_LABELS.put("IMAGE_COLOUR", "Image colour");
+        FACET_LABELS.put("VIDEO_HD", "Video HD");
+        FACET_LABELS.put("SOUND_HQ", "Sound HQ");
+    }
+
     public FacetBox(String label, List<String> valueLabels) {
-        getStyle().set("margin-top", "0px");
-        getStyle().set("margin-left", "10px");
-        setPadding(false);
-        this.name = new Text(label);
-        this.values = new ArrayList<>();
+        setSummaryText(FACET_LABELS.get(label));
+        values = new ArrayList<>();
         valueLabels.forEach(s -> {
             Checkbox checkbox = new Checkbox(s);
-            checkbox.getStyle().set("margin", "0px");
-            checkbox.setVisible(false);
-            this.values.add(checkbox);
+            values.add(checkbox);
         });
-
-        iconUp = new Icon(VaadinIcon.ANGLE_UP);
-        iconUp.setVisible(false);
-        iconUp.addClickListener(iconClickEvent -> {
-                iconUp.setVisible(false);
-                iconDown.setVisible(true);
-                values.forEach(checkbox -> checkbox.setVisible(false));
-            });
-        iconUp.getStyle().set("margin-left", "auto");
-
-        iconDown = new Icon(VaadinIcon.ANGLE_DOWN);
-        iconDown.setVisible(true);
-        iconDown.addClickListener(iconClickEvent -> {
-            iconUp.setVisible(true);
-            iconDown.setVisible(false);
-            values.forEach(checkbox -> checkbox.setVisible(true));
-        });
-        iconDown.getStyle().set("margin-left", "auto");
-
-        HorizontalLayout nameLine = new HorizontalLayout();
-        nameLine.setDefaultVerticalComponentAlignment(Alignment.STRETCH);
-        nameLine.add(name, iconUp, iconDown);
-        nameLine.setAlignSelf(Alignment.END, iconUp);
-        nameLine.setAlignSelf(Alignment.END, iconDown);
-
-        add(nameLine);
-        add(values.toArray(new Checkbox[0]));
+        addContent(values.toArray(new Checkbox[0]));
     }
 }

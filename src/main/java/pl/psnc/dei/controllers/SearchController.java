@@ -5,6 +5,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.SearchService;
 import reactor.core.publisher.Mono;
 
@@ -25,6 +26,9 @@ public class SearchController {
                                        @RequestParam(value = "cursor", required = false) String cursor) {
         if (query.isEmpty()) {
             query = QUERY_ALL;
+        }
+        if (cursor ==  null || cursor.isEmpty()) {
+            cursor = SearchResults.FIRST_CURSOR;
         }
         SearchService searchService = applicationContext.getBean(SearchService.class);
 
