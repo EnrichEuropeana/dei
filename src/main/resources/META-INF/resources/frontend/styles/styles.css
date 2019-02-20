@@ -56,3 +56,26 @@
 .search-field {
     max-width: 1000px;
 }
+
+.navigation-button {
+    width: 42px;
+    min-width: 42px;
+    max-width: 42px;
+    height: 36px;
+    margin: 2px;
+    font-size: small;
+    color: #000000;
+}
+
+.navigation-button-current {
+    background-color: darkgray;
+}
+
+.navigation-bar {
+    max-width: 1000px;
+    width: 1000px;
+}
+
+.page-navigation-bar {
+    margin-left: auto;
+}

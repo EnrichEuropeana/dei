@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
@@ -43,17 +44,26 @@ extends RestRequestExecutor {
         log.info("Will use {} url.", searchApiUrl);
     }
 
+    /**
+     * Execute search request. Note that cursor parameter must be URL encoded.
+     * @param query query string
+     * @param queryFilter query filter
+     * @param cursor cursor for next page of values
+     * @return response from search API associated with web client
+     */
     public Mono<SearchResponse> search(String query, String queryFilter, String cursor) {
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
                     uriBuilder.queryParam("wskey", apiKey);
                     searchApiPredefinedParameters.forEach(uriBuilder::query);
-                    return uriBuilder.queryParam("query", query)
-                        .queryParam("qf", queryFilter)
-                        .queryParam("qf", searchApiIiifQuery)
-                        .queryParam("cursor", cursor)
-                        .build();
+                    uriBuilder.queryParam("query", UriUtils.encode(query, "UTF-8"));
+                    if (queryFilter != null) {
+                        uriBuilder.queryParam("qf", UriUtils.encode(queryFilter, "UTF-8"));
+                    }
+                    return uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"))
+                            .queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
+                            .build();
                 })
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))

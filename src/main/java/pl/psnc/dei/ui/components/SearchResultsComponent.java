@@ -5,15 +5,21 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.response.search.Item;
+import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 
+import java.util.ArrayList;
+
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
-    private static final int DEFAULT_PAGE_SIZE = 12;
+    public static final int DEFAULT_PAGE_SIZE = 12;
 
     private static final String AUTHOR_LABEL = "Author:";
 
@@ -29,40 +35,226 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private static final String LICENSE_LABEL = "License:";
 
+    // query string
+    private transient String query;
+
+    // query filter
+    private transient String qf;
+
+    // search results container
     private transient SearchResults searchResults;
 
-    public SearchResultsComponent(SearchResults results) {
+    // search controller to execute searches
+    private transient SearchController searchController;
+
+    // results label
+    private Label resultsCount;
+
+    // navigation bar with results count and page navigation
+    private HorizontalLayout navigationBar;
+
+    // component with page navigation buttons
+    private PageNavigationComponent pageNavigationComponent;
+
+    // list of results
+    private VerticalLayout resultsList;
+
+    public SearchResultsComponent(SearchController searchController) {
+        this.searchController = searchController;
+        this.searchResults = new SearchResults();
+
         addClassName("search-results-component");
-        this.searchResults = results;
         setPadding(false);
 
-        updateComponent();
+        setVisible(searchResults.getResults() != null
+                && !searchResults.getResults().isEmpty());
+    }
+
+    private void createResultList() {
+        resultsList = new VerticalLayout();
+        resultsList.setPadding(false);
+        add(resultsList);
+    }
+
+    private void createNavigationBar() {
+        navigationBar = new HorizontalLayout();
+        navigationBar.addClassName("navigation-bar");
+        navigationBar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+
+        // add results count
+        resultsCount = new Label(prepareResultsText());
+        navigationBar.add(resultsCount);
+
+        // page navigation
+        pageNavigationComponent = new PageNavigationComponent(this, DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        navigationBar.add(pageNavigationComponent);
+
+        add(navigationBar);
     }
 
     private void updateComponent() {
-        removeAll();
         setVisible(searchResults != null
                 && searchResults.getResults() != null
                 && !searchResults.getResults().isEmpty());
-
         if (isVisible()) {
-            // add results count
-            Label resultsCount = new Label(prepareResultsText());
-            add(resultsCount);
-
-            // add result list
-            VerticalLayout resultsList = new VerticalLayout();
-            resultsList.setPadding(false);
+            if (navigationBar == null) {
+                createNavigationBar();
+            } else {
+                updateNavigationBar();
+            }
+            if (resultsList == null) {
+                createResultList();
+            }
+            resultsCount.setText(prepareResultsText());
+            resultsList.removeAll();
             searchResults.getResults().forEach(searchResult -> {
                 resultsList.add(createResultComponent(searchResult));
             });
-            add(resultsList);
         }
     }
 
-    public void setSearchResults(SearchResults results) {
-        this.searchResults = results;
+    private void updateNavigationBar() {
+        pageNavigationComponent.resetPages(DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+    }
+
+    /**
+     * Execute new search
+     * @param query query entered by the user
+     * @param qf query filter from facets
+     * @param cursor cursor for a search
+     * @return
+     */
+    public SearchResults executeSearch(String query, String qf, String cursor) {
+        this.query = query;
+        this.qf = qf;
+        clearSearchResults();
+
+        SearchResponse result = searchController.search(query, qf, cursor).block();
+        if (result == null) {
+            // we should show failure warning
+            Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
+            return null;
+        }
+        updateSearchResults(result, true);
         updateComponent();
+        return searchResults;
+    }
+
+    private void clearSearchResults() {
+        searchResults.clearPageCursors();
+        searchResults.setResultsCollected(0);
+        searchResults.setResults(new ArrayList<>());
+        searchResults.setFacets(new ArrayList<>());
+        searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
+        searchResults.setTotalResults(0);
+    }
+
+    /**
+     * Change page from current to a new one in either direction
+     * @param currentPage current page
+     * @param newPage new page
+     */
+    void goToPage(int currentPage, int newPage) {
+        int page;
+        if (newPage < currentPage) {
+            String cursor = searchResults.getPageCursor(newPage);
+            if (cursor == null) {
+                // when there is no cursor for specific page we should start from the beginning
+                searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
+                searchResults.setResultsCollected(0);
+                page = 0;
+            } else {
+                // we should set all things as we would be one page behind the requested one
+                searchResults.setNextCursor(cursor);
+                searchResults.setResultsCollected(DEFAULT_PAGE_SIZE * (newPage - 1));
+                page = newPage - 1;
+            }
+        } else if (newPage > currentPage) {
+            // we will start from the current page and retrieve missing pages one by one
+            page = currentPage;
+        } else {
+            // do nothing when the current page is requested
+            return;
+        }
+        while (++page <= newPage) {
+            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor()).block();
+            if (result == null) {
+                // redirect to error page
+                return;
+            }
+            updateSearchResults(result, page == newPage);
+        }
+        updateComponent();
+    }
+
+    private void updateSearchResults(SearchResponse result, boolean updateResultsList) {
+        if (result.getTotalResults() == 0) {
+            searchResults.setResultsCollected(0);
+            searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
+            searchResults.clearPageCursors();
+            searchResults.setTotalResults(result.getTotalResults());
+            searchResults.setFacets(new ArrayList<>());
+            searchResults.setResults(new ArrayList<>());
+        } else {
+            searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
+            if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
+                searchResults.setPageCursor(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, searchResults.getNextCursor());
+            } else {
+                searchResults.setPageCursor((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, searchResults.getNextCursor());
+            }
+            searchResults.setNextCursor(result.getNextCursor());
+            searchResults.setTotalResults(result.getTotalResults());
+            searchResults.setFacets(result.getFacets());
+            searchResults.setResults(new ArrayList<>());
+
+            if (updateResultsList) {
+                result.getItems().forEach(item -> {
+                    searchResults.getResults().add(itemToSearchResult(item));
+                });
+            }
+        }
+    }
+
+    private SearchResult itemToSearchResult(Item item) {
+        SearchResult searchResult = new SearchResult();
+
+        // title
+        if (item.getTitle() != null && !item.getTitle().isEmpty()) {
+            searchResult.setTitle(item.getTitle().get(0));
+        }
+
+        // author
+        if (item.getDcCreator() != null && !item.getDcCreator().isEmpty()) {
+            searchResult.setAuthor(item.getDcCreator().get(0));
+        } else if (item.getDcContributor() != null && !item.getDcContributor().isEmpty()) {
+            searchResult.setAuthor(item.getDcContributor().get(0));
+        }
+
+        // issued
+
+        // provider institution
+        if (item.getDataProvider() != null && !item.getDataProvider().isEmpty()) {
+            searchResult.setProvider(item.getDataProvider().get(0));
+        }
+
+        // format
+
+        // language
+        if (item.getLanguage() != null && !item.getLanguage().isEmpty()) {
+            searchResult.setLanguage(item.getLanguage().get(0));
+        }
+
+        // license
+        if (item.getRights() != null && !item.getRights().isEmpty()) {
+            searchResult.setLicense(item.getRights().get(0));
+        }
+
+        // image URL
+        if (item.getEdmPreview() != null && !item.getEdmPreview().isEmpty()) {
+            searchResult.setImageURL(item.getEdmPreview().get(0));
+        }
+
+        return searchResult;
     }
 
     private Component createResultComponent(SearchResult searchResult) {
@@ -116,10 +308,24 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     private String prepareResultsText() {
-        return String.valueOf((searchResults.getResultsCollected() >= DEFAULT_PAGE_SIZE ? searchResults.getResultsCollected() - DEFAULT_PAGE_SIZE : 0) + 1)
+        return prepareFromResultsText()
                 + " - "
                 + searchResults.getResultsCollected()
                 + " of "
                 + searchResults.getTotalResults();
+    }
+
+    private String prepareFromResultsText() {
+        int fromResults = searchResults.getResultsCollected();
+        if (fromResults >= DEFAULT_PAGE_SIZE) {
+            if (fromResults >= searchResults.getTotalResults()) {
+                fromResults -= searchResults.getResults().size();
+            } else {
+                fromResults -= DEFAULT_PAGE_SIZE;
+            }
+        } else {
+            fromResults = 0;
+        }
+        return String.valueOf(fromResults + 1);
     }
 }

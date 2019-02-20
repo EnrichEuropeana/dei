@@ -3,6 +3,7 @@ package pl.psnc.dei.request;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.util.DefaultUriBuilderFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -26,10 +27,13 @@ public class RestRequestExecutor {
     protected void setRootUri(String rootUri) {
         URI uri = validateUri(rootUri);
         if (webClient != null) {
+            DefaultUriBuilderFactory uriBuilderFactory = new DefaultUriBuilderFactory(uri.toString());
+            uriBuilderFactory.setEncodingMode(DefaultUriBuilderFactory.EncodingMode.VALUES_ONLY);
             webClient = webClient.mutate()
                     .baseUrl(uri.toString())
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+                    .uriBuilderFactory(uriBuilderFactory)
                     .build();
         }
     }
