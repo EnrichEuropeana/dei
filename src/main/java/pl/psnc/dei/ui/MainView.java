@@ -8,12 +8,10 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.*;
-import com.vaadin.flow.server.PWA;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
-@PWA(name = "Data Exchange Infrastructure", shortName = "DEI")
 public class MainView extends VerticalLayout implements RouterLayout {
 
     public MainView() {

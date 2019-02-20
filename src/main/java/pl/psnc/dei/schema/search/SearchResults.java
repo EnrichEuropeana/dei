@@ -2,6 +2,7 @@ package pl.psnc.dei.schema.search;
 
 import pl.psnc.dei.response.search.Facet;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResults {
@@ -13,6 +14,8 @@ public class SearchResults {
 
     private List<Facet> facets = null;
 
+    private List<String> pageCursors = new ArrayList<>();
+
     private String nextCursor;
 
     private List<SearchResult> results = null;
@@ -20,6 +23,7 @@ public class SearchResults {
     public SearchResults() {
         totalResults = 0;
         resultsCollected = 0;
+        pageCursors.add(FIRST_CURSOR);
         nextCursor = FIRST_CURSOR;
     }
 
@@ -61,5 +65,25 @@ public class SearchResults {
 
     public void setResults(List<SearchResult> results) {
         this.results = results;
+    }
+
+    public void setPageCursor(int page, String cursor) {
+        if (page <= pageCursors.size()) {
+            pageCursors.set(page - 1, cursor);
+        } else if (page == pageCursors.size() + 1) {
+            pageCursors.add(cursor);
+        }
+    }
+
+    public String getPageCursor(int page) {
+        if (page <= pageCursors.size()) {
+            return pageCursors.get(page - 1);
+        }
+        return null;
+    }
+
+    public void clearPageCursors() {
+        pageCursors.clear();
+        pageCursors.add(FIRST_CURSOR);
     }
 }
