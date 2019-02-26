@@ -12,13 +12,13 @@ public class SearchResults {
 
     private int resultsCollected;
 
-    private List<Facet> facets = null;
+    private List<Facet> facets = new ArrayList<>();
 
     private List<String> pageCursors = new ArrayList<>();
 
     private String nextCursor;
 
-    private List<SearchResult> results = null;
+    private List<SearchResult> results = new ArrayList<>();
 
     public SearchResults() {
         totalResults = 0;
@@ -48,7 +48,10 @@ public class SearchResults {
     }
 
     public void setFacets(List<Facet> facets) {
-        this.facets = facets;
+        this.facets.clear();
+        if (facets != null) {
+            this.facets.addAll(facets);
+        }
     }
 
     public String getNextCursor() {
@@ -64,7 +67,10 @@ public class SearchResults {
     }
 
     public void setResults(List<SearchResult> results) {
-        this.results = results;
+        this.results.clear();
+        if (results != null) {
+            this.results.addAll(results);
+        }
     }
 
     public void setPageCursor(int page, String cursor) {
@@ -85,5 +91,14 @@ public class SearchResults {
     public void clearPageCursors() {
         pageCursors.clear();
         pageCursors.add(FIRST_CURSOR);
+    }
+
+    public void clear() {
+        clearPageCursors();
+        setResultsCollected(0);
+        results.clear();
+        facets.clear();
+        setNextCursor(SearchResults.FIRST_CURSOR);
+        setTotalResults(0);
     }
 }

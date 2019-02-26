@@ -14,6 +14,7 @@ import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.ArrayList;
 
@@ -65,17 +66,22 @@ public class SearchResultsComponent extends VerticalLayout {
 
         addClassName("search-results-component");
         setPadding(false);
-
         setVisible(searchResults.getResults() != null
                 && !searchResults.getResults().isEmpty());
     }
 
+    /**
+     * Create results list
+     */
     private void createResultList() {
         resultsList = new VerticalLayout();
         resultsList.setPadding(false);
         add(resultsList);
     }
 
+    /**
+     * Create navigation bar with info about number of results and page navigation
+     */
     private void createNavigationBar() {
         navigationBar = new HorizontalLayout();
         navigationBar.addClassName("navigation-bar");
@@ -92,6 +98,9 @@ public class SearchResultsComponent extends VerticalLayout {
         add(navigationBar);
     }
 
+    /**
+     * Shows / hides this component according to number of results.
+     */
     private void updateComponent() {
         setVisible(searchResults != null
                 && searchResults.getResults() != null
@@ -113,8 +122,19 @@ public class SearchResultsComponent extends VerticalLayout {
         }
     }
 
+    /**
+     * Resets the page navigation component when number of total results has changed
+     */
     private void updateNavigationBar() {
         pageNavigationComponent.resetPages(DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+    }
+
+    /**
+     * Execute facet search after a facet was selected or deselected. The current query string is used and the cursor is
+     * set as for the first execution.
+     */
+    public void executeFacetSearch(String qf) {
+        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR)));
     }
 
     /**
@@ -122,12 +142,15 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param query query entered by the user
      * @param qf query filter from facets
      * @param cursor cursor for a search
-     * @return
+     * @return search results object
      */
     public SearchResults executeSearch(String query, String qf, String cursor) {
         this.query = query;
         this.qf = qf;
-        clearSearchResults();
+        if (this.qf == null) {
+            this.qf = "";
+        }
+        searchResults.clear();
 
         SearchResponse result = searchController.search(query, qf, cursor).block();
         if (result == null) {
@@ -138,15 +161,6 @@ public class SearchResultsComponent extends VerticalLayout {
         updateSearchResults(result, true);
         updateComponent();
         return searchResults;
-    }
-
-    private void clearSearchResults() {
-        searchResults.clearPageCursors();
-        searchResults.setResultsCollected(0);
-        searchResults.setResults(new ArrayList<>());
-        searchResults.setFacets(new ArrayList<>());
-        searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
-        searchResults.setTotalResults(0);
     }
 
     /**
@@ -187,14 +201,14 @@ public class SearchResultsComponent extends VerticalLayout {
         updateComponent();
     }
 
+    /**
+     * Updates SearchResults container based on the SearchResponse. When updateResultsList is true also the actual result items are updated.
+     * @param result result from search execution
+     * @param updateResultsList when true the actual items are also updated
+     */
     private void updateSearchResults(SearchResponse result, boolean updateResultsList) {
         if (result.getTotalResults() == 0) {
-            searchResults.setResultsCollected(0);
-            searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
-            searchResults.clearPageCursors();
-            searchResults.setTotalResults(result.getTotalResults());
-            searchResults.setFacets(new ArrayList<>());
-            searchResults.setResults(new ArrayList<>());
+            searchResults.clear();
         } else {
             searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
             if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
@@ -215,6 +229,11 @@ public class SearchResultsComponent extends VerticalLayout {
         }
     }
 
+    /**
+     * Create a SearchResult object from Item which is retrieved from the response
+     * @param item item found in the results
+     * @return item converted to search result object
+     */
     private SearchResult itemToSearchResult(Item item) {
         SearchResult searchResult = new SearchResult();
 
@@ -257,6 +276,11 @@ public class SearchResultsComponent extends VerticalLayout {
         return searchResult;
     }
 
+    /**
+     * Create a single result component
+     * @param searchResult search result from which all the data is retrieved
+     * @return created component
+     */
     private Component createResultComponent(SearchResult searchResult) {
         HorizontalLayout resultComponent = new HorizontalLayout();
         resultComponent.addClassName("search-result-element");
@@ -271,6 +295,11 @@ public class SearchResultsComponent extends VerticalLayout {
         return resultComponent;
     }
 
+    /**
+     * Create metadata component which is part of the result component
+     * @param searchResult source of the metadata
+     * @return created component
+     */
     private Component createMetadataComponent(SearchResult searchResult) {
         VerticalLayout metadata = new VerticalLayout();
         createMetadataLine(metadata, TITLE_LABEL, searchResult.getTitle());
@@ -283,6 +312,12 @@ public class SearchResultsComponent extends VerticalLayout {
         return metadata;
     }
 
+    /**
+     * Create a single line of the metadata component
+     * @param metadata metadata component where the line will be added
+     * @param label label of the attribute
+     * @param value value of the attribute
+     */
     private void createMetadataLine(FlexComponent metadata, String label, String value) {
         if (value != null && !value.isEmpty()) {
             HorizontalLayout line = new HorizontalLayout();
@@ -299,6 +334,11 @@ public class SearchResultsComponent extends VerticalLayout {
         }
     }
 
+    /**
+     * Create thumbnail image
+     * @param result search result to get the URL to image
+     * @return created image
+     */
     private Image createImage(SearchResult result) {
         Image image = new Image();
         image.setAlt(result.getTitle());
@@ -307,6 +347,10 @@ public class SearchResultsComponent extends VerticalLayout {
         return image;
     }
 
+    /**
+     * Text with info which pages out of total are shown.
+     * @return info string
+     */
     private String prepareResultsText() {
         return prepareFromResultsText()
                 + " - "
@@ -315,6 +359,10 @@ public class SearchResultsComponent extends VerticalLayout {
                 + searchResults.getTotalResults();
     }
 
+    /**
+     * Text with first shown result
+     * @return first shown result index
+     */
     private String prepareFromResultsText() {
         int fromResults = searchResults.getResultsCollected();
         if (fromResults >= DEFAULT_PAGE_SIZE) {
@@ -327,5 +375,10 @@ public class SearchResultsComponent extends VerticalLayout {
             fromResults = 0;
         }
         return String.valueOf(fromResults + 1);
+    }
+
+    public void clear() {
+        searchResults.clear();
+        updateComponent();
     }
 }
