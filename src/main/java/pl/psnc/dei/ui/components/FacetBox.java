@@ -3,17 +3,19 @@ package pl.psnc.dei.ui.components;
 import com.vaadin.flow.component.accordion.AccordionPanel;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.StyleSheet;
+import pl.psnc.dei.response.search.Facet;
+import pl.psnc.dei.response.search.FacetField;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class FacetBox extends AccordionPanel {
-    private static final Map<String, String> FACET_LABELS;
+    // Labels for facet fields
+    public static final Map<String, String> FACET_LABELS;
 
-    private List<Checkbox> values;
+    private transient Map<Checkbox, FacetField> values;
 
     static {
         FACET_LABELS = new HashMap<>();
@@ -41,13 +43,56 @@ public class FacetBox extends AccordionPanel {
         FACET_LABELS.put("SOUND_HQ", "Sound HQ");
     }
 
-    public FacetBox(String label, List<String> valueLabels) {
-        setSummaryText(FACET_LABELS.get(label));
-        values = new ArrayList<>();
-        valueLabels.forEach(s -> {
-            Checkbox checkbox = new Checkbox(s);
-            values.add(checkbox);
+    // Used facet field
+    private String facet;
+
+    // parent facet component
+    private FacetComponent facetComponent;
+
+    public FacetBox(FacetComponent parent, Facet facet) {
+        this.facetComponent = parent;
+        this.facet = facet.getName();
+        setSummaryText(FACET_LABELS.get(facet.getName()));
+
+        values = new HashMap<>();
+        facet.getFields().forEach(facetField -> {
+            Checkbox checkbox = new Checkbox(facetField.toString(), checkboxBooleanComponentValueChangeEvent -> {
+                if (checkboxBooleanComponentValueChangeEvent.isFromClient()) {
+                    handleFacetField(checkboxBooleanComponentValueChangeEvent.getSource());
+                }
+            });
+            values.put(checkbox, facetField);
+            addContent(checkbox);
         });
-        addContent(values.toArray(new Checkbox[0]));
+    }
+
+    /**
+     * Execute facet search after clicking certain checkbox
+     * @param fieldCheckbox clicked checkbox
+     */
+    private void handleFacetField(Checkbox fieldCheckbox) {
+        facetComponent.excuteFacetSearch(facet, values.get(fieldCheckbox).getLabel(), fieldCheckbox.getValue());
+    }
+
+    /**
+     * Return facet field which can be used for facet search
+     * @return facet field
+     */
+    public String getFacet() {
+        return facet;
+    }
+
+    /**
+     * Update facet checkboxes based on the selected values
+     * @param selectedValues list of values that should be selected
+     */
+    public void updateFacets(List<String> selectedValues) {
+        if (selectedValues != null && !selectedValues.isEmpty()) {
+            values.forEach((key, value) -> {
+                if (selectedValues.contains(value.getLabel())) {
+                    key.setValue(true);
+                }
+            });
+        }
     }
 }

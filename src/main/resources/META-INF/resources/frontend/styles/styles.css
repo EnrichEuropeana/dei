@@ -6,6 +6,10 @@
     max-width: 250px;
 }
 
+.facet-hidden {
+    visibility: hidden;
+}
+
 .refine-query-label {
     margin-top: 10px;
     font-weight: bold;
@@ -15,6 +19,19 @@
     margin-top: 0;
     margin-left: 10px;
     text-wrap: avoid;
+}
+
+.selected-facets {
+    flex-wrap: wrap;
+}
+
+.selected-facet-button {
+    font-size: 0.85em;
+    margin: 2px;
+}
+
+.selected-facet-icon {
+    color: darkred;
 }
 
 .search-results-component {
@@ -32,6 +49,10 @@
 
 .search-result-checkbox {
     margin-left: 30px;
+}
+
+.no-results-label {
+    font-style: italic;
 }
 
 .metadata-label {
@@ -55,6 +76,7 @@
 
 .search-field {
     max-width: 1000px;
+    min-width: 500px;
 }
 
 .navigation-button {
