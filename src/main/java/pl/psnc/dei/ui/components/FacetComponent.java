@@ -121,8 +121,10 @@ public class FacetComponent extends VerticalLayout {
             List<String> filterValues = Arrays.asList(s.split(" OR "));
             filterValues.stream().map(String::trim).map(f -> removeTrailing(f, "(")).
                     map(f -> removeTrailing(f, ")")).forEach(f -> {
-                String[] facetValue = f.split(":");
-                fq.computeIfAbsent(facetValue[0], v -> new ArrayList<>()).add(removeTrailing(facetValue[1], "\""));
+                int pos = f.indexOf(':');
+                if (pos != -1) {
+                    fq.computeIfAbsent(f.substring(0, pos), v -> new ArrayList<>()).add(removeTrailing(f.substring(pos + 1), "\""));
+                }
             });
         });
         if (!fq.isEmpty()) {
