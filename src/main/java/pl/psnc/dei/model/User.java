@@ -5,22 +5,24 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 
 @Entity
-@Table(name = "user_profiles")
-public class UserProfile {
+public class User {
     @Id
     private long id;
 
     @NotNull
     private String username;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Campaign> collections;
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "owner")
+    private List<Campaign> campaigns;
 
 
-    public UserProfile(long id, String username, List<Campaign> collections) {
+    public User() {
+    }
+
+    public User(long id, String username, List<Campaign> campaigns) {
         this.id = id;
         this.username = username;
-        this.collections = collections;
+        this.campaigns = campaigns;
     }
 
 
@@ -36,11 +38,12 @@ public class UserProfile {
         this.username = username;
     }
 
-    public List<Campaign> getCollections() {
-        return collections;
+    public List<Campaign> getCampaigns() {
+        return campaigns;
     }
 
-    public void setCollections(List<Campaign> collections) {
-        this.collections = collections;
+    public void setCampaigns(List<Campaign> campaigns) {
+        this.campaigns = campaigns;
     }
 }
+

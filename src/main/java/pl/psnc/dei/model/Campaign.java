@@ -1,6 +1,7 @@
 package pl.psnc.dei.model;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -12,17 +13,26 @@ public class Campaign {
 
     private String name;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private List<Material> selected;
+    @ManyToOne
+    private User owner;
+
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "campaign")
+    private List<Record> records;
 
     public Campaign() {
-
     }
 
-    public Campaign(long id, String name, List<Material> selected) {
-        this.id = id;
+    public Campaign(String name, List<Record> records) {
         this.name = name;
-        this.selected = selected;
+        this.records = records;
+    }
+    public Campaign(String name) {
+        this.name = name;
+        this.records = new ArrayList<>();
+    }
+
+    public void addRecord(Record record){
+        records.add(record);
     }
 
     public String getName() {
@@ -37,11 +47,19 @@ public class Campaign {
         return id;
     }
 
-    public List<Material> getSelected() {
-        return selected;
+    public List<Record> getRecords() {
+        return records;
     }
 
-    public void setSelected(List<Material> selected) {
-        this.selected = selected;
+    public void setRecords(List<Record> records) {
+        this.records = records;
+    }
+
+    public User getOwner() {
+        return owner;
+    }
+
+    public void setOwner(User owner) {
+        this.owner = owner;
     }
 }
