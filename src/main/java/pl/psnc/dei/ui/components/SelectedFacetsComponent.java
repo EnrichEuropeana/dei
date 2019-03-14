@@ -29,21 +29,19 @@ public class SelectedFacetsComponent extends HorizontalLayout {
 
     private void updateLabels() {
         removeAll();
-        selectedValues.forEach((s, strings) -> {
-            strings.forEach(v -> {
-                Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
-                icon.addClassName("selected-facet-icon");
-                Button button = new Button(v, icon);
-                button.addClassName("selected-facet-button");
-                button.addClickListener(buttonClickEvent -> {
-                    selectedValues.get(s).remove(v);
-                    remove(button);
-                    facetComponent.excuteFacetSearch(s, v, false);
-                });
-                button.setIconAfterText(false);
-                add(button);
+        selectedValues.forEach((s, strings) -> strings.forEach(v -> {
+            Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
+            icon.addClassName("selected-facet-icon");
+            Button button = new Button(v, icon);
+            button.addClassName("selected-facet-button");
+            button.addClickListener(buttonClickEvent -> {
+                selectedValues.get(s).remove(v);
+                remove(button);
+                facetComponent.excuteFacetSearch(s, v, false);
             });
-        });
+            button.setIconAfterText(false);
+            add(button);
+        }));
     }
 
     public void clear() {
