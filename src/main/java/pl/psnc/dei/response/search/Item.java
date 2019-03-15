@@ -148,7 +148,7 @@ public class Item {
     @JsonProperty("timestamp_update")
     private String timestampUpdate;
     @JsonIgnore
-    private Map<String, Object> additionalProperties = new HashMap<String, Object>();
+    private Map<String, Object> additionalProperties = new HashMap<>();
 
     @JsonProperty("id")
     public String getId() {
