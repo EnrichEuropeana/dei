@@ -10,6 +10,8 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
+import org.springframework.security.access.annotation.Secured;
+import pl.psnc.dei.config.Role;
 import pl.psnc.dei.controllers.SearchController;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.ui.MainView;
@@ -21,6 +23,7 @@ import java.util.stream.Collectors;
 
 
 @Route(value = "search", layout = MainView.class)
+@Secured(Role.OPERATOR)
 public class SearchPage extends HorizontalLayout implements HasUrlParameter<String> {
     private TextField search;
 
