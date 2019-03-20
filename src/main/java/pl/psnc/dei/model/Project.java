@@ -20,7 +20,7 @@ public class Project {
     private long id;
 
     @JsonProperty("ProjectId")
-    private String projectId = "1";
+    private String projectId;
 
     @JsonProperty("Name")
     private String name;
