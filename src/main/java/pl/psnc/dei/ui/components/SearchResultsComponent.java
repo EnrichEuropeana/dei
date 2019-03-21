@@ -116,9 +116,7 @@ public class SearchResultsComponent extends VerticalLayout {
             }
             resultsCount.setText(prepareResultsText());
             resultsList.removeAll();
-            searchResults.getResults().forEach(searchResult -> {
-                resultsList.add(createResultComponent(searchResult));
-            });
+            searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult)));
         }
     }
 
@@ -222,9 +220,7 @@ public class SearchResultsComponent extends VerticalLayout {
             searchResults.setResults(new ArrayList<>());
 
             if (updateResultsList) {
-                result.getItems().forEach(item -> {
-                    searchResults.getResults().add(itemToSearchResult(item));
-                });
+                result.getItems().forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
             }
         }
     }
