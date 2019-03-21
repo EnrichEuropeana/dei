@@ -8,11 +8,14 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.*;
+import pl.psnc.dei.config.SecurityUtils;
+import pl.psnc.dei.ui.pages.AccessDeniedPage;
+import pl.psnc.dei.ui.pages.LogoutPage;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
-public class MainView extends VerticalLayout implements RouterLayout {
+public class MainView extends VerticalLayout implements RouterLayout, BeforeEnterObserver {
 
     public MainView() {
         H2 title = new H2("Data Exchange Infrastructure");
@@ -36,11 +39,30 @@ public class MainView extends VerticalLayout implements RouterLayout {
         searchLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab searchTab = new Tab(searchLayout);
 
-        menuTabs.add(homeTab, searchTab);
+        RouterLink logout = new RouterLink("Logout", LogoutPage.class);
+        logout.getStyle().set("font-size", "1em");
+        // Only show as active for the exact URL, but not for sub paths
+        logout.setHighlightCondition(HighlightConditions.sameLocation());
+        VerticalLayout logoutLayout = new VerticalLayout(VaadinIcon.POWER_OFF.create(), logout);
+        logoutLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        Tab logoutTab = new Tab(logoutLayout);
+
+        menuTabs.add(homeTab, searchTab, logoutTab);
 
         HorizontalLayout header = new HorizontalLayout(title, menuTabs);
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setAlignSelf(Alignment.START, title);
         add(header);
+    }
+
+    @Override
+    public void beforeEnter(BeforeEnterEvent event) {
+        if (!SecurityUtils.isAccessGranted(event.getNavigationTarget())) {
+            if (!SecurityUtils.isUserLoggedIn()) {
+                event.getUI().getPage().reload(); // should redirect to login page
+            } else if (event.getNavigationTarget() != AccessDeniedPage.class) {
+                event.rerouteTo(AccessDeniedPage.class);
+            }
+        }
     }
 }
