@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ public class Project {
     private String name;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
-    private List<Dataset> dataset;
+    private List<Dataset> datasets = new ArrayList<>();
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
@@ -56,11 +57,16 @@ public class Project {
         this.records = records;
     }
 
-    public List<Dataset> getDataset() {
-        return dataset;
+    public List<Dataset> getDatasets() {
+        return datasets;
     }
 
-    public void setDataset(List<Dataset> dataset) {
-        this.dataset = dataset;
+    public void setDatasets(List<Dataset> datasets) {
+        this.datasets = datasets;
+    }
+
+    @Override
+    public String toString() {
+        return this.getName();
     }
 }

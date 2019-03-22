@@ -1,5 +1,7 @@
 package pl.psnc.dei.model;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import javax.persistence.*;
 import java.util.List;
 
@@ -15,8 +17,10 @@ public class Dataset {
     @GeneratedValue
     private long id;
 
+    @JsonProperty("DatasetId")
     private String datasetId;
 
+    @JsonProperty("Name")
     private String name;
 
     @ManyToOne
@@ -56,5 +60,10 @@ public class Dataset {
 
     public void setRecords(List<Record> records) {
         this.records = records;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
     }
 }
