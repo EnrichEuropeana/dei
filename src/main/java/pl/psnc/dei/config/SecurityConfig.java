@@ -77,6 +77,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         super.configure(http);
+        http.httpBasic().disable();
         http.anonymous().disable();
         http
                 .csrf().disable()
@@ -84,7 +85,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
                 // allow Vaadin URLs and the login URL without authentication
                 .regexMatchers("/frontend/.*", "/VAADIN/.*").permitAll()
                 .requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
-                .antMatchers("/accessdenied*", "/logout*").permitAll()
+                .antMatchers("/accessdenied*", "/logout*", "/sso/login*").permitAll()
                 .and()
                 .authorizeRequests().anyRequest().hasAuthority("operator");
     }
