@@ -1,13 +1,11 @@
 package pl.psnc.dei.service;
 
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -21,9 +19,12 @@ public class TranscriptionPlatformService {
 
     private List<Project> availableProjects;
     private UrlBuilder urlBuilder;
+    private final WebClient webClient;
 
-    public TranscriptionPlatformService(UrlBuilder urlBuilder) {
+    public TranscriptionPlatformService(UrlBuilder urlBuilder,
+                                        WebClient.Builder webClientBuilder) {
         this.urlBuilder = urlBuilder;
+        this.webClient = webClientBuilder.baseUrl(urlBuilder.getBaseUrl()).build();
     }
 
     public List<Project> getProjects() {
@@ -34,13 +35,9 @@ public class TranscriptionPlatformService {
     }
 
     public void getDatasetsFor(Project project) {
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<List<Dataset>> rateResponse =
-                restTemplate.exchange(urlBuilder.urlForProjectDatasets(project),
-                        HttpMethod.GET, null, new ParameterizedTypeReference<List<Dataset>>() {
-                        });
-        List<Dataset> projectDatasets = rateResponse.getBody();
-        for(Dataset projectDataset: projectDatasets){
+        Dataset[] projectDatasets = this.webClient.get().uri(urlBuilder.urlForProjectDatasets(project)).retrieve().bodyToMono(Dataset[].class).block();
+
+        for (Dataset projectDataset : projectDatasets) {
             projectDataset.setProject(project);
             project.getDatasets().add(projectDataset);
         }
@@ -62,12 +59,8 @@ public class TranscriptionPlatformService {
     }
 
     private void initAvailableProjects() {
-        RestTemplate restTemplate = new RestTemplate();
-        ResponseEntity<List<Project>> rateResponse =
-                restTemplate.exchange(urlBuilder.urlForAllProjects(),
-                        HttpMethod.GET, null, new ParameterizedTypeReference<List<Project>>() {
-                        });
-        availableProjects = rateResponse.getBody();
+        Project[] projects = this.webClient.get().uri(urlBuilder.urlForAllProjects()).retrieve().bodyToMono(Project[].class).block();
+        availableProjects = Arrays.asList(projects);
     }
 
 }

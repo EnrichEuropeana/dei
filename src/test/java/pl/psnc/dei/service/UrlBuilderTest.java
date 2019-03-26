@@ -12,6 +12,7 @@ public class UrlBuilderTest {
         UrlBuilder urlBuilder = new UrlBuilder();
         ReflectionTestUtils.setField(urlBuilder, "transcriptionPlatformLocation", "sampleUrl");
 
+        Assert.assertEquals("sampleUrl", urlBuilder.getBaseUrl());
         Assert.assertEquals("sampleUrl/Project/all", urlBuilder.urlForAllProjects());
         Project project = new Project();
         project.setProjectId("sampleProjectID");

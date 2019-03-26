@@ -18,6 +18,10 @@ public class UrlBuilder {
     @Value("${transcription.api.url}")
     private String transcriptionPlatformLocation;
 
+    public String getBaseUrl() {
+        return transcriptionPlatformLocation;
+    }
+
     public String urlForAllProjects() {
         return transcriptionPlatformLocation + ALL_PROJECTS_SUFFIX;
     }

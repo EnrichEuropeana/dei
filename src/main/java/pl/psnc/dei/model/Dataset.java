@@ -3,6 +3,7 @@ package pl.psnc.dei.model;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.persistence.*;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -11,7 +12,7 @@ import java.util.List;
  * Created by pwozniak on 3/20/19
  */
 @Entity
-public class Dataset {
+public class Dataset implements Serializable {
 
     @Id
     @GeneratedValue
