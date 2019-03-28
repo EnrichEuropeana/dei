@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.CurrentUser;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
@@ -60,8 +61,12 @@ public class SearchResultsComponent extends VerticalLayout {
     // list of results
     private VerticalLayout resultsList;
 
-    public SearchResultsComponent(SearchController searchController) {
+    private CurrentUser currentUser;
+
+    public SearchResultsComponent(SearchController searchController,
+                                  CurrentUser currentUser) {
         this.searchController = searchController;
+        this.currentUser = currentUser;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -233,6 +238,9 @@ public class SearchResultsComponent extends VerticalLayout {
     private SearchResult itemToSearchResult(Item item) {
         SearchResult searchResult = new SearchResult();
 
+        //id
+        searchResult.setId(item.getId());
+
         // title
         if (item.getTitle() != null && !item.getTitle().isEmpty()) {
             searchResult.setTitle(item.getTitle().get(0));
@@ -283,7 +291,16 @@ public class SearchResultsComponent extends VerticalLayout {
         resultComponent.setSizeFull();
         resultComponent.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         Checkbox checkbox = new Checkbox();
+        checkbox.setId(searchResult.getId());
         checkbox.addClassName("search-result-checkbox");
+        checkbox.setValue(currentUser.isRecordSelected(searchResult.getId()));
+        checkbox.addValueChangeListener(event -> {
+            if (event.getValue()) {
+                currentUser.addSelectedId(event.getSource().getId().get());
+            } else {
+                currentUser.removeSelectedId(event.getSource().getId().get());
+            }
+        });
         resultComponent.add(checkbox);
         Image image = createImage(searchResult);
         resultComponent.add(image);

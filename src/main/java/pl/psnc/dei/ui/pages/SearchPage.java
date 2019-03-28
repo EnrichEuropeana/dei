@@ -12,6 +12,7 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
 import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.CurrentUser;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -33,11 +34,17 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
+    private CurrentUser currentUser;
+
     // label used when no results were found
     private Label noResults;
 
-    public SearchPage(SearchController searchController, TranscriptionPlatformService transcriptionPlatformService) {
+    public SearchPage(
+            SearchController searchController,
+            TranscriptionPlatformService transcriptionPlatformService,
+            CurrentUser currentUser) {
         this.transcriptionPlatformService = transcriptionPlatformService;
+        this.currentUser = currentUser;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -80,7 +87,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(createQueryForm());
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController);
+        resultsComponent = new SearchResultsComponent(searchController, currentUser);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 resultsComponent);
@@ -117,12 +124,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             datasets.setItems(project.getDatasets());
         });
         //
+        Button addElements = new Button();
+        addElements.setText("Add");
+
+        addElements.addClickListener(
+                e->{});
+        //
         HorizontalLayout layout = new HorizontalLayout();
-        layout.add(projects, datasets);
+        layout.add(projects, datasets, addElements);
         return layout;
     }
-
-
 
     /**
      * Create query form with search field and button
@@ -144,7 +155,10 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
-                e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                e -> {
+                    currentUser.clearSelectedRecords();
+                    e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
+                });
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
