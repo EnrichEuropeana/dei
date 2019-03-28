@@ -10,7 +10,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.controllers.SearchController;
-import pl.psnc.dei.model.CurrentUser;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
@@ -61,12 +61,12 @@ public class SearchResultsComponent extends VerticalLayout {
     // list of results
     private VerticalLayout resultsList;
 
-    private CurrentUser currentUser;
+    private CurrentUserRecordSelection currentUserRecordSelection;
 
     public SearchResultsComponent(SearchController searchController,
-                                  CurrentUser currentUser) {
+                                  CurrentUserRecordSelection currentUserRecordSelection) {
         this.searchController = searchController;
-        this.currentUser = currentUser;
+        this.currentUserRecordSelection = currentUserRecordSelection;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -293,12 +293,12 @@ public class SearchResultsComponent extends VerticalLayout {
         Checkbox checkbox = new Checkbox();
         checkbox.setId(searchResult.getId());
         checkbox.addClassName("search-result-checkbox");
-        checkbox.setValue(currentUser.isRecordSelected(searchResult.getId()));
+        checkbox.setValue(currentUserRecordSelection.isRecordSelected(searchResult.getId()));
         checkbox.addValueChangeListener(event -> {
             if (event.getValue()) {
-                currentUser.addSelectedId(event.getSource().getId().get());
+                currentUserRecordSelection.addSelectedRecordId(event.getSource().getId().get());
             } else {
-                currentUser.removeSelectedId(event.getSource().getId().get());
+                currentUserRecordSelection.removeSelectedRecordId(event.getSource().getId().get());
             }
         });
         resultComponent.add(checkbox);

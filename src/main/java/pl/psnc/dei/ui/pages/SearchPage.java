@@ -12,7 +12,8 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
 import pl.psnc.dei.controllers.SearchController;
-import pl.psnc.dei.model.CurrentUser;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -34,7 +35,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
-    private CurrentUser currentUser;
+    private CurrentUserRecordSelection currentUserRecordSelection;
 
     // label used when no results were found
     private Label noResults;
@@ -42,9 +43,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
-            CurrentUser currentUser) {
+            CurrentUserRecordSelection currentUserRecordSelection) {
         this.transcriptionPlatformService = transcriptionPlatformService;
-        this.currentUser = currentUser;
+        this.currentUserRecordSelection = currentUserRecordSelection;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -87,7 +88,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(createQueryForm());
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController, currentUser);
+        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 resultsComponent);
@@ -104,31 +105,38 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         add(noResults);
     }
 
-    private Component createProjectSelectionBox(){
+    private Component createProjectSelectionBox() {
         //
         Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
         //
         Select projects = new Select<>();
+        Select datasets = new Select<>();
+        //
         projects.setItems(transcriptionPlatformService.getProjects());
         projects.setLabel("Available projects");
         projects.setEmptySelectionAllowed(false);
+        projects.addValueChangeListener(event -> {
+            Project project = (Project) event.getValue();
+            datasets.setItems(project.getDatasets());
+            currentUserRecordSelection.setSelectedProject(project);
+        });
         projects.setValue(currentProject);
         //
-        Select datasets = new Select<>();
         datasets.setItems(currentProject.getDatasets());
         datasets.setLabel("Available datasets");
         datasets.setEmptySelectionAllowed(true);
-        //
-        projects.addValueChangeListener(event -> {
-            Project project = (Project) projects.getValue();
-            datasets.setItems(project.getDatasets());
+        datasets.addValueChangeListener(event -> {
+            Dataset selectedDataset = (Dataset) event.getValue();
+            currentUserRecordSelection.setSelectedDataSet(selectedDataset);
         });
+        //
         //
         Button addElements = new Button();
         addElements.setText("Add");
 
         addElements.addClickListener(
-                e->{});
+                e -> {
+                });
         //
         HorizontalLayout layout = new HorizontalLayout();
         layout.add(projects, datasets, addElements);
@@ -150,13 +158,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.addClassName("search-field");
         search.setPlaceholder("Search in Europeana");
         search.addKeyUpListener(Key.ENTER,
-                keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                keyUpEvent -> {
+                    currentUserRecordSelection.clearSelectedRecords();
+                    search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
+                });
 
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
                 e -> {
-                    currentUser.clearSelectedRecords();
+                    currentUserRecordSelection.clearSelectedRecords();
                     e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
                 });
         queryForm.add(search, searchButton);
