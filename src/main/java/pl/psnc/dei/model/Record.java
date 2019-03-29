@@ -11,10 +11,14 @@ public class Record {
 
     private String identifier;
 
-    @ManyToOne
-    private Campaign campaign;
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Project project;
 
-    public Record(){}
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Dataset dataset;
+
+    public Record() {
+    }
 
     public Record(String identifier) {
         this.identifier = identifier;
@@ -32,11 +36,20 @@ public class Record {
         return id;
     }
 
-    public void setCampaign(Campaign campaign) {
-        this.campaign = campaign;
+
+    public Project getProject() {
+        return project;
     }
 
-    public Campaign getCampaign() {
-        return campaign;
+    public void setProject(Project project) {
+        this.project = project;
+    }
+
+    public Dataset getDataset() {
+        return dataset;
+    }
+
+    public void setDataset(Dataset dataset) {
+        this.dataset = dataset;
     }
 }

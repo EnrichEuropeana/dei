@@ -12,19 +12,14 @@ public class User {
     @NotNull
     private String username;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER, mappedBy = "owner")
-    private List<Campaign> campaigns;
-
-
     public User() {
     }
 
-    public User(long id, String username, List<Campaign> campaigns) {
+    public User(long id, String username) {
         this.id = id;
         this.username = username;
-        this.campaigns = campaigns;
-    }
 
+    }
 
     public long getId() {
         return id;
@@ -38,12 +33,5 @@ public class User {
         this.username = username;
     }
 
-    public List<Campaign> getCampaigns() {
-        return campaigns;
-    }
-
-    public void setCampaigns(List<Campaign> campaigns) {
-        this.campaigns = campaigns;
-    }
 }
 

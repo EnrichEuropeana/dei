@@ -8,12 +8,15 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
 import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
@@ -31,10 +34,13 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private SearchResultsComponent resultsComponent;
 
+    private TranscriptionPlatformService transcriptionPlatformService;
+
     // label used when no results were found
     private Label noResults;
 
-    public SearchPage(SearchController searchController) {
+    public SearchPage(SearchController searchController, TranscriptionPlatformService transcriptionPlatformService) {
+        this.transcriptionPlatformService = transcriptionPlatformService;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -55,6 +61,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Show / hide facets component using visibility css property
+     *
      * @param show when true
      */
     private void showFacets(boolean show) {
@@ -67,6 +74,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Creates search results list component which consists of the query form and the search results component
+     *
      * @param searchController search controller used to execute searches
      * @return created component
      */
@@ -76,7 +84,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         createNoResultsLabel();
         searchResultsList.add(noResults);
         resultsComponent = new SearchResultsComponent(searchController);
-        searchResultsList.add(resultsComponent);
+        searchResultsList.add(
+                createProjectSelectionBox(),
+                resultsComponent);
         return searchResultsList;
     }
 
@@ -90,8 +100,36 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         add(noResults);
     }
 
+    private Component createProjectSelectionBox(){
+        //
+        Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
+        //
+        Select projects = new Select<>();
+        projects.setItems(transcriptionPlatformService.getProjects());
+        projects.setLabel("Available projects");
+        projects.setEmptySelectionAllowed(false);
+        projects.setValue(currentProject);
+        //
+        Select datasets = new Select<>();
+        datasets.setItems(currentProject.getDatasets());
+        datasets.setLabel("Available datasets");
+        datasets.setEmptySelectionAllowed(true);
+        //
+        projects.addValueChangeListener(event -> {
+            Project project = (Project) projects.getValue();
+            datasets.setItems(project.getDatasets());
+        });
+        //
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.add(projects, datasets);
+        return layout;
+    }
+
+
+
     /**
      * Create query form with search field and button
+     *
      * @return created component
      */
     private Component createQueryForm() {
@@ -119,8 +157,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Prepare QueryParameters
-     * @param query query string
-     * @param qf query filter
+     *
+     * @param query  query string
+     * @param qf     query filter
      * @param cursor cursor
      * @return QueryParameters used by the search page
      */
@@ -134,8 +173,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Adds a parameter as a list of values. Values are retrieved from <code>value</code> by splitting it with '&' delimiter
-     * @param name parameter name
-     * @param value value of the parameter (may be concatenation of many values val1&val2&...&valn
+     *
+     * @param name       parameter name
+     * @param value      value of the parameter (may be concatenation of many values val1&val2&...&valn
      * @param parameters map of parameters
      */
     private static void addParameter(String name, String value, Map<String, List<String>> parameters) {
@@ -150,8 +190,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Execute search in the SearchResultsComponent and add facets
-     * @param query query string
-     * @param qf query filter
+     *
+     * @param query  query string
+     * @param qf     query filter
      * @param cursor cursor
      */
     private void executeSearch(String query, String qf, String cursor) {
@@ -176,7 +217,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     /**
      * Executed before search page is displayed. Handles the query parameters from URL.
-     * @param event event used to the current URL
+     *
+     * @param event     event used to the current URL
      * @param parameter not used here
      */
     @Override
@@ -195,7 +237,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     /**
      * Gets a single value for a parameter. If <code>oneValue</code> is true only the first from the list is returned
      * otherwise values are concatenated with "AND"
-     * @param values list of values
+     *
+     * @param values   list of values
      * @param oneValue one value indicator
      * @return value
      */
