@@ -2,6 +2,7 @@ package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
@@ -16,6 +17,7 @@ import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.FacetComponent;
@@ -37,15 +39,19 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private CurrentUserRecordSelection currentUserRecordSelection;
 
+    private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
+
     // label used when no results were found
     private Label noResults;
 
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
-            CurrentUserRecordSelection currentUserRecordSelection) {
+            CurrentUserRecordSelection currentUserRecordSelection,
+            RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
         this.transcriptionPlatformService = transcriptionPlatformService;
         this.currentUserRecordSelection = currentUserRecordSelection;
+        this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -136,6 +142,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
         addElements.addClickListener(
                 e -> {
+                    recordsProjectsAssignmentService.saveSelectedRecords();
+                    currentUserRecordSelection.clearSelectedRecords();
+                    UI.getCurrent().getPage().reload();
                 });
         //
         HorizontalLayout layout = new HorizontalLayout();

@@ -14,4 +14,8 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
     List<Record> findAllByProject(Project project);
 
     List<Record> findAllByDataset(Dataset dataset);
+
+    Record findByIdentifierAndProject(String identifier, Project project);
+
+    Record findByIdentifierAndProjectAndDataset(String identifier, Project project, Dataset dataset);
 }

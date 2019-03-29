@@ -2,6 +2,7 @@ package pl.psnc.dei.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
@@ -15,6 +16,27 @@ public class RecordsProjectsAssignmentService {
 
     @Autowired
     private RecordsRepository recordsRepository;
+
+    @Autowired
+    private CurrentUserRecordSelection currentUserRecordSelection;
+
+    public void saveSelectedRecords() {
+        Project project = currentUserRecordSelection.getSelectedProject();
+        Dataset dataset = currentUserRecordSelection.getSelectedDataSet();
+        List<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
+        recordIds.forEach(recordId -> {
+            if (recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset) == null) {
+                if (recordsRepository.findByIdentifierAndProject(recordId, project) == null) {
+                    Record r = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
+                    Record record = new Record();
+                    record.setIdentifier(recordId);
+                    record.setProject(project);
+                    record.setDataset(dataset);
+                    recordsRepository.save(record);
+                }
+            }
+        });
+    }
 
     /**
      * Assign records to the specified project and dataset if not null.

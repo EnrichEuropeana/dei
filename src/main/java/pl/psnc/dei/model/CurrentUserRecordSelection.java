@@ -24,6 +24,14 @@ public class CurrentUserRecordSelection {
     private Dataset selectedDataSet;
     private List<String> selectedRecordIds = new ArrayList<>();
 
+    public Project getSelectedProject() {
+        return selectedProject;
+    }
+
+    public Dataset getSelectedDataSet() {
+        return selectedDataSet;
+    }
+
     public void setSelectedDataSet(Dataset selectedDataSet) {
         log.info("Changing user selected dataset to: " + selectedDataSet);
         this.selectedDataSet = selectedDataSet;
@@ -36,6 +44,10 @@ public class CurrentUserRecordSelection {
 
     public boolean isRecordSelected(String recordId) {
         return selectedRecordIds.contains(recordId);
+    }
+
+    public List<String> getSelectedRecordIds() {
+        return selectedRecordIds;
     }
 
     public void addSelectedRecordId(String recordId) {
