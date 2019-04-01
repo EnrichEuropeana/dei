@@ -1,21 +1,16 @@
 package pl.psnc.dei.model.DAO;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.service.UrlBuilder;
 
 import java.util.List;
 
@@ -23,8 +18,11 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @DataJpaTest
-@Import({TranscriptionPlatformService.class, UrlBuilder.class})
 public class RecordsRepositoryTest {
+
+    /** This is just to ensure that the test is running successfully. Bean of this class is needed. */
+    @MockBean
+    TranscriptionPlatformService transcriptionPlatformService;
 
     @Autowired
     RecordsRepository recordsRepository;
