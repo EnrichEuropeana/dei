@@ -26,11 +26,15 @@ public class RecordsProjectsAssignmentService {
         List<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
         recordIds.forEach(recordId -> {
             if (recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset) == null) {
-                if (recordsRepository.findByIdentifierAndProject(recordId, project) == null) {
-                    Record r = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
-                    Record record = new Record();
-                    record.setIdentifier(recordId);
-                    record.setProject(project);
+                Record record = recordsRepository.findByIdentifierAndProject(recordId, project);
+                if (record == null) {
+                    Record newRecord = new Record();
+                    newRecord.setIdentifier(recordId);
+                    newRecord.setProject(project);
+                    newRecord.setDataset(dataset);
+                    recordsRepository.save(newRecord);
+                } else {
+                    //record is assigned to project but not to dataset yet
                     record.setDataset(dataset);
                     recordsRepository.save(record);
                 }
