@@ -17,6 +17,9 @@ public class Record {
     @ManyToOne(cascade = CascadeType.ALL)
     private Dataset dataset;
 
+    @ManyToOne(cascade = CascadeType.ALL)
+    private Import anImport;
+
     public Record() {
     }
 
@@ -51,5 +54,13 @@ public class Record {
 
     public void setDataset(Dataset dataset) {
         this.dataset = dataset;
+    }
+
+    public Import getAnImport() {
+        return anImport;
+    }
+
+    public void setAnImport(Import anImport) {
+        this.anImport = anImport;
     }
 }
