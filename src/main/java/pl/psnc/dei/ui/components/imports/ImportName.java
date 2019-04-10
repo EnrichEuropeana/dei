@@ -1,4 +1,4 @@
-package pl.psnc.dei.ui.components;
+package pl.psnc.dei.ui.components.imports;
 
 import com.vaadin.flow.component.textfield.TextField;
 
