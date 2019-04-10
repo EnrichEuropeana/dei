@@ -2,6 +2,7 @@ package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
@@ -14,8 +15,11 @@ import com.vaadin.flow.router.*;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
 import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.FacetComponent;
@@ -36,11 +40,21 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
+    private CurrentUserRecordSelection currentUserRecordSelection;
+
+    private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
+
     // label used when no results were found
     private Label noResults;
 
-    public SearchPage(SearchController searchController, TranscriptionPlatformService transcriptionPlatformService) {
+    public SearchPage(
+            SearchController searchController,
+            TranscriptionPlatformService transcriptionPlatformService,
+            CurrentUserRecordSelection currentUserRecordSelection,
+            RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
         this.transcriptionPlatformService = transcriptionPlatformService;
+        this.currentUserRecordSelection = currentUserRecordSelection;
+        this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -83,7 +97,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(createQueryForm());
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController);
+        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 resultsComponent);
@@ -100,32 +114,46 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         add(noResults);
     }
 
-    private Component createProjectSelectionBox(){
+    private Component createProjectSelectionBox() {
         //
         Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
         //
         Select projects = new Select<>();
+        Select datasets = new Select<>();
+        //
         projects.setItems(transcriptionPlatformService.getProjects());
         projects.setLabel("Available projects");
         projects.setEmptySelectionAllowed(false);
+        projects.addValueChangeListener(event -> {
+            Project project = (Project) event.getValue();
+            datasets.setItems(project.getDatasets());
+            currentUserRecordSelection.setSelectedProject(project);
+        });
         projects.setValue(currentProject);
         //
-        Select datasets = new Select<>();
         datasets.setItems(currentProject.getDatasets());
         datasets.setLabel("Available datasets");
         datasets.setEmptySelectionAllowed(true);
-        //
-        projects.addValueChangeListener(event -> {
-            Project project = (Project) projects.getValue();
-            datasets.setItems(project.getDatasets());
+        datasets.addValueChangeListener(event -> {
+            Dataset selectedDataset = (Dataset) event.getValue();
+            currentUserRecordSelection.setSelectedDataSet(selectedDataset);
         });
         //
+        //
+        Button addElements = new Button();
+        addElements.setText("Add");
+
+        addElements.addClickListener(
+                e -> {
+                    recordsProjectsAssignmentService.saveSelectedRecords();
+                    currentUserRecordSelection.clearSelectedRecords();
+                    UI.getCurrent().getPage().reload();
+                });
+        //
         HorizontalLayout layout = new HorizontalLayout();
-        layout.add(projects, datasets);
+        layout.add(projects, datasets, addElements);
         return layout;
     }
-
-
 
     /**
      * Create query form with search field and button
@@ -142,12 +170,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.addClassName("search-field");
         search.setPlaceholder("Search in Europeana");
         search.addKeyUpListener(Key.ENTER,
-                keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                keyUpEvent -> {
+                    currentUserRecordSelection.clearSelectedRecords();
+                    search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
+                });
 
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
-                e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                e -> {
+                    currentUserRecordSelection.clearSelectedRecords();
+                    e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
+                });
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);

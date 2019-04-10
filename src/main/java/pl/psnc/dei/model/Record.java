@@ -11,10 +11,10 @@ public class Record {
 
     private String identifier;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     private Project project;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     private Dataset dataset;
 
     @ManyToOne(cascade = CascadeType.ALL)
