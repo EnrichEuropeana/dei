@@ -10,6 +10,7 @@ import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.*;
 import pl.psnc.dei.config.SecurityUtils;
 import pl.psnc.dei.ui.pages.AccessDeniedPage;
+import pl.psnc.dei.ui.pages.ImportPage;
 import pl.psnc.dei.ui.pages.LogoutPage;
 import pl.psnc.dei.ui.pages.SearchPage;
 
@@ -39,6 +40,14 @@ public class MainView extends VerticalLayout implements RouterLayout, BeforeEnte
         searchLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab searchTab = new Tab(searchLayout);
 
+        RouterLink importLink = new RouterLink("Import", ImportPage.class);
+        search.getStyle().set("font-size", "1em");
+        // Only show as active for the exact URL, but not for sub paths
+        search.setHighlightCondition(HighlightConditions.sameLocation());
+        VerticalLayout importLayout = new VerticalLayout(new Icon(VaadinIcon.ANGLE_RIGHT), importLink);
+        importLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        Tab importTab = new Tab(importLayout);
+
         RouterLink logout = new RouterLink("Logout", LogoutPage.class);
         logout.getStyle().set("font-size", "1em");
         // Only show as active for the exact URL, but not for sub paths
@@ -47,7 +56,7 @@ public class MainView extends VerticalLayout implements RouterLayout, BeforeEnte
         logoutLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab logoutTab = new Tab(logoutLayout);
 
-        menuTabs.add(homeTab, searchTab, logoutTab);
+        menuTabs.add(homeTab, searchTab, importTab, logoutTab);
 
         HorizontalLayout header = new HorizontalLayout(title, menuTabs);
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
