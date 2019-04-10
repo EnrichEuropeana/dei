@@ -12,7 +12,7 @@ import java.util.Date;
  */
 public class ImportName extends TextField {
 
-    private static String TITLE_PATTERN = "IMPORT_%s_%tFT%tT";
+    private static final String TITLE_PATTERN = "IMPORT_%s_%tFT%tT";
 
     public ImportName() {
         this.setPlaceholder("Select project first");

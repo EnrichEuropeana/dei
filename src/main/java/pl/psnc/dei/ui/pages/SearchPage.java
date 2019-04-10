@@ -118,8 +118,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         //
         Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
         //
-        Select projects = new Select<>();
-        Select datasets = new Select<>();
+        Select<Project> projects = new Select<>();
+        Select<Dataset> datasets = new Select<>();
         //
         projects.setItems(transcriptionPlatformService.getProjects());
         projects.setLabel("Available projects");
