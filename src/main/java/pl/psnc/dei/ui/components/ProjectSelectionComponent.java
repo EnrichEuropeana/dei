@@ -15,16 +15,16 @@ import pl.psnc.dei.service.TranscriptionPlatformService;
  */
 public class ProjectSelectionComponent extends HorizontalLayout {
 
-    private Select projects = new Select<>();
-    private Select datasets = new Select<>();
+    private Select<Project> projects = new Select<>();
+    private Select<Dataset> datasets = new Select<>();
     private TranscriptionPlatformService transcriptionPlatformService;
-    private HasValue.ValueChangeListener projectChangeListener;
-    private HasValue.ValueChangeListener datasetChangeListener;
+    private HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Project>> projectChangeListener;
+    private HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Dataset>> datasetChangeListener;
 
     public ProjectSelectionComponent(
             TranscriptionPlatformService transcriptionPlatformService,
-            HasValue.ValueChangeListener projectChangeListener,
-            HasValue.ValueChangeListener datasetChangeListener) {
+            HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Project>> projectChangeListener,
+            HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Dataset>> datasetChangeListener) {
         //
         this.transcriptionPlatformService = transcriptionPlatformService;
         this.projectChangeListener = projectChangeListener;
@@ -39,7 +39,7 @@ public class ProjectSelectionComponent extends HorizontalLayout {
         projects.setEmptySelectionAllowed(false);
 
         projects.addValueChangeListener(event -> {
-            Project project = (Project) event.getValue();
+            Project project = event.getValue();
             datasets.setItems(project.getDatasets());
         });
         projects.addValueChangeListener(projectChangeListener);
@@ -49,11 +49,8 @@ public class ProjectSelectionComponent extends HorizontalLayout {
     private Select<Dataset> datasetsList() {
         datasets.setLabel("Available datasets");
         datasets.setEmptySelectionAllowed(true);
-        datasets.addValueChangeListener(event -> {
-            Dataset selectedDataset = (Dataset) event.getValue();
-        });
+        datasets.addValueChangeListener(datasetChangeListener);
         add(projects, datasets);
         return datasets;
     }
-
 }

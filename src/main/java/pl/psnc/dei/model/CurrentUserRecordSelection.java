@@ -40,6 +40,7 @@ public class CurrentUserRecordSelection {
     public void setSelectedProject(Project selectedProject) {
         log.info("Changing user selected project to: " + selectedProject);
         this.selectedProject = selectedProject;
+        setSelectedDataSet(null);
     }
 
     public boolean isRecordSelected(String recordId) {
