@@ -25,6 +25,13 @@ public class Import {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
     private List<ImportFailure> failures;
 
+    public static Import from(String name, List<Record> records) {
+        Import anImport = new Import();
+        anImport.setName(name);
+        anImport.setRecords(records);
+        return anImport;
+    }
+
     public long getId() {
         return id;
     }

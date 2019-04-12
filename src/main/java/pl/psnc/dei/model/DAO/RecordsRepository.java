@@ -3,6 +3,7 @@ package pl.psnc.dei.model.DAO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.psnc.dei.model.Dataset;
+import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 
@@ -23,5 +24,6 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     Record findByIdentifierAndProjectAndDataset(String identifier, Project project, Dataset dataset);
 
+    List<Record> findAllByAnImport(Import anImport);
 
 }
