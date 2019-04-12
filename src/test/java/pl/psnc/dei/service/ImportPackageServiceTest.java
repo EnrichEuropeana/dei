@@ -49,7 +49,7 @@ public class ImportPackageServiceTest {
     @Test
     public void shouldCreateImportWithDefaultName() {
         //given
-        String regexDefaultProjectName = "projectName_[0-9]{4}-[0-9]{2}-[0-9]{2}.*";
+        String regexDefaultProjectName = "IMPORT_projectName_[0-9]{4}-[0-9]{2}-[0-9]{2}.*";
         List<Record> records = Lists.list(new Record("id1"), new Record("id2"));
         Project project = new Project();
         project.setName("projectName");

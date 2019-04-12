@@ -1,8 +1,11 @@
 package pl.psnc.dei.service;
 
+import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.*;
@@ -17,34 +20,20 @@ public class ImportPackageService {
 
     private final String SPACE_SEPARATOR = " ";
     private final String UNDERSCORE_SEPARATOR = "_";
+    private final String IMPORT = "IMPORT_";
 
     private ImportsRepository importsRepository;
     private RecordsRepository recordsRepository;
+    private WebClient webClient;
+    private UrlBuilder urlBuilder;
 
     @Autowired
-    public ImportPackageService(ImportsRepository importsRepository, RecordsRepository recordsRepository) {
+    public ImportPackageService(ImportsRepository importsRepository, RecordsRepository recordsRepository,
+                                WebClient webClient, UrlBuilder urlBuilder) {
         this.importsRepository = importsRepository;
         this.recordsRepository = recordsRepository;
-    }
-
-    /**
-     * Create import for project from given records
-     *
-     * @param name    name of the import, if null then creating using project name and date
-     * @param project project from which come records
-     * @param records list of records to assign to the import
-     */
-    public Import createImport(String name, Project project, List<Record> records) {
-        if (project == null) {
-            throw new IllegalArgumentException("Project cannot be null");
-        }
-        Import anImport = Import.from(getImportName(name, project.getName()), records);
-        this.importsRepository.save(anImport);
-        records.forEach(record -> {
-            record.setAnImport(anImport);
-            recordsRepository.save(record);
-        });
-        return anImport;
+        this.webClient = webClient;
+        this.urlBuilder = urlBuilder;
     }
 
     /**
@@ -59,9 +48,45 @@ public class ImportPackageService {
         }
     }
 
+    /**
+     * Create import for project from given records
+     *
+     * @param name    name of the import, if null then creating using project name and date
+     * @param project project from which come records
+     * @param records list of records to assign to the import
+     */
+    public Import createImport(String name, Project project, List<Record> records) {
+        if (project == null) {
+            throw new IllegalArgumentException("Project cannot be null");
+        }
+        Import anImport = Import.from(getImportName(name, project.getName()), records);
+        anImport.setStatus(ImportStatus.CREATED);
+        this.importsRepository.save(anImport);
+        records.forEach(record -> {
+            record.setAnImport(anImport);
+            recordsRepository.save(record);
+        });
+        return anImport;
+    }
+
+
+    /**
+     * Send import to TP
+     *
+     * @param inputImport input which should be send
+     */
     public void sendExistingImport(Import inputImport) {
         Import anImport = importsRepository.getOne(inputImport.getId());
-        //todo send
+        anImport.setStatus(ImportStatus.IN_PROGRESS);
+        importsRepository.save(anImport);
+        HttpResponse response = webClient.post().uri(urlBuilder.urlForSendingImport()).body(BodyInserters.fromObject(anImport)).retrieve().bodyToMono(HttpResponse.class).block();
+        if (response.getStatusLine().getStatusCode() >= 200 && response.getStatusLine().getStatusCode() < 300) {
+            anImport.setStatus(ImportStatus.SENT);
+        } else {
+            anImport.setStatus(ImportStatus.FAILED);
+        }
+        importsRepository.save(anImport);
+        //TODO maybe change above code - the way we acquire http status
     }
 
     /**
@@ -84,11 +109,10 @@ public class ImportPackageService {
     }
 
     private String getImportName(String name, String projectName) {
-        return name.isEmpty() ? StringUtils.replace(projectName, SPACE_SEPARATOR, UNDERSCORE_SEPARATOR) + UNDERSCORE_SEPARATOR + getCurrentDate() : name;
+        return name.isEmpty() ? IMPORT + StringUtils.replace(projectName, SPACE_SEPARATOR, UNDERSCORE_SEPARATOR) + UNDERSCORE_SEPARATOR + getCurrentDate() : name;
     }
 
     private String getCurrentDate() {
         return new SimpleDateFormat("yyyy-MM-ddKK:mm:ssZ").format(Date.from(Instant.now()));
     }
-
 }
