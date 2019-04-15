@@ -14,7 +14,7 @@ public class Record {
     @ManyToOne
     private Project project;
 
-    @ManyToOne
+    @ManyToOne(cascade = CascadeType.ALL)
     private Dataset dataset;
 
     @ManyToOne(cascade = CascadeType.ALL)

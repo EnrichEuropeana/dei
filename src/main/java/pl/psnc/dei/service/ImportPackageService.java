@@ -1,42 +1,55 @@
 package pl.psnc.dei.service;
 
 import org.apache.http.HttpResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.WebClient;
+import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ImportsRepository;
+import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.*;
-import pl.psnc.dei.util.ImportNameCreatorUtil;
+import pl.psnc.dei.request.RestRequestExecutor;
 
 import java.util.List;
 
-@Service
-public class ImportPackageService {
+import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
-    private ImportsRepository importsRepository;
-    private RecordsRepository recordsRepository;
-    private WebClient webClient;
-    private UrlBuilder urlBuilder;
+
+@Service
+public class ImportPackageService extends RestRequestExecutor {
+
+    private final static Logger log = LoggerFactory.getLogger(ImportPackageService.class);
 
     @Autowired
-    public ImportPackageService(ImportsRepository importsRepository, RecordsRepository recordsRepository,
-                                WebClient webClient, UrlBuilder urlBuilder) {
-        this.importsRepository = importsRepository;
-        this.recordsRepository = recordsRepository;
-        this.webClient = webClient;
-        this.urlBuilder = urlBuilder;
+    private ImportsRepository importsRepository;
+    @Autowired
+    private RecordsRepository recordsRepository;
+    @Autowired
+    private ProjectsRepository projectsRepository;
+    @Autowired
+    private DatasetsReposotory datasetsReposotory;
+    @Autowired
+    private UrlBuilder urlBuilder;
+
+    public static String createImportName(String name, String projectName) {
+        return name.isEmpty() ? generateImportName(projectName) : name;
     }
 
     /**
-     * @param project project for searching candidates
+     * @param projectId project id for searching candidates
+     * @param datasetId dataset id (optional)
      * @return list of records which are candidates
      */
-    public List<Record> getCandidates(Project project, Dataset dataset) {
-        if (dataset == null) {
+    public List<Record> getCandidates(String projectId, String datasetId) {
+        Project project = projectsRepository.findByProjectId(projectId);
+        if (datasetId == null) {
             return recordsRepository.findAllByProjectAndDatasetNullAndAnImportNull(project);
         } else {
+            Dataset dataset = datasetsReposotory.findDatasetByDatasetId(datasetId);
             return recordsRepository.findAllByProjectAndDatasetAndAnImportNull(project, dataset);
         }
     }
@@ -44,15 +57,17 @@ public class ImportPackageService {
     /**
      * Create import for project from given records
      *
-     * @param name    name of the import, if null then creating using project name and date
-     * @param project project from which come records
-     * @param records list of records to assign to the import
+     * @param name      name of the import, if null then creating using project name and date
+     * @param projectId project id from which come records
+     * @param records   list of records to assign to the import
      */
-    public Import createImport(String name, Project project, List<Record> records) {
-        if (project == null) {
+    public Import createImport(String name, String projectId, List<Record> records) {
+        log.info("Creating import name {}, projectId {}, records {}", name, projectId, records);
+        if (projectId == null) {
             throw new IllegalArgumentException("Project cannot be null");
         }
-        Import anImport = Import.from(ImportNameCreatorUtil.createDefaultImportName(name, project.getName()), records);
+        Project project = projectsRepository.findByProjectId(projectId);
+        Import anImport = Import.from(createImportName(name, project.getName()), records);
         anImport.setStatus(ImportStatus.CREATED);
         this.importsRepository.save(anImport);
         records.forEach(record -> {
@@ -62,14 +77,17 @@ public class ImportPackageService {
         return anImport;
     }
 
-
     /**
      * Send import to TP
      *
-     * @param inputImport input which should be send
+     * @param importName name of the import which should be send
      */
-    public void sendExistingImport(Import inputImport) {
-        Import anImport = importsRepository.getOne(inputImport.getId());
+    public void sendExistingImport(String importName) throws NotFoundException {
+        log.info("Sending existing import {}", importName);
+        Import anImport = importsRepository.findImportByName(importName);
+        if (anImport == null) {
+            throw new NotFoundException("Import not found");
+        }
         anImport.setStatus(ImportStatus.IN_PROGRESS);
         importsRepository.save(anImport);
         HttpResponse response = webClient.post().uri(urlBuilder.urlForSendingImport()).body(BodyInserters.fromObject(anImport)).retrieve().bodyToMono(HttpResponse.class).block();
@@ -87,18 +105,23 @@ public class ImportPackageService {
      * @return import with records which belong to it
      */
     public Import getContentOfImport(Import inputImport) {
+        log.info("Getting content of import {}", inputImport);
         Import anImport = importsRepository.getOne(inputImport.getId());
         anImport.setRecords(recordsRepository.findAllByAnImport(anImport));
         return anImport;
     }
 
     /**
-     * @param inputImport object Import which status and failure should be returned
+     * @param importName name of the import which status and failure should be returned
      * @return import status and import failure information
      */
-    public ImportReport getStatusWithFailure(Import inputImport) {
-        Import anImport = importsRepository.getOne(inputImport.getId());
+    public ImportReport getStatusWithFailure(String importName) throws NotFoundException {
+        log.info("Getting status with failure {}", importName);
+        Import anImport = importsRepository.findImportByName(importName);
+        if (anImport == null) {
+            log.error("Empty import name for getting import status");
+            throw new NotFoundException("Import not found");
+        }
         return ImportReport.from(anImport.getStatus(), anImport.getFailures());
     }
-
 }

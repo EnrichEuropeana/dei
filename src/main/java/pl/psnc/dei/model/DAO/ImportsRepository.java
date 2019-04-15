@@ -6,4 +6,5 @@ import pl.psnc.dei.model.Import;
 
 @Repository
 public interface ImportsRepository extends JpaRepository<Import, Long> {
+    Import findImportByName(String importName);
 }
