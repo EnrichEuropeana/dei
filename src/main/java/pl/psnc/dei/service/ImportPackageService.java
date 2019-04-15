@@ -3,24 +3,17 @@ package pl.psnc.dei.service;
 import org.apache.http.HttpResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.*;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
-import java.text.SimpleDateFormat;
-import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 
 @Service
 public class ImportPackageService {
-
-    private final String SPACE_SEPARATOR = " ";
-    private final String UNDERSCORE_SEPARATOR = "_";
-    private final String IMPORT = "IMPORT_";
 
     private ImportsRepository importsRepository;
     private RecordsRepository recordsRepository;
@@ -59,7 +52,7 @@ public class ImportPackageService {
         if (project == null) {
             throw new IllegalArgumentException("Project cannot be null");
         }
-        Import anImport = Import.from(getImportName(name, project.getName()), records);
+        Import anImport = Import.from(ImportNameCreatorUtil.createDefaultImportName(name, project.getName()), records);
         anImport.setStatus(ImportStatus.CREATED);
         this.importsRepository.save(anImport);
         records.forEach(record -> {
@@ -80,7 +73,7 @@ public class ImportPackageService {
         anImport.setStatus(ImportStatus.IN_PROGRESS);
         importsRepository.save(anImport);
         HttpResponse response = webClient.post().uri(urlBuilder.urlForSendingImport()).body(BodyInserters.fromObject(anImport)).retrieve().bodyToMono(HttpResponse.class).block();
-        if (response.getStatusLine().getStatusCode() >= 200 && response.getStatusLine().getStatusCode() < 300) {
+        if (response != null && response.getStatusLine().getStatusCode() >= 200 && response.getStatusLine().getStatusCode() < 300) {
             anImport.setStatus(ImportStatus.SENT);
         } else {
             anImport.setStatus(ImportStatus.FAILED);
@@ -108,11 +101,4 @@ public class ImportPackageService {
         return ImportReport.from(anImport.getStatus(), anImport.getFailures());
     }
 
-    private String getImportName(String name, String projectName) {
-        return name.isEmpty() ? IMPORT + StringUtils.replace(projectName, SPACE_SEPARATOR, UNDERSCORE_SEPARATOR) + UNDERSCORE_SEPARATOR + getCurrentDate() : name;
-    }
-
-    private String getCurrentDate() {
-        return new SimpleDateFormat("yyyy-MM-ddKK:mm:ssZ").format(Date.from(Instant.now()));
-    }
 }
