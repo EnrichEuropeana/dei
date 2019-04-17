@@ -17,18 +17,20 @@ public class Import {
 
     private Date creationDate;
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
     private List<Record> records;
 
     private ImportStatus status;
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
     private List<ImportFailure> failures;
 
-    public static Import from(String name, List<Record> records) {
+    public static Import from(String name, Date date) {
         Import anImport = new Import();
         anImport.setName(name);
-        anImport.setRecords(records);
+        anImport.setCreationDate(date);
         return anImport;
     }
 

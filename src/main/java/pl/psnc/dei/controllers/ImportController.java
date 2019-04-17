@@ -22,8 +22,8 @@ public class ImportController {
         this.importService = importService;
     }
 
-    @PostMapping("/project/{projectId}/import/name/{name}")
-    public ResponseEntity<Import> createImport(@PathVariable("projectId") String projectId, @PathVariable("name") String name, @RequestBody List<Record> records) {
+    @PostMapping("/project/{projectId}/import")
+    public ResponseEntity<Import> createImport(@PathVariable("projectId") String projectId, @RequestParam(value = "name", required = false) String name, @RequestBody List<Record> records) {
         return new ResponseEntity<>(importService.createImport(name, projectId, records), HttpStatus.OK);
     }
 

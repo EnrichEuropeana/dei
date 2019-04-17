@@ -1,11 +1,13 @@
 package pl.psnc.dei.service;
 
-import org.apache.http.HttpResponse;
+import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ImportsRepository;
@@ -13,7 +15,9 @@ import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
+import reactor.core.publisher.Mono;
 
+import java.util.Date;
 import java.util.List;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
@@ -35,8 +39,12 @@ public class ImportPackageService extends RestRequestExecutor {
     @Autowired
     private UrlBuilder urlBuilder;
 
-    public static String createImportName(String name, String projectName) {
-        return name.isEmpty() ? generateImportName(projectName) : name;
+    public ImportPackageService(WebClient.Builder weBuilder) {
+        configure(weBuilder);
+    }
+
+    private static String createImportName(String name, String projectName) {
+        return StringUtil.isNullOrEmpty(name) ? generateImportName(projectName) : name;
     }
 
     /**
@@ -47,7 +55,7 @@ public class ImportPackageService extends RestRequestExecutor {
     public List<Record> getCandidates(String projectId, String datasetId) {
         Project project = projectsRepository.findByProjectId(projectId);
         if (datasetId == null) {
-            return recordsRepository.findAllByProjectAndDatasetNullAndAnImportNull(project);
+            return recordsRepository.findAllByProjectAndAnImportNull(project);
         } else {
             Dataset dataset = datasetsReposotory.findDatasetByDatasetId(datasetId);
             return recordsRepository.findAllByProjectAndDatasetAndAnImportNull(project, dataset);
@@ -67,12 +75,16 @@ public class ImportPackageService extends RestRequestExecutor {
             throw new IllegalArgumentException("Project cannot be null");
         }
         Project project = projectsRepository.findByProjectId(projectId);
-        Import anImport = Import.from(createImportName(name, project.getName()), records);
+        Import anImport = Import.from(createImportName(name, project.getName()), new Date());
         anImport.setStatus(ImportStatus.CREATED);
-        this.importsRepository.save(anImport);
+        Import savedImport = this.importsRepository.save(anImport);
         records.forEach(record -> {
-            record.setAnImport(anImport);
-            recordsRepository.save(record);
+            record.setAnImport(savedImport);
+            recordsRepository.findById(record.getId()).ifPresent(r -> {
+                recordsRepository.findByIdentifier(r.getIdentifier());
+                r.setAnImport(savedImport);
+                recordsRepository.save(r);
+            });
         });
         return anImport;
     }
@@ -90,14 +102,27 @@ public class ImportPackageService extends RestRequestExecutor {
         }
         anImport.setStatus(ImportStatus.IN_PROGRESS);
         importsRepository.save(anImport);
-        HttpResponse response = webClient.post().uri(urlBuilder.urlForSendingImport()).body(BodyInserters.fromObject(anImport)).retrieve().bodyToMono(HttpResponse.class).block();
-        if (response != null && response.getStatusLine().getStatusCode() >= 200 && response.getStatusLine().getStatusCode() < 300) {
-            anImport.setStatus(ImportStatus.SENT);
-        } else {
-            anImport.setStatus(ImportStatus.FAILED);
-        }
+        webClient.post()
+                .uri(urlBuilder.urlForSendingImport())
+                .body(BodyInserters.fromObject(anImport))
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, (clientResponse) -> {
+                    log.info("Failed to send import {} {}", clientResponse.statusCode(), clientResponse.rawStatusCode());
+                    anImport.setStatus(ImportStatus.FAILED);
+                    return Mono.empty();
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    log.info("Failed to send import {} {}", clientResponse.statusCode(), clientResponse.rawStatusCode());
+                    anImport.setStatus(ImportStatus.FAILED);
+                    return Mono.empty();
+                })
+                .onStatus(HttpStatus::is2xxSuccessful, clientResponse -> {
+                    log.info("Import send successfully {}", clientResponse.statusCode());
+                    anImport.setStatus(ImportStatus.SENT);
+                    return Mono.empty();
+                })
+                .bodyToMono(Object.class).block();
         importsRepository.save(anImport);
-        //TODO maybe change above code - the way we acquire http status
     }
 
     /**

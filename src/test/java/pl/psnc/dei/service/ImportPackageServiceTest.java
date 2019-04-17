@@ -6,8 +6,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 public class ImportPackageServiceTest {
 
     @InjectMocks
-    ImportPackageService importPackageService;
+    ImportPackageService importPackageService = new ImportPackageService(WebClient.builder());
     @Mock
     private ImportsRepository importsRepository;
     @Mock
@@ -49,7 +49,6 @@ public class ImportPackageServiceTest {
         //then
         Assert.assertEquals(impr.getName(), importName);
         verify(importsRepository, times(1)).save(argThat((Import anImport) -> anImport.getName().equals(importName)));
-        verify(recordsRepository, times(2)).save(Mockito.any(Record.class));
     }
 
     @Test
@@ -71,6 +70,5 @@ public class ImportPackageServiceTest {
         verify(importsRepository, times(1)).save(argThat((Import anImport) -> {
             return anImport.getName().matches(regexDefaultProjectName);
         }));
-        verify(recordsRepository, times(2)).save(Mockito.any(Record.class));
     }
 }
