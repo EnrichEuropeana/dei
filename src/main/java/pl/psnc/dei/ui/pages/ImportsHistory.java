@@ -18,6 +18,6 @@ public class ImportsHistory extends VerticalLayout {
     }
 
     private Grid prepareImportsGrid(List<Import> imports) {
-        return ImportsListGenerator.generate(imports);
+        return new ImportsListGenerator(imports).generate();
     }
 }
