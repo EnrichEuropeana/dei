@@ -14,6 +14,7 @@ public class UrlBuilder {
 
     private static final String ALL_PROJECTS_SUFFIX = "/Project/all";
     private static final String DATASETS_SEARCH_SUFFIX = "/Dataset/search";
+    private static final String IMPORTS_ADD_SUFFIX = "/";
 
     @Value("${transcription.api.url}")
     private String transcriptionPlatformLocation;
@@ -29,4 +30,10 @@ public class UrlBuilder {
     public String urlForProjectDatasets(Project project) {
         return transcriptionPlatformLocation + DATASETS_SEARCH_SUFFIX + "?ProjectId=" + project.getProjectId();
     }
+
+    public String urlForSendingImport(){
+        return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
+        //todo repair
+    }
+
 }
