@@ -152,6 +152,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         //
         HorizontalLayout layout = new HorizontalLayout();
         layout.add(projects, datasets, addElements);
+        layout.setDefaultVerticalComponentAlignment(Alignment.BASELINE);
         return layout;
     }
 
