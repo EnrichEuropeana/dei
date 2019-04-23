@@ -149,4 +149,21 @@ public class ImportPackageService extends RestRequestExecutor {
         }
         return ImportReport.from(anImport.getStatus(), anImport.getFailures());
     }
+
+    public Import addRecordsToImport(String importName, List<Record> records) throws NotFoundException {
+        log.info("Adding records to import {}, records {}", importName, records);
+        Import anImport = importsRepository.findImportByName(importName);
+        if (anImport == null) {
+            throw new NotFoundException("Import not found");
+        }
+        records.forEach(record -> {
+            record.setAnImport(anImport);
+            recordsRepository.findById(record.getId()).ifPresent(r -> {
+                recordsRepository.findByIdentifier(r.getIdentifier());
+                r.setAnImport(anImport);
+                recordsRepository.save(r);
+            });
+        });
+        return anImport;
+    }
 }
