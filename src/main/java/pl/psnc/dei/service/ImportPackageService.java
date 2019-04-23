@@ -17,8 +17,7 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
@@ -125,7 +124,7 @@ public class ImportPackageService extends RestRequestExecutor {
     public Import getContentOfImport(Long importId) {
         log.info("Getting content of import {}", importId);
         Import anImport = importsRepository.getOne(importId);
-        anImport.setRecords(recordsRepository.findAllByAnImport(anImport));
+        anImport.setRecords(new HashSet<>(recordsRepository.findAllByAnImport(anImport)));
         return anImport;
     }
 
@@ -140,7 +139,7 @@ public class ImportPackageService extends RestRequestExecutor {
             log.error("Empty import name for getting import status");
             throw new NotFoundException("Import not found");
         }
-        return ImportReport.from(anImport.getStatus(), anImport.getFailures());
+        return ImportReport.from(anImport.getStatus(), new ArrayList<>(anImport.getFailures()));
     }
 
     public Import addRecordsToImport(String importName, List<Record> records) throws NotFoundException {
