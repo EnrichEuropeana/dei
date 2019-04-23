@@ -126,12 +126,12 @@ public class ImportPackageService extends RestRequestExecutor {
     }
 
     /**
-     * @param inputImport object Import which content should be returned
+     * @param importId object Import which content should be returned
      * @return import with records which belong to it
      */
-    public Import getContentOfImport(Import inputImport) {
-        log.info("Getting content of import {}", inputImport);
-        Import anImport = importsRepository.getOne(inputImport.getId());
+    public Import getContentOfImport(Long importId) {
+        log.info("Getting content of import {}", importId);
+        Import anImport = importsRepository.getOne(importId);
         anImport.setRecords(recordsRepository.findAllByAnImport(anImport));
         return anImport;
     }
