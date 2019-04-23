@@ -9,10 +9,7 @@ import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.*;
 import pl.psnc.dei.config.SecurityUtils;
-import pl.psnc.dei.ui.pages.AccessDeniedPage;
-import pl.psnc.dei.ui.pages.ImportPage;
-import pl.psnc.dei.ui.pages.LogoutPage;
-import pl.psnc.dei.ui.pages.SearchPage;
+import pl.psnc.dei.ui.pages.*;
 
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
@@ -41,9 +38,9 @@ public class MainView extends VerticalLayout implements RouterLayout, BeforeEnte
         Tab searchTab = new Tab(searchLayout);
 
         RouterLink importLink = new RouterLink("Import", ImportPage.class);
-        search.getStyle().set("font-size", "1em");
+        importLink.getStyle().set("font-size", "1em");
         // Only show as active for the exact URL, but not for sub paths
-        search.setHighlightCondition(HighlightConditions.sameLocation());
+        importLink.setHighlightCondition(HighlightConditions.sameLocation());
         VerticalLayout importLayout = new VerticalLayout(new Icon(VaadinIcon.ANGLE_RIGHT), importLink);
         importLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab importTab = new Tab(importLayout);
@@ -56,12 +53,22 @@ public class MainView extends VerticalLayout implements RouterLayout, BeforeEnte
         logoutLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab logoutTab = new Tab(logoutLayout);
 
-        menuTabs.add(homeTab, searchTab, importTab, logoutTab);
+        menuTabs.add(homeTab, searchTab, importTab, importsHistoryTab(), logoutTab);
 
         HorizontalLayout header = new HorizontalLayout(title, menuTabs);
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setAlignSelf(Alignment.START, title);
         add(header);
+    }
+
+    private Tab importsHistoryTab() {
+        RouterLink importsHistoryLink = new RouterLink("History", ImportsHistory.class);
+        importsHistoryLink.getStyle().set("font-size", "1em");
+        // Only show as active for the exact URL, but not for sub paths
+        importsHistoryLink.setHighlightCondition(HighlightConditions.sameLocation());
+        VerticalLayout importHistoryLayout = new VerticalLayout(new Icon(VaadinIcon.CALENDAR_O), importsHistoryLink);
+        importHistoryLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
+        return new Tab(importHistoryLayout);
     }
 
     @Override
