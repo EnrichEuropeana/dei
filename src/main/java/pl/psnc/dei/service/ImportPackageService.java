@@ -78,14 +78,7 @@ public class ImportPackageService extends RestRequestExecutor {
         Import anImport = Import.from(createImportName(name, project.getName()), new Date());
         anImport.setStatus(ImportStatus.CREATED);
         Import savedImport = this.importsRepository.save(anImport);
-        records.forEach(record -> {
-            record.setAnImport(savedImport);
-            recordsRepository.findById(record.getId()).ifPresent(r -> {
-                recordsRepository.findByIdentifier(r.getIdentifier());
-                r.setAnImport(savedImport);
-                recordsRepository.save(r);
-            });
-        });
+        updateRecords(records, savedImport);
         return anImport;
     }
 
@@ -156,6 +149,11 @@ public class ImportPackageService extends RestRequestExecutor {
         if (anImport == null) {
             throw new NotFoundException("Import not found");
         }
+        updateRecords(records, anImport);
+        return anImport;
+    }
+
+    private void updateRecords(List<Record> records, Import anImport) {
         records.forEach(record -> {
             record.setAnImport(anImport);
             recordsRepository.findById(record.getId()).ifPresent(r -> {
@@ -164,6 +162,6 @@ public class ImportPackageService extends RestRequestExecutor {
                 recordsRepository.save(r);
             });
         });
-        return anImport;
     }
+
 }
