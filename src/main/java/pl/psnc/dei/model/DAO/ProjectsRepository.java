@@ -12,4 +12,6 @@ import pl.psnc.dei.model.Record;
 public interface ProjectsRepository extends JpaRepository<Project, Long> {
 
     Project findByName(String name);
+
+    Project findByProjectId(String projectId);
 }

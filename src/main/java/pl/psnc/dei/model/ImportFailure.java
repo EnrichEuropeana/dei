@@ -17,6 +17,7 @@ public class ImportFailure {
 
     private String reason;
 
+    @JsonIgnore
     @ManyToOne(cascade = CascadeType.ALL)
     private Import anImport;
 

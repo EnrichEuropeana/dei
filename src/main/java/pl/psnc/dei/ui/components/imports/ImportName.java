@@ -1,8 +1,7 @@
 package pl.psnc.dei.ui.components.imports;
 
 import com.vaadin.flow.component.textfield.TextField;
-
-import java.util.Date;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 /**
  * Default Vaadin text field extended by the algorithm for title creation.
@@ -22,10 +21,6 @@ public class ImportName extends TextField {
 
     @Override
     public void setValue(String value) {
-        super.setValue(generateImportName(value));
-    }
-
-    private String generateImportName(String value) {
-        return String.format(TITLE_PATTERN, value, new Date(), new Date());
+        super.setValue(ImportNameCreatorUtil.generateImportName(value));
     }
 }

@@ -33,7 +33,7 @@ public class UrlBuilder {
 
     public String urlForSendingImport(){
         return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
-        //todo repair
+        //todo change to real url
     }
 
 }

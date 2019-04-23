@@ -27,6 +27,7 @@ public class Project implements Serializable {
     @JsonProperty("Name")
     private String name;
 
+    @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
     private List<Dataset> datasets = new ArrayList<>();
 
