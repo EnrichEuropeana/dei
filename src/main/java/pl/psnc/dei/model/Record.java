@@ -1,5 +1,7 @@
 package pl.psnc.dei.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import javax.persistence.*;
 
 @Entity
@@ -11,11 +13,17 @@ public class Record {
 
     private String identifier;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ManyToOne
     private Project project;
 
-    @ManyToOne(cascade = CascadeType.ALL)
+    @JsonIgnore
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Dataset dataset;
+
+    @JsonIgnore
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private Import anImport;
 
     public Record() {
     }
@@ -51,5 +59,13 @@ public class Record {
 
     public void setDataset(Dataset dataset) {
         this.dataset = dataset;
+    }
+
+    public Import getAnImport() {
+        return anImport;
+    }
+
+    public void setAnImport(Import anImport) {
+        this.anImport = anImport;
     }
 }
