@@ -45,7 +45,7 @@ public class TranscriptionPlatformServiceTest {
 
 
     @TestConfiguration
-    static class EmployeeServiceImplTestContextConfiguration {
+    static class TranscriptionPlatformServiceContextConfiguration {
 
         @Bean
         public UrlBuilder urlBuilder() {
@@ -76,17 +76,17 @@ public class TranscriptionPlatformServiceTest {
         testRecord.setIdentifier("123");
         List<Transcription> transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
 
-        Assert.assertTrue(transcriptions.size() == 2);
-        Assert.assertTrue(transcriptions.get(0).getTarget().equals("test321"));
-        Assert.assertTrue(transcriptions.get(1).getTarget().equals("test54321"));
+        Assert.assertEquals(2, transcriptions.size());
+        Assert.assertEquals("test321", transcriptions.get(0).getTarget());
+        Assert.assertEquals("test54321", transcriptions.get(1).getTarget());
 
-        Assert.assertTrue(transcriptions.get(0).getTranscription().equals("test123"));
-        Assert.assertTrue(transcriptions.get(1).getTranscription().equals("test12345"));
+        Assert.assertEquals("test123", transcriptions.get(0).getTranscription());
+        Assert.assertEquals("test12345", transcriptions.get(1).getTranscription());
     }
 
 
     @Test(expected = TranscriptionPlatformException.class)
-    public void shouldFailOnTimeout() {
+    public void shouldFailOnTimeoutWhileFetchingTranscriptions() {
         wireMockRule.resetAll();
         wireMockRule.stubFor(get(urlEqualTo("/records/123"))
                 .willReturn(aResponse()
@@ -99,16 +99,16 @@ public class TranscriptionPlatformServiceTest {
         testRecord.setIdentifier("123");
         List<Transcription> transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
 
-        Assert.assertTrue(transcriptions.size() == 2);
-        Assert.assertTrue(transcriptions.get(0).getTarget().equals("test321"));
-        Assert.assertTrue(transcriptions.get(1).getTarget().equals("test54321"));
+        Assert.assertEquals(2, transcriptions.size());
+        Assert.assertEquals("test321", transcriptions.get(0).getTarget());
+        Assert.assertEquals("test54321", transcriptions.get(1).getTarget());
 
-        Assert.assertTrue(transcriptions.get(0).getTranscription().equals("test123"));
-        Assert.assertTrue(transcriptions.get(1).getTranscription().equals("test12345"));
+        Assert.assertEquals("test123", transcriptions.get(0).getTranscription());
+        Assert.assertEquals("test12345", transcriptions.get(1).getTranscription());
     }
 
     @Test(expected = TranscriptionPlatformException.class)
-    public void shouldFailOnServerError() {
+    public void shouldFailOnServerErrorWhileFetchingTranscriptions() {
         wireMockRule.resetAll();
         wireMockRule.stubFor(get(urlEqualTo("/records/123"))
                 .willReturn(aResponse()
@@ -119,14 +119,55 @@ public class TranscriptionPlatformServiceTest {
         //
         Record testRecord = new Record();
         testRecord.setIdentifier("123");
-        List<Transcription> transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
+        transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
 
-        Assert.assertTrue(transcriptions.size() == 2);
-        Assert.assertTrue(transcriptions.get(0).getTarget().equals("test321"));
-        Assert.assertTrue(transcriptions.get(1).getTarget().equals("test54321"));
-
-        Assert.assertTrue(transcriptions.get(0).getTranscription().equals("test123"));
-        Assert.assertTrue(transcriptions.get(1).getTranscription().equals("test12345"));
+        Assert.fail();
     }
 
+    @Test
+    public void shouldSendAnnotationUrl() throws TranscriptionPlatformException {
+        wireMockRule.resetAll();
+        wireMockRule.stubFor(post(urlEqualTo("/transcription/sampleIdentifierFromTP"))
+                .willReturn(aResponse()
+                        .withStatus(201)
+                        .withFixedDelay(2000)));
+        //
+        Transcription testTranscription = new Transcription();
+        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setAnnotationId("sampleAnnotationId");
+        transcriptionPlatformService.sendAnnotationUrl(testTranscription);
+    }
+
+    @Test(expected = TranscriptionPlatformException.class)
+    public void shouldFailOnTimeoutWhileSendingAnnotationUrl() {
+        wireMockRule.resetAll();
+        wireMockRule.stubFor(post(urlEqualTo("/transcription/sampleIdentifierFromTP"))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withFixedDelay(7000)));
+
+        //
+        Transcription testTranscription = new Transcription();
+        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setAnnotationId("sampleAnnotationId");
+        transcriptionPlatformService.sendAnnotationUrl(testTranscription);
+
+        Assert.fail();
+    }
+
+    @Test(expected = TranscriptionPlatformException.class)
+    public void shouldFailOnServerErrorWhileWhileSendingAnnotationUrl() {
+        wireMockRule.resetAll();
+        wireMockRule.stubFor(post(urlEqualTo("/transcription/sampleIdentifierFromTP"))
+                .willReturn(aResponse()
+                        .withStatus(500)
+                        .withFixedDelay(1000)));
+        //
+        Transcription testTranscription = new Transcription();
+        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setAnnotationId("sampleAnnotationId");
+        transcriptionPlatformService.sendAnnotationUrl(testTranscription);
+
+        Assert.fail();
+    }
 }
