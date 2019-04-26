@@ -1,10 +1,10 @@
 package pl.psnc.dei.ui.components.imports;
 
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.TextField;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Record;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -14,19 +14,25 @@ import java.util.List;
  */
 public class SelectedRecordsList extends VerticalLayout {
 
-    public SelectedRecordsList() {
+    private CurrentUserRecordSelection currentUserRecordSelection;
 
+    private List<RecordForImportComponent> recordsForImport = new ArrayList<>();
+
+    public SelectedRecordsList(CurrentUserRecordSelection currentUserRecordSelection) {
+        this.currentUserRecordSelection = currentUserRecordSelection;
     }
 
     public void update(List<Record> records) {
+        recordsForImport.clear();
         this.removeAll();
 
         for (Record r : records) {
-            Checkbox checkbox = new Checkbox();
-            TextField t = new TextField();
-            t.setValue(r.getIdentifier());
-            t.setWidth("80%");
-            this.add(checkbox, t);
+            boolean isSelected = currentUserRecordSelection.isRecordSelectedForImport(r.getIdentifier());
+            RecordForImportComponent recordForImport = new RecordForImportComponent(r.getIdentifier(), isSelected,
+                    currentUserRecordSelection);
+
+            recordsForImport.add(recordForImport);
+            add(recordForImport);
         }
     }
 }
