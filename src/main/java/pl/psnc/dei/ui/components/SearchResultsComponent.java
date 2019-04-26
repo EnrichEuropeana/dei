@@ -416,21 +416,16 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     public void inverseSelection() {
-        List<SearchResult> notSelected = searchResults.getResults().stream()
-                .filter(s -> !currentUserRecordSelection.getSelectedRecordIds().contains(s.getId()))
-                .collect(Collectors.toList());
-
-        List<SearchResult> selected = searchResults.getResults().stream()
-                .filter(s -> currentUserRecordSelection.getSelectedRecordIds().contains(s.getId()))
-                .collect(Collectors.toList());
         resultsList.removeAll();
-        notSelected.forEach(ns -> {
-            resultsList.add(createResultComponent(ns, true));
-            currentUserRecordSelection.addSelectedRecordId(ns.getId());
-        });
-        selected.forEach(s -> {
-            resultsList.add(createResultComponent(s, false));
-            currentUserRecordSelection.removeSelectedRecordId(s.getId());
-        });
+        for(SearchResult s :searchResults.getResults()){
+            if(!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())){
+                resultsList.add(createResultComponent(s, true));
+                currentUserRecordSelection.addSelectedRecordId(s.getId());
+            } else{
+                resultsList.add(createResultComponent(s, false));
+                currentUserRecordSelection.removeSelectedRecordId(s.getId());
+            }
+        }
+
     }
 }
