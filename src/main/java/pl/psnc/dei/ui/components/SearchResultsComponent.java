@@ -18,8 +18,6 @@ import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.ArrayList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
@@ -417,11 +415,11 @@ public class SearchResultsComponent extends VerticalLayout {
 
     public void inverseSelection() {
         resultsList.removeAll();
-        for(SearchResult s :searchResults.getResults()){
-            if(!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())){
+        for (SearchResult s : searchResults.getResults()) {
+            if (!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())) {
                 resultsList.add(createResultComponent(s, true));
                 currentUserRecordSelection.addSelectedRecordId(s.getId());
-            } else{
+            } else {
                 resultsList.add(createResultComponent(s, false));
                 currentUserRecordSelection.removeSelectedRecordId(s.getId());
             }
