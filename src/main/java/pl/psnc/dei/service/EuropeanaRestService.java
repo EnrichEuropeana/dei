@@ -1,47 +1,75 @@
 package pl.psnc.dei.service;
 
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.rdf.model.Model;
+import org.apache.jena.rdf.model.ModelFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.BodyInserters;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
-import java.util.HashMap;
-import java.util.Map;
+import javax.annotation.PostConstruct;
+import java.io.StringWriter;
 
 @Service
 public class EuropeanaRestService extends RestRequestExecutor {
 
-    private final Logger log = LoggerFactory.getLogger(EuropeanaRestService.class);
+    private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+
+    @Value("${europeana.api.annotations.endpoint}")
+    private static String annotationApiEndpoint;
+
+    @Value("${europeana.api.url}")
+    private String europeanaApiUrl;
+
+    @Value("${europeana.api.record.endpoint}")
+    private String recordApiEndpoint;
+
     @Value("${api.key}")
     private String apiKey;
-    @Value("${record.api.url}")
-    private String recordApiUrl;
 
-    public EuropeanaRestService(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.baseUrl(recordApiUrl).build();
+    @Value("${api.userToken}")
+    private String userToken;
+
+    public EuropeanaRestService() {
     }
 
-    public String retriveRecord(String datasetId, String localId) {
-        log.info("Retrieving record {} {}", datasetId, localId);
-        Map<String, String> m = new HashMap<>();
-        // TODO how record id is looks like
-        m.putIfAbsent("dataset", datasetId);
-        m.putIfAbsent("localId", localId);
-        m.putIfAbsent("format", "rdf");
-        String record = webClient.get()
-                .uri(recordApiUrl + "/{dataset}/{localId}.{format}?wskey=" + apiKey, m)
+    @PostConstruct
+    private void init() {
+        setRootUri(europeanaApiUrl);
+    }
+
+    /**
+     * @param transcription JSON that contains target, body and optionally annotation metadata
+     * @return String that contains annotationId generated for given transcription
+     */
+//	TODO change String transcription to Transcription transcription after merge
+    public String postTranscription(String transcription) {
+        String annotationId = webClient.post()
+                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+                .body(BodyInserters.fromObject(transcription))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(String.class)
                 .block();
 
-        return record;
-        //TODO change returning type after jena research
+        return annotationId;
+    }
+
+    public JsonValue retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+        logger.info("Retrieving record from europeana {}", recordId);
+        final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
+        final Model model = ModelFactory.createDefaultModel();
+        model.read(url);
+        final StringWriter writer = new StringWriter();
+        model.write(writer, "JSON-LD");
+        return JSON.parse(writer.toString());
     }
 }
