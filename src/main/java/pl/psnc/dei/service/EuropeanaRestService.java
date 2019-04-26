@@ -14,16 +14,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
-public class RecordRetrieverService extends RestRequestExecutor {
+public class EuropeanaRestService extends RestRequestExecutor {
 
-    private final Logger log = LoggerFactory.getLogger(RecordRetrieverService.class);
-    private final WebClient webClient;
+    private final Logger log = LoggerFactory.getLogger(EuropeanaRestService.class);
     @Value("${api.key}")
     private String apiKey;
     @Value("${record.api.url}")
     private String recordApiUrl;
 
-    public RecordRetrieverService(WebClient.Builder webClientBuilder) {
+    public EuropeanaRestService(WebClient.Builder webClientBuilder) {
         this.webClient = webClientBuilder.baseUrl(recordApiUrl).build();
     }
 
@@ -35,7 +34,7 @@ public class RecordRetrieverService extends RestRequestExecutor {
         m.putIfAbsent("localId", localId);
         m.putIfAbsent("format", "rdf");
         String record = webClient.get()
-                .uri(recordApiUrl + "/{dataset}/{localId}.{format}?wskey={apiKey}" + apiKey, m)
+                .uri(recordApiUrl + "/{dataset}/{localId}.{format}?wskey=" + apiKey, m)
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
