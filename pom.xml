@@ -79,7 +79,15 @@
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
-	</dependencies>
+
+        <!-- https://mvnrepository.com/artifact/com.github.tomakehurst/wiremock -->
+        <dependency>
+            <groupId>com.github.tomakehurst</groupId>
+            <artifactId>wiremock</artifactId>
+            <version>2.23.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 	<dependencyManagement>
 		<dependencies>

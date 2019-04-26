@@ -1,6 +1,11 @@
 package pl.psnc.dei.service;
 
+import io.netty.channel.ChannelOption;
+import io.netty.handler.timeout.ReadTimeoutHandler;
+import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
@@ -10,9 +15,11 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import reactor.core.publisher.Mono;
+import reactor.netty.http.client.HttpClient;
+import reactor.netty.tcp.TcpClient;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -24,6 +31,10 @@ import java.util.List;
 @Service
 public class TranscriptionPlatformService {
 
+    private static final int READ_TIMEOUT_IN_SECONDS = 5;
+    private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
+    private static final int CONNECTION_TIMEOUT_IN_SECONDS = 1;
+
     @Autowired
     private ProjectsRepository projectsRepository;
 
@@ -32,12 +43,24 @@ public class TranscriptionPlatformService {
 
     private List<Project> availableProjects;
     private UrlBuilder urlBuilder;
-    private final WebClient webClient;
+    private WebClient webClient;
 
     public TranscriptionPlatformService(UrlBuilder urlBuilder,
                                         WebClient.Builder webClientBuilder) {
         this.urlBuilder = urlBuilder;
-        this.webClient = webClientBuilder.baseUrl(urlBuilder.getBaseUrl()).build();
+        configureWebClient(urlBuilder, webClientBuilder);
+    }
+
+    private void configureWebClient(UrlBuilder urlBuilder, WebClient.Builder webClientBuilder) {
+        TcpClient tcpClient = TcpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_IN_SECONDS * 1000)
+                .doOnConnected(con -> con.addHandlerLast(new ReadTimeoutHandler(READ_TIMEOUT_IN_SECONDS))
+                        .addHandlerLast(new WriteTimeoutHandler(WRITE_TIMEOUT_IN_SECONDS)));
+
+        this.webClient = webClientBuilder
+                .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
+                .baseUrl(urlBuilder.getBaseUrl())
+                .build();
     }
 
     public List<Project> getProjects() {
@@ -76,7 +99,22 @@ public class TranscriptionPlatformService {
      * @throws TranscriptionPlatformException
      */
     public List<Transcription> fetchTranscriptionsFor(Record record) throws TranscriptionPlatformException {
-        return Collections.emptyList();
+        Transcription[] recordTranscriptions =
+                this.webClient
+                        .get()
+                        .uri(urlBuilder.urlForRecord(record))
+                        .retrieve()
+                        .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+                        .bodyToMono(Transcription[].class)
+                        .doOnError(cause -> {
+                            if (cause instanceof TranscriptionPlatformException) {
+                                throw new TranscriptionPlatformException("Error while communicating with Transcription Platform");
+                            } else {
+                                throw new TranscriptionPlatformException("Error while communicating with Transcription Platform", cause);
+                            }
+                        })
+                        .block();
+        return Arrays.asList(recordTranscriptions);
     }
 
     /**
