@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import javax.persistence.*;
 import java.util.Date;
-import java.util.List;
+import java.util.Set;
 
 @Entity
 public class Import {
@@ -19,13 +19,13 @@ public class Import {
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
-    private List<Record> records;
+    private Set<Record> records;
 
     private ImportStatus status;
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
-    private List<ImportFailure> failures;
+    private Set<ImportFailure> failures;
 
     public static Import from(String name, Date date) {
         Import anImport = new Import();
@@ -58,11 +58,11 @@ public class Import {
         this.creationDate = creationDate;
     }
 
-    public List<Record> getRecords() {
+    public Set<Record> getRecords() {
         return records;
     }
 
-    public void setRecords(List<Record> records) {
+    public void setRecords(Set<Record> records) {
         this.records = records;
     }
 
@@ -74,11 +74,11 @@ public class Import {
         this.status = status;
     }
 
-    public List<ImportFailure> getFailures() {
+    public Set<ImportFailure> getFailures() {
         return failures;
     }
 
-    public void setFailures(List<ImportFailure> failures) {
+    public void setFailures(Set<ImportFailure> failures) {
         this.failures = failures;
     }
 }

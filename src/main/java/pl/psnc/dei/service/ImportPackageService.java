@@ -17,8 +17,7 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
@@ -78,14 +77,7 @@ public class ImportPackageService extends RestRequestExecutor {
         Import anImport = Import.from(createImportName(name, project.getName()), new Date());
         anImport.setStatus(ImportStatus.CREATED);
         Import savedImport = this.importsRepository.save(anImport);
-        records.forEach(record -> {
-            record.setAnImport(savedImport);
-            recordsRepository.findById(record.getId()).ifPresent(r -> {
-                recordsRepository.findByIdentifier(r.getIdentifier());
-                r.setAnImport(savedImport);
-                recordsRepository.save(r);
-            });
-        });
+        updateRecords(records, savedImport);
         return anImport;
     }
 
@@ -126,13 +118,13 @@ public class ImportPackageService extends RestRequestExecutor {
     }
 
     /**
-     * @param inputImport object Import which content should be returned
+     * @param importId object Import which content should be returned
      * @return import with records which belong to it
      */
-    public Import getContentOfImport(Import inputImport) {
-        log.info("Getting content of import {}", inputImport);
-        Import anImport = importsRepository.getOne(inputImport.getId());
-        anImport.setRecords(recordsRepository.findAllByAnImport(anImport));
+    public Import getContentOfImport(Long importId) {
+        log.info("Getting content of import {}", importId);
+        Import anImport = importsRepository.getOne(importId);
+        anImport.setRecords(new HashSet<>(recordsRepository.findAllByAnImport(anImport)));
         return anImport;
     }
 
@@ -147,6 +139,28 @@ public class ImportPackageService extends RestRequestExecutor {
             log.error("Empty import name for getting import status");
             throw new NotFoundException("Import not found");
         }
-        return ImportReport.from(anImport.getStatus(), anImport.getFailures());
+        return ImportReport.from(anImport.getStatus(), new ArrayList<>(anImport.getFailures()));
     }
+
+    public Import addRecordsToImport(String importName, List<Record> records) throws NotFoundException {
+        log.info("Adding records to import {}, records {}", importName, records);
+        Import anImport = importsRepository.findImportByName(importName);
+        if (anImport == null) {
+            throw new NotFoundException("Import not found");
+        }
+        updateRecords(records, anImport);
+        return anImport;
+    }
+
+    private void updateRecords(List<Record> records, Import anImport) {
+        records.forEach(record -> {
+            record.setAnImport(anImport);
+            recordsRepository.findById(record.getId()).ifPresent(r -> {
+                recordsRepository.findByIdentifier(r.getIdentifier());
+                r.setAnImport(anImport);
+                recordsRepository.save(r);
+            });
+        });
+    }
+
 }
