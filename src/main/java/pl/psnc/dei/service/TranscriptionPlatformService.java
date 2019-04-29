@@ -3,13 +3,17 @@ package pl.psnc.dei.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.Record;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Service responsible for communication with Transcription Platform.
@@ -24,6 +28,11 @@ public class TranscriptionPlatformService {
     private ProjectsRepository projectsRepository;
     @Autowired
     private DatasetsReposotory datasetsReposotory;
+    @Autowired
+    private RecordsRepository recordsRepository;
+    //TODO uncomment when merging with queue
+    /*@Autowired
+    private TaskQueueService taskQueueService;*/
 
     private List<Project> availableProjects;
     private UrlBuilder urlBuilder;
@@ -61,6 +70,20 @@ public class TranscriptionPlatformService {
         initAvailableProjects();
         getDatasetsFor(availableProjects);
         saveAvailableProjects();
+    }
+
+    public void createNewTranscribeTask(String recordId) throws NotFoundException {
+        Optional<Record> record = recordsRepository.findByIdentifier(recordId);
+        if (record.isPresent()) {
+            //TODO uncomment when merging with queue
+            /*Record savedRecord = record.get();
+            savedRecord.setState(Record.RecordState.T_PENDING);
+            recordsRepository.save(savedRecord);
+            TranscriptionTask transcriptionTask = new TranscriptionTask(record.get());
+            taskQueueService.addTaskToQueue(transcriptionTask);*/
+        } else {
+            throw new NotFoundException("Record not found.");
+        }
     }
 
     private boolean availableProjectInitialized() {
