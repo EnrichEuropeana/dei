@@ -108,6 +108,13 @@ public class Record {
 		this.transcriptions = transcriptions;
 	}
 
+	/**
+	 * States representing record state, meanings:
+	 * NORMAL - no action needed, just a normal record
+	 * E_PENDING - Enrichment process for given record is pending, transcriptions are ready to be taken from TP to EU
+	 * T_PENDING - Transcription process for given record is pending, records will be transfered from EU to TP
+	 * U_PENDING - Update process for given record annotations is pending
+	 */
 	public enum RecordState {
 
 		NORMAL(0),

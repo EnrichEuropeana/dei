@@ -17,18 +17,18 @@ public class QueueRecordService {
 	@Autowired
 	private RecordsRepository recordsRepository;
 
-    public List<Record> getRecordsToProcess() {
+	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNot(Record.RecordState.NORMAL);
-    }
+	}
 
-    public void setNewStateForRecord(long recordId, Record.RecordState state) throws NotFoundException {
-    	Optional<Record> record = recordsRepository.findById(recordId);
-    	if(record.isPresent()) {
-    		Record newRecord = record.get();
-    		newRecord.setState(state);
-    		recordsRepository.save(newRecord);
+	public void setNewStateForRecord(long recordId, Record.RecordState state) throws NotFoundException {
+		Optional<Record> record = recordsRepository.findById(recordId);
+		if (record.isPresent()) {
+			Record newRecord = record.get();
+			newRecord.setState(state);
+			recordsRepository.save(newRecord);
 		} else {
-    		throw new NotFoundException("Record not found, id: " + recordId);
+			throw new NotFoundException("Record not found, id: " + recordId);
 		}
 	}
 

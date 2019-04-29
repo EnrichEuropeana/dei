@@ -65,6 +65,39 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     }
 
     /**
+     * Prepare QueryParameters
+     *
+     * @param query  query string
+     * @param qf     query filter
+     * @param cursor cursor
+     * @return QueryParameters used by the search page
+     */
+    public static QueryParameters prepareQueryParameters(String query, String qf, String cursor) {
+        Map<String, List<String>> parameters = new HashMap<>();
+        addParameter("query", query, parameters);
+        addParameter("qf", qf, parameters);
+        addParameter("cursor", cursor, parameters);
+        return new QueryParameters(parameters);
+    }
+
+    /**
+     * Adds a parameter as a list of values. Values are retrieved from <code>value</code> by splitting it with '&' delimiter
+     *
+     * @param name       parameter name
+     * @param value      value of the parameter (may be concatenation of many values val1&val2&...&valn
+     * @param parameters map of parameters
+     */
+    private static void addParameter(String name, String value, Map<String, List<String>> parameters) {
+        if (value == null) {
+            return;
+        }
+        String[] split = value.split("&");
+        List<String> values = new ArrayList<>();
+        Collections.addAll(values, split);
+        parameters.put(name, values);
+    }
+
+    /**
      * Creates facets component. By default it is hidden.
      */
     private void createFacetComponent() {
@@ -100,6 +133,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
         searchResultsList.add(
                 createProjectSelectionBox(),
+                createSelectionProperties(),
                 resultsComponent);
         return searchResultsList;
     }
@@ -140,6 +174,21 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         });
         //
         //
+        //
+
+
+        HorizontalLayout layout = new HorizontalLayout();
+        layout.add(projects, datasets);
+        return layout;
+    }
+
+    private Component createSelectionProperties() {
+        HorizontalLayout horizontalLayout = new HorizontalLayout();
+        Button selectAll = new Button("Select all");
+        selectAll.addClickListener( e -> resultsComponent.selectAll());
+        Button invertSelection = new Button("Invert selection");
+        invertSelection.addClickListener(e -> resultsComponent.inverseSelection());
+
         Button addElements = new Button();
         addElements.setText("Add");
 
@@ -149,11 +198,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                     currentUserRecordSelection.clearSelectedRecords();
                     UI.getCurrent().getPage().reload();
                 });
-        //
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.add(projects, datasets, addElements);
-        layout.setDefaultVerticalComponentAlignment(Alignment.BASELINE);
-        return layout;
+
+        horizontalLayout.add(selectAll, invertSelection, addElements);
+        return horizontalLayout;
     }
 
     /**
@@ -188,39 +235,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
         queryForm.expand();
         return queryForm;
-    }
-
-    /**
-     * Prepare QueryParameters
-     *
-     * @param query  query string
-     * @param qf     query filter
-     * @param cursor cursor
-     * @return QueryParameters used by the search page
-     */
-    public static QueryParameters prepareQueryParameters(String query, String qf, String cursor) {
-        Map<String, List<String>> parameters = new HashMap<>();
-        addParameter("query", query, parameters);
-        addParameter("qf", qf, parameters);
-        addParameter("cursor", cursor, parameters);
-        return new QueryParameters(parameters);
-    }
-
-    /**
-     * Adds a parameter as a list of values. Values are retrieved from <code>value</code> by splitting it with '&' delimiter
-     *
-     * @param name       parameter name
-     * @param value      value of the parameter (may be concatenation of many values val1&val2&...&valn
-     * @param parameters map of parameters
-     */
-    private static void addParameter(String name, String value, Map<String, List<String>> parameters) {
-        if (value == null) {
-            return;
-        }
-        String[] split = value.split("&");
-        List<String> values = new ArrayList<>();
-        Collections.addAll(values, split);
-        parameters.put(name, values);
     }
 
     /**
