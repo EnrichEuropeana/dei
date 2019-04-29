@@ -121,7 +121,7 @@ public class SearchResultsComponent extends VerticalLayout {
             }
             resultsCount.setText(prepareResultsText());
             resultsList.removeAll();
-            searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult)));
+            searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, currentUserRecordSelection.isRecordSelected(searchResult.getId()))));
         }
     }
 
@@ -142,8 +142,9 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Execute new search
-     * @param query query entered by the user
-     * @param qf query filter from facets
+     *
+     * @param query  query entered by the user
+     * @param qf     query filter from facets
      * @param cursor cursor for a search
      * @return search results object
      */
@@ -168,8 +169,9 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Change page from current to a new one in either direction
+     *
      * @param currentPage current page
-     * @param newPage new page
+     * @param newPage     new page
      */
     void goToPage(int currentPage, int newPage) {
         int page;
@@ -206,7 +208,8 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Updates SearchResults container based on the SearchResponse. When updateResultsList is true also the actual result items are updated.
-     * @param result result from search execution
+     *
+     * @param result            result from search execution
      * @param updateResultsList when true the actual items are also updated
      */
     private void updateSearchResults(SearchResponse result, boolean updateResultsList) {
@@ -232,6 +235,7 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Create a SearchResult object from Item which is retrieved from the response
+     *
      * @param item item found in the results
      * @return item converted to search result object
      */
@@ -282,10 +286,11 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Create a single result component
+     *
      * @param searchResult search result from which all the data is retrieved
      * @return created component
      */
-    private Component createResultComponent(SearchResult searchResult) {
+    private Component createResultComponent(SearchResult searchResult, boolean isSelected) {
         HorizontalLayout resultComponent = new HorizontalLayout();
         resultComponent.addClassName("search-result-element");
         resultComponent.setSizeFull();
@@ -293,7 +298,7 @@ public class SearchResultsComponent extends VerticalLayout {
         Checkbox checkbox = new Checkbox();
         checkbox.setId(searchResult.getId());
         checkbox.addClassName("search-result-checkbox");
-        checkbox.setValue(currentUserRecordSelection.isRecordSelected(searchResult.getId()));
+        checkbox.setValue(isSelected);
         checkbox.addValueChangeListener(event -> {
             if (event.getValue()) {
                 currentUserRecordSelection.addSelectedRecordId(event.getSource().getId().get());
@@ -310,6 +315,7 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Create metadata component which is part of the result component
+     *
      * @param searchResult source of the metadata
      * @return created component
      */
@@ -327,9 +333,10 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Create a single line of the metadata component
+     *
      * @param metadata metadata component where the line will be added
-     * @param label label of the attribute
-     * @param value value of the attribute
+     * @param label    label of the attribute
+     * @param value    value of the attribute
      */
     private void createMetadataLine(FlexComponent metadata, String label, String value) {
         if (value != null && !value.isEmpty()) {
@@ -349,6 +356,7 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Create thumbnail image
+     *
      * @param result search result to get the URL to image
      * @return created image
      */
@@ -362,6 +370,7 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Text with info which pages out of total are shown.
+     *
      * @return info string
      */
     private String prepareResultsText() {
@@ -374,6 +383,7 @@ public class SearchResultsComponent extends VerticalLayout {
 
     /**
      * Text with first shown result
+     *
      * @return first shown result index
      */
     private String prepareFromResultsText() {
@@ -393,5 +403,27 @@ public class SearchResultsComponent extends VerticalLayout {
     public void clear() {
         searchResults.clear();
         updateComponent();
+    }
+
+
+    public void selectAll() {
+        resultsList.removeAll();
+        searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, true)));
+        currentUserRecordSelection.clearSelectedRecords();
+        searchResults.getResults().forEach(r -> currentUserRecordSelection.addSelectedRecordId(r.getId()));
+    }
+
+    public void inverseSelection() {
+        resultsList.removeAll();
+        for (SearchResult s : searchResults.getResults()) {
+            if (!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())) {
+                resultsList.add(createResultComponent(s, true));
+                currentUserRecordSelection.addSelectedRecordId(s.getId());
+            } else {
+                resultsList.add(createResultComponent(s, false));
+                currentUserRecordSelection.removeSelectedRecordId(s.getId());
+            }
+        }
+
     }
 }
