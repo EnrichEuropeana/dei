@@ -15,12 +15,17 @@ public class UrlBuilder {
     private static final String ALL_PROJECTS_SUFFIX = "/Project/all";
     private static final String DATASETS_SEARCH_SUFFIX = "/Dataset/search";
     private static final String IMPORTS_ADD_SUFFIX = "/";
+    private static final String RECORD_SUFFIX = "/record";
 
     @Value("${transcription.api.url}")
     private String transcriptionPlatformLocation;
 
     public String getBaseUrl() {
         return transcriptionPlatformLocation;
+    }
+
+    public String urlForRecords() {
+        return transcriptionPlatformLocation + RECORD_SUFFIX;
     }
 
     public String urlForAllProjects() {

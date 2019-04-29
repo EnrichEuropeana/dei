@@ -1,7 +1,7 @@
 package pl.psnc.dei.service;
 
 import org.apache.jena.atlas.json.JSON;
-import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.slf4j.Logger;
@@ -63,7 +63,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
         return annotationId;
     }
 
-    public JsonValue retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+    public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
         logger.info("Retrieving record from europeana {}", recordId);
         final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
         final Model model = ModelFactory.createDefaultModel();

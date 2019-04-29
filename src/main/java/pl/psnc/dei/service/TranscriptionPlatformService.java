@@ -1,12 +1,17 @@
 package pl.psnc.dei.service;
 
+import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
+import reactor.core.publisher.Mono;
 
 import java.util.Arrays;
 import java.util.List;
@@ -20,14 +25,13 @@ import java.util.List;
 @Service
 public class TranscriptionPlatformService {
 
+    private final WebClient webClient;
     @Autowired
     private ProjectsRepository projectsRepository;
     @Autowired
     private DatasetsReposotory datasetsReposotory;
-
     private List<Project> availableProjects;
     private UrlBuilder urlBuilder;
-    private final WebClient webClient;
 
     public TranscriptionPlatformService(UrlBuilder urlBuilder,
                                         WebClient.Builder webClientBuilder) {
@@ -63,6 +67,17 @@ public class TranscriptionPlatformService {
         saveAvailableProjects();
     }
 
+    public void sendRecord(JsonObject record) {
+        this.webClient.post()
+                .uri(urlBuilder.urlForRecords())
+                .body(BodyInserters.fromObject(record))
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .bodyToMono(String.class)
+                .block();
+    }
+
     private boolean availableProjectInitialized() {
         return availableProjects != null;
     }
@@ -86,5 +101,4 @@ public class TranscriptionPlatformService {
             }
         }
     }
-
 }
