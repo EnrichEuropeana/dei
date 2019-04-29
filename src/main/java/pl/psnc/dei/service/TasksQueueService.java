@@ -7,7 +7,7 @@ import pl.psnc.dei.queue.task.Task;
 
 @Service
 public class TasksQueueService {
-
+  
 	private TasksQueue queue;
 
 	@Autowired
