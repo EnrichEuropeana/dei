@@ -1,8 +1,12 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import pl.psnc.dei.converter.RecordStateConverter;
 
 import javax.persistence.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Entity
 public class Record {
@@ -11,9 +15,17 @@ public class Record {
     @GeneratedValue
     private long id;
 
-    private String identifier;
+	/**
+	 * Record identifier (from Europeana)
+	 * Looks like: "[DATASET_ID]/[LOCAL_ID]"
+	 */
+	private String identifier;
 
-    @JsonIgnore
+    @Convert(converter = RecordStateConverter.class)
+	@Column(columnDefinition = "int default 0")
+    private RecordState state;
+
+	@JsonIgnore
     @ManyToOne
     private Project project;
 
@@ -25,6 +37,9 @@ public class Record {
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Import anImport;
 
+    @OneToMany
+    private List<Transcription> transcriptions;
+
     public Record() {
     }
 
@@ -32,7 +47,20 @@ public class Record {
         this.identifier = identifier;
     }
 
-    public String getIdentifier() {
+	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions) {
+		this.identifier = identifier;
+		this.state = state;
+		this.project = project;
+		this.dataset = dataset;
+		this.anImport = anImport;
+		this.transcriptions = transcriptions;
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public String getIdentifier() {
         return identifier;
     }
 
@@ -40,10 +68,13 @@ public class Record {
         this.identifier = identifier;
     }
 
-    public long getId() {
-        return id;
+    public RecordState getState() {
+        return state;
     }
 
+    public void setState(RecordState state) {
+        this.state = state;
+    }
 
     public Project getProject() {
         return project;
@@ -68,4 +99,48 @@ public class Record {
     public void setAnImport(Import anImport) {
         this.anImport = anImport;
     }
+
+	public List<Transcription> getTranscriptions() {
+		return transcriptions;
+	}
+
+	public void setTranscriptions(List<Transcription> transcriptions) {
+		this.transcriptions = transcriptions;
+	}
+
+	/**
+	 * States representing record state, meanings:
+	 * NORMAL - no action needed, just a normal record
+	 * E_PENDING - Enrichment process for given record is pending, transcriptions are ready to be taken from TP to EU
+	 * T_PENDING - Transcription process for given record is pending, records will be transfered from EU to TP
+	 * U_PENDING - Update process for given record annotations is pending
+	 */
+	public enum RecordState {
+
+		NORMAL(0),
+		E_PENDING(1),
+		T_PENDING(2),
+		U_PENDING(3);
+
+		private final int value;
+
+		RecordState(int value) {
+			this.value = value;
+		}
+
+		public int getValue() {
+			return value;
+		}
+
+		private static final Map<Integer, RecordState> map = new HashMap<>();
+
+		static {
+			for(RecordState state : RecordState.values())
+				map.put(state.value, state);
+		}
+
+		public static RecordState getState(int value) {
+			return map.get(value);
+		}
+	}
 }
