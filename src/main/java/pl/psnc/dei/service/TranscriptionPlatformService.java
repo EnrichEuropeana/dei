@@ -3,6 +3,8 @@ package pl.psnc.dei.service;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -148,6 +150,22 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
+	}
+
+	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
+		String response = this.webClient
+				.get()
+				.uri(urlBuilder.urlForTranscriptionUpdate(transcription))
+				.retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+				.bodyToMono(String.class)
+				.doOnError(couse -> {
+					throw new TranscriptionPlatformException("Error while communicating with Transcription Platform", couse);
+				})
+				.block();
+
+		return JSON.parse(response);
 	}
 
 	public void createNewTranscribeTask(String recordId) throws NotFoundException {

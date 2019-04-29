@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,20 @@ public class QueueRecordService {
 		} else {
 			throw new NotFoundException("Record not found, id: " + recordId);
 		}
+	}
+
+	public Record getRecord(String identifier) throws NotFoundException {
+		Optional<Record> record = recordsRepository.findByIdentifier(identifier);
+		if (record.isPresent()) {
+			Record result = record.get();
+			Hibernate.initialize(result.getTranscriptions());
+			return result;
+		}
+		throw new NotFoundException("Record not found, id: " + identifier);
+	}
+
+	public void saveRecord(Record record) {
+		recordsRepository.save(record);
 	}
 
 }

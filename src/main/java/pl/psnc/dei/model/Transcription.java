@@ -26,11 +26,10 @@ public class Transcription {
 	public Transcription() {
 	}
 
-	public Transcription(Record record, String annotationId, String transcription, String target) {
+	public Transcription(String tp_id, Record record, String annotationId) {
+		this.tp_id = tp_id;
 		this.record = record;
 		this.annotationId = annotationId;
-		this.transcription = transcription;
-		this.target = target;
 	}
 
 	public String getTp_id() {
