@@ -15,6 +15,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
@@ -43,6 +44,8 @@ public class TranscriptionPlatformServiceTest {
     @MockBean
     private DatasetsReposotory datasetsReposotory;
 
+    @MockBean
+    private RecordsRepository recordsRepository;
 
     @TestConfiguration
     static class TranscriptionPlatformServiceContextConfiguration {
