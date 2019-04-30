@@ -11,7 +11,7 @@ public abstract class Task {
 
 	protected TaskState state;
 
-	private Record record;
+	protected Record record;
 
 	public Task(Record record) {
 		this.record = record;
@@ -36,7 +36,10 @@ public abstract class Task {
 
 		T_RETRIEVE_RECORD,
 		T_CONVERT_RECORD,
-		T_SEND_RESULT
+		T_SEND_RESULT,
+
+		U_GET_TRANSCRIPTION_FROM_TP,
+		U_HANDLE_TRANSCRIPTION
 	}
 
 }

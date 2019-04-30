@@ -10,6 +10,8 @@ public class RecordStateConverter implements AttributeConverter<Record.RecordSta
 
 	@Override
 	public Integer convertToDatabaseColumn(Record.RecordState recordState) {
+		if(recordState == null)
+			return Record.RecordState.NORMAL.getValue();
 		return recordState.getValue();
 	}
 

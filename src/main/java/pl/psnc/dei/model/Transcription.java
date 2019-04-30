@@ -12,6 +12,8 @@ public class Transcription {
 	@GeneratedValue
 	private long id;
 
+	private String tp_id;
+
 	@ManyToOne
 	private Record record;
 
@@ -24,11 +26,18 @@ public class Transcription {
 	public Transcription() {
 	}
 
-	public Transcription(Record record, String annotationId, String transcription, String target) {
+	public Transcription(String tp_id, Record record, String annotationId) {
+		this.tp_id = tp_id;
 		this.record = record;
 		this.annotationId = annotationId;
-		this.transcription = transcription;
-		this.target = target;
+	}
+
+	public String getTp_id() {
+		return tp_id;
+	}
+
+	public void setTp_id(String tp_id) {
+		this.tp_id = tp_id;
 	}
 
 	public Record getRecord() {

@@ -37,7 +37,7 @@ public class Record {
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Import anImport;
 
-    @OneToMany
+    @OneToMany(orphanRemoval = true)
     private List<Transcription> transcriptions;
 
     public Record() {
