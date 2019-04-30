@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import pl.psnc.dei.exception.DEIHttpException;
+import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
@@ -49,10 +50,24 @@ public class EuropeanaRestService extends RestRequestExecutor {
      * @param transcription JSON that contains target, body and optionally annotation metadata
      * @return String that contains annotationId generated for given transcription
      */
-//	TODO change String transcription to Transcription transcription after merge
-    public String postTranscription(String transcription) {
+    public String postTranscription(Transcription transcription) {
         String annotationId = webClient.post()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+//                TODO when parser will be ready change transcription to some kind of json object?
+                .body(BodyInserters.fromObject(transcription))
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .bodyToMono(String.class)
+                .block();
+
+        return annotationId;
+    }
+
+    public String updateTranscription(Transcription transcription) {
+        String annotationId = webClient.put()
+                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+//                TODO when parser will be ready change transcription to some kind of json object?
                 .body(BodyInserters.fromObject(transcription))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))

@@ -35,6 +35,10 @@ public class UrlBuilder {
         return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id();
     }
 
+    public String urlForTranscriptionUpdate(Transcription transcription) {
+        return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id() + "?annotationId=" + transcription.getAnnotationId();
+    }
+
     public String urlForProjectDatasets(Project project) {
         return transcriptionPlatformLocation + DATASETS_SEARCH_SUFFIX + "?ProjectId=" + project.getProjectId();
     }

@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import pl.psnc.dei.exception.TaskCreationException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.EnrichTask;
 import pl.psnc.dei.queue.task.Task;
@@ -42,7 +43,11 @@ public class TasksQueue implements Runnable {
 	public TasksQueue(QueueRecordService queueRecordService) {
 		this.queueRecordService = queueRecordService;
 		for (Record record : queueRecordService.getRecordsToProcess()) {
-			tasks.add(createTask(record));
+			try {
+				tasks.add(createTask(record));
+			} catch (TaskCreationException e) {
+				logger.error("Task creation exception: ", e);
+			}
 		}
 	}
 
@@ -105,7 +110,7 @@ public class TasksQueue implements Runnable {
 		logger.info(log);
 	}
 
-	private Task createTask(Record record) {
+	private Task createTask(Record record) throws TaskCreationException {
 		switch (record.getState()) {
 			case E_PENDING:
 				return new EnrichTask(record);
