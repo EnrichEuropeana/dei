@@ -1,7 +1,7 @@
 package pl.psnc.dei.service;
 
 import org.apache.jena.atlas.json.JSON;
-import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.slf4j.Logger;
@@ -21,22 +21,20 @@ import java.io.StringWriter;
 @Service
 public class EuropeanaRestService extends RestRequestExecutor {
 
-    private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+	@Value("${europeana.api.annotations.endpoint}")
+	private static String annotationApiEndpoint;
+	private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+	@Value("${europeana.api.url}")
+	private String europeanaApiUrl;
 
-    @Value("${europeana.api.annotations.endpoint}")
-    private static String annotationApiEndpoint;
+	@Value("${europeana.api.record.endpoint}")
+	private String recordApiEndpoint;
 
-    @Value("${europeana.api.url}")
-    private String europeanaApiUrl;
+	@Value("${api.key}")
+	private String apiKey;
 
-    @Value("${europeana.api.record.endpoint}")
-    private String recordApiEndpoint;
-
-    @Value("${api.key}")
-    private String apiKey;
-
-    @Value("${api.userToken}")
-    private String userToken;
+	@Value("${api.userToken}")
+	private String userToken;
 
     public EuropeanaRestService() {
     }
@@ -75,16 +73,16 @@ public class EuropeanaRestService extends RestRequestExecutor {
                 .bodyToMono(String.class)
                 .block();
 
-        return annotationId;
-    }
+		return annotationId;
+	}
 
-    public JsonValue retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
-        logger.info("Retrieving record from europeana {}", recordId);
-        final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
-        final Model model = ModelFactory.createDefaultModel();
-        model.read(url);
-        final StringWriter writer = new StringWriter();
-        model.write(writer, "JSON-LD");
-        return JSON.parse(writer.toString());
-    }
+	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+		logger.info("Retrieving record from europeana {}", recordId);
+		final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
+		final Model model = ModelFactory.createDefaultModel();
+		model.read(url);
+		final StringWriter writer = new StringWriter();
+		model.write(writer, "JSON-LD");
+		return JSON.parse(writer.toString());
+	}
 }
