@@ -14,42 +14,42 @@ import pl.psnc.dei.model.Transcription;
 @Service
 public class UrlBuilder {
 
-    private static final String ALL_PROJECTS_SUFFIX = "/Project/all";
-    private static final String DATASETS_SEARCH_SUFFIX = "/Dataset/search";
-    private static final String IMPORTS_ADD_SUFFIX = "/";
-    private static final String RECORDS_SUFFIX = "/records";
-    private static final String TRANSCRIPTIONS_SUFFIX = "/transcription";
+	private static final String ALL_PROJECTS_SUFFIX = "/Project/all";
+	private static final String DATASETS_SEARCH_SUFFIX = "/Dataset/search";
+	private static final String IMPORTS_ADD_SUFFIX = "/";
+	private static final String RECORDS_SUFFIX = "/records";
+	private static final String TRANSCRIPTIONS_SUFFIX = "/transcription";
 
-    @Value("${transcription.api.url}")
-    private String transcriptionPlatformLocation;
+	@Value("${transcription.api.url}")
+	private String transcriptionPlatformLocation;
 
-    public String getBaseUrl() {
-        return transcriptionPlatformLocation;
-    }
+	public String getBaseUrl() {
+		return transcriptionPlatformLocation;
+	}
 
-    public String urlForAllProjects() {
-        return transcriptionPlatformLocation + ALL_PROJECTS_SUFFIX;
-    }
+	public String urlForAllProjects() {
+		return transcriptionPlatformLocation + ALL_PROJECTS_SUFFIX;
+	}
 
-    public String urlForTranscription(Transcription transcription) {
-        return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id();
-    }
+	public String urlForTranscription(Transcription transcription) {
+		return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id();
+	}
 
-    public String urlForProjectDatasets(Project project) {
-        return transcriptionPlatformLocation + DATASETS_SEARCH_SUFFIX + "?ProjectId=" + project.getProjectId();
-    }
+	public String urlForProjectDatasets(Project project) {
+		return transcriptionPlatformLocation + DATASETS_SEARCH_SUFFIX + "?ProjectId=" + project.getProjectId();
+	}
 
-    public String urlForSendingImport() {
-        return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
-        //todo change to real url
-    }
+	public String urlForSendingImport() {
+		return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
+		//todo change to real url
+	}
 
-    public String urlForRecord(Record record) {
-        return transcriptionPlatformLocation + RECORDS_SUFFIX + "/" + record.getIdentifier();
-    }
+	public String urlForRecord(Record record) {
+		return transcriptionPlatformLocation + RECORDS_SUFFIX + "/" + record.getIdentifier();
+	}
 
-    public String urlForSendingRecord() {
-        return transcriptionPlatformLocation + RECORDS_SUFFIX;
-    }
+	public String urlForSendingRecord() {
+		return transcriptionPlatformLocation + RECORDS_SUFFIX;
+	}
 
 }

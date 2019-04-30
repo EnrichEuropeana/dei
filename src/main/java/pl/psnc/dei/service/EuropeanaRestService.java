@@ -20,56 +20,54 @@ import java.io.StringWriter;
 @Service
 public class EuropeanaRestService extends RestRequestExecutor {
 
-    private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+	@Value("${europeana.api.annotations.endpoint}")
+	private static String annotationApiEndpoint;
+	private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+	@Value("${europeana.api.url}")
+	private String europeanaApiUrl;
 
-    @Value("${europeana.api.annotations.endpoint}")
-    private static String annotationApiEndpoint;
+	@Value("${europeana.api.record.endpoint}")
+	private String recordApiEndpoint;
 
-    @Value("${europeana.api.url}")
-    private String europeanaApiUrl;
+	@Value("${api.key}")
+	private String apiKey;
 
-    @Value("${europeana.api.record.endpoint}")
-    private String recordApiEndpoint;
+	@Value("${api.userToken}")
+	private String userToken;
 
-    @Value("${api.key}")
-    private String apiKey;
+	public EuropeanaRestService() {
+	}
 
-    @Value("${api.userToken}")
-    private String userToken;
+	@PostConstruct
+	private void init() {
+		setRootUri(europeanaApiUrl);
+	}
 
-    public EuropeanaRestService() {
-    }
-
-    @PostConstruct
-    private void init() {
-        setRootUri(europeanaApiUrl);
-    }
-
-    /**
-     * @param transcription JSON that contains target, body and optionally annotation metadata
-     * @return String that contains annotationId generated for given transcription
-     */
+	/**
+	 * @param transcription JSON that contains target, body and optionally annotation metadata
+	 * @return String that contains annotationId generated for given transcription
+	 */
 //	TODO change String transcription to Transcription transcription after merge
-    public String postTranscription(String transcription) {
-        String annotationId = webClient.post()
-                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-                .body(BodyInserters.fromObject(transcription))
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(String.class)
-                .block();
+	public String postTranscription(String transcription) {
+		String annotationId = webClient.post()
+				.uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+				.body(BodyInserters.fromObject(transcription))
+				.retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.bodyToMono(String.class)
+				.block();
 
-        return annotationId;
-    }
+		return annotationId;
+	}
 
-    public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
-        logger.info("Retrieving record from europeana {}", recordId);
-        final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
-        final Model model = ModelFactory.createDefaultModel();
-        model.read(url);
-        final StringWriter writer = new StringWriter();
-        model.write(writer, "JSON-LD");
-        return JSON.parse(writer.toString());
-    }
+	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+		logger.info("Retrieving record from europeana {}", recordId);
+		final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
+		final Model model = ModelFactory.createDefaultModel();
+		model.read(url);
+		final StringWriter writer = new StringWriter();
+		model.write(writer, "JSON-LD");
+		return JSON.parse(writer.toString());
+	}
 }
