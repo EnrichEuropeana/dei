@@ -97,7 +97,7 @@ public class TasksQueue implements Runnable {
 		}
 	}
 
-	public void addToQueue(Task task) {
+	public synchronized void addToQueue(Task task) {
 		tasks.add(task);
 		notifyAll();
 	}
