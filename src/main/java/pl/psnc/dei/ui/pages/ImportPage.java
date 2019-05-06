@@ -9,7 +9,9 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.queue.task.TranscribeTask;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
@@ -30,7 +32,7 @@ public class ImportPage extends VerticalLayout {
 
     private RecordsRepository recordsRepository;
     private ImportPackageService importService;
-    /*private TasksQueueService tasksQueueService;*/ //TODO uncomment when merging with queue
+    private TasksQueueService tasksQueueService;
     private DefaultImportOptions defaultImportOptions;
     private Project selectedProject;
 
@@ -42,11 +44,11 @@ public class ImportPage extends VerticalLayout {
 
     public ImportPage(RecordsRepository repo, ImportPackageService importService,
                       TranscriptionPlatformService transcriptionPlatformService,
-                      /*TasksQueueService tasksQueueService,*/ //TODO uncomment when merging with queue
+                      TasksQueueService tasksQueueService,
                       CurrentUserRecordSelection currentUserRecordSelection) {
         this.recordsRepository = repo;
         this.importService = importService;
-        /*this.tasksQueueService = tasksQueueService;*/ //TODO uncomment when merging with queue
+        this.tasksQueueService = tasksQueueService;
         this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(),
                 new DatasetChangeListener());
         this.currentUserRecordSelection = currentUserRecordSelection;
@@ -72,10 +74,10 @@ public class ImportPage extends VerticalLayout {
         importService.createImport(importName, selectedProject.getProjectId(), records);
 
         for (Record record : records) {
-            /*record.setState(Record.RecordState.E_PENDING); //TODO uncomment when merging with queue
+            record.setState(Record.RecordState.E_PENDING);
             recordsRepository.save(record);
-            EnrichTask task = new EnrichTask(record);
-            taskQueueService.addTaskToQueue(transcriptionTask);*/
+            TranscribeTask task = new TranscribeTask(record);
+            tasksQueueService.addTaskToQueue(task);
         }
         currentUserRecordSelection.clearSelectedRecordsForImport();
     }
