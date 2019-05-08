@@ -43,6 +43,9 @@ public class SearchResultsComponent extends VerticalLayout {
     // query filter
     private transient String qf;
 
+    // search only objects available via iiif
+    private transient boolean onlyIiif;
+
     // search results container
     private transient SearchResults searchResults;
 
@@ -146,17 +149,19 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param query  query entered by the user
      * @param qf     query filter from facets
      * @param cursor cursor for a search
+     * @param onlyIiif true to query only objects available via IIIF, false otherwise
      * @return search results object
      */
-    public SearchResults executeSearch(String query, String qf, String cursor) {
+    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif) {
         this.query = query;
         this.qf = qf;
+        this.onlyIiif = onlyIiif;
         if (this.qf == null) {
             this.qf = "";
         }
         searchResults.clear();
 
-        SearchResponse result = searchController.search(query, qf, cursor).block();
+        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif).block();
         if (result == null) {
             // we should show failure warning
             Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
@@ -196,7 +201,7 @@ public class SearchResultsComponent extends VerticalLayout {
             return;
         }
         while (++page <= newPage) {
-            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor()).block();
+            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif).block();
             if (result == null) {
                 // redirect to error page
                 return;

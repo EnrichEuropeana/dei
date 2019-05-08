@@ -23,16 +23,20 @@ public class SearchController {
     @GetMapping(value = "/api/search", produces = "application/json")
     public Mono<SearchResponse> search(@RequestParam(value = "query") String query,
                                        @RequestParam(value = "qf", required = false) String qf,
-                                       @RequestParam(value = "cursor", required = false) String cursor) {
+                                       @RequestParam(value = "cursor", required = false) String cursor,
+                                       @RequestParam(value = "only_iiif", required = false) Boolean onlyIiif) {
         if (query.isEmpty()) {
             query = QUERY_ALL;
         }
         if (cursor ==  null || cursor.isEmpty()) {
             cursor = SearchResults.FIRST_CURSOR;
         }
+        if (onlyIiif == null) {
+            onlyIiif = true;
+        }
         SearchService searchService = applicationContext.getBean(SearchService.class);
 
-        return searchService.search(query, qf, cursor);
+        return searchService.search(query, qf, cursor, onlyIiif);
     }
 
 }
