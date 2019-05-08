@@ -4,7 +4,9 @@ import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonValue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -134,14 +136,14 @@ public class TranscriptionPlatformService {
 	 * @return list of all transcriptions for the given record
 	 * @throws TranscriptionPlatformException
 	 */
-	public List<Transcription> fetchTranscriptionsFor(Record record) throws TranscriptionPlatformException {
-		Transcription[] recordTranscriptions =
+	public JsonArray fetchTranscriptionsFor(Record record) throws TranscriptionPlatformException {
+		String recordTranscriptions =
 				this.webClient
 						.get()
 						.uri(urlBuilder.urlForRecord(record))
 						.retrieve()
 						.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
-						.bodyToMono(Transcription[].class)
+						.bodyToMono(String.class)
 						.doOnError(cause -> {
 							if (cause instanceof TranscriptionPlatformException) {
 								throw new TranscriptionPlatformException("Error while communicating with Transcription Platform");
@@ -150,7 +152,8 @@ public class TranscriptionPlatformService {
 							}
 						})
 						.block();
-		return Arrays.asList(recordTranscriptions);
+		JsonValue value = JSON.parseAny(recordTranscriptions);
+		return value.getAsArray();
 	}
 
 	/**

@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
@@ -10,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
@@ -21,11 +23,13 @@ import java.io.StringWriter;
 @Service
 public class EuropeanaRestService extends RestRequestExecutor {
 
-	@Value("${europeana.api.annotations.endpoint}")
-	private static String annotationApiEndpoint;
 	private final Logger logger = LoggerFactory.getLogger(EuropeanaRestService.class);
+
 	@Value("${europeana.api.url}")
 	private String europeanaApiUrl;
+
+	@Value("${europeana.api.annotations.endpoint}")
+	private String annotationApiEndpoint;
 
 	@Value("${europeana.api.record.endpoint}")
 	private String recordApiEndpoint;
@@ -36,12 +40,14 @@ public class EuropeanaRestService extends RestRequestExecutor {
 	@Value("${api.userToken}")
 	private String userToken;
 
-    public EuropeanaRestService() {
+    public EuropeanaRestService(WebClient.Builder webClientBuilder) {
+    	configure(webClientBuilder);
     }
 
     @PostConstruct
     private void init() {
-        setRootUri(europeanaApiUrl);
+    	if(StringUtils.isNotBlank(europeanaApiUrl))
+			setRootUri(europeanaApiUrl);
     }
 
     /**

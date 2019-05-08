@@ -1,5 +1,7 @@
 package pl.psnc.dei.model;
 
+import org.apache.jena.atlas.json.JsonObject;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
@@ -17,11 +19,9 @@ public class Transcription {
 	@ManyToOne
 	private Record record;
 
+	private JsonObject transcriptionContent;
+
 	private String annotationId;
-
-	private String transcription;
-
-	private String target;
 
 	public Transcription() {
 	}
@@ -56,19 +56,11 @@ public class Transcription {
 		this.annotationId = annotationId;
 	}
 
-	public String getTranscription() {
-		return transcription;
+	public JsonObject getTranscriptionContent() {
+		return transcriptionContent;
 	}
 
-	public void setTranscription(String transcription) {
-		this.transcription = transcription;
-	}
-
-	public String getTarget() {
-		return target;
-	}
-
-	public void setTarget(String target) {
-		this.target = target;
+	public void setTranscriptionContent(JsonObject transcriptionContent) {
+		this.transcriptionContent = transcriptionContent;
 	}
 }
