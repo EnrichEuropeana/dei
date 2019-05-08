@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -57,7 +58,7 @@ public class CurrentUserRecordSelection {
     }
 
     public List<String> getSelectedRecordIdsForImport() {
-        return selectedRecordIdsForImport;
+        return Collections.unmodifiableList(selectedRecordIdsForImport);
     }
 
     public void addSelectedRecordId(String recordId) {
