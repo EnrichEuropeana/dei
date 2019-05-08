@@ -4,6 +4,7 @@ import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -33,6 +34,8 @@ import java.util.stream.Collectors;
 @Secured(Role.OPERATOR)
 public class SearchPage extends HorizontalLayout implements HasUrlParameter<String> {
     private TextField search;
+
+    private Checkbox searchOnlyIiif;
 
     private FacetComponent facets;
 
@@ -128,6 +131,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private Component createSearchResultsList(SearchController searchController) {
         VerticalLayout searchResultsList = new VerticalLayout();
         searchResultsList.add(createQueryForm());
+        createSearchOnlyIiifBox();
+        searchResultsList.add(searchOnlyIiif);
         createNoResultsLabel();
         searchResultsList.add(noResults);
         resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
@@ -146,6 +151,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         noResults.addClassName("no-results-label");
         noResults.setVisible(false);
         add(noResults);
+    }
+
+    private void createSearchOnlyIiifBox() {
+        searchOnlyIiif = new Checkbox();
+        searchOnlyIiif.setLabel("Search objects only available via IIIF");
+        searchOnlyIiif.setValue(true);
     }
 
     private Component createProjectSelectionBox() {
@@ -254,7 +265,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             if (search.isEmpty()) {
                 search.setValue(query);
             }
-            SearchResults results = resultsComponent.executeSearch(query, qf, cursor);
+            SearchResults results = resultsComponent.executeSearch(query, qf, cursor, searchOnlyIiif.getValue());
             if (results != null) {
                 facets.addFacets(results.getFacets());
                 facets.updateState(qf);

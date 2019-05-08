@@ -81,20 +81,20 @@ public class SearchServiceTest {
     @Test(expected = IllegalStateException.class)
     public void searchWhenQueryEmpty() {
         mockWebClientResponse(getResponseOK());
-        searchService.search("", null, "*");
+        searchService.search("", null, "*", true);
     }
 
     @Test(expected = IllegalStateException.class)
     public void searchWhenCursorEmpty() {
         mockWebClientResponse(getResponseOK());
-        searchService.search("abc", null, null);
+        searchService.search("abc", null, null, true);
     }
 
     @Test
     public void searchWhenResultsOK() {
         SearchResponse responseOK = getResponseOK();
         mockWebClientResponse(responseOK);
-        Mono<SearchResponse> response = searchService.search("abc", null, "*");
+        Mono<SearchResponse> response = searchService.search("abc", null, "*", true);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(response.block(), responseOK);

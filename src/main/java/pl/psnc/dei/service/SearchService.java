@@ -49,9 +49,10 @@ extends RestRequestExecutor {
      * @param query query string
      * @param queryFilter query filter
      * @param cursor cursor for next page of values
+     * @param onlyIiif true to query only objects available via IIIF, false otherwise
      * @return response from search API associated with web client
      */
-    public Mono<SearchResponse> search(String query, String queryFilter, String cursor) {
+    public Mono<SearchResponse> search(String query, String queryFilter, String cursor, boolean onlyIiif) {
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
@@ -61,8 +62,10 @@ extends RestRequestExecutor {
                     if (queryFilter != null) {
                         uriBuilder.queryParam("qf", UriUtils.encode(queryFilter, "UTF-8"));
                     }
-                    return uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"))
-                            .queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
+                    if (onlyIiif) {
+                        uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"));
+                    }
+                    return uriBuilder.queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
                             .build();
                 })
                 .retrieve()
