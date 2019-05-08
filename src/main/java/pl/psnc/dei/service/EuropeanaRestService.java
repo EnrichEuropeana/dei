@@ -57,8 +57,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
     public String postTranscription(Transcription transcription) {
         String annotationId = webClient.post()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-//                TODO when parser will be ready change transcription to some kind of json object?
-                .body(BodyInserters.fromObject(transcription))
+                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
@@ -71,8 +70,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
     public String updateTranscription(Transcription transcription) {
         String annotationId = webClient.put()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-//                TODO when parser will be ready change transcription to some kind of json object?
-                .body(BodyInserters.fromObject(transcription))
+                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))

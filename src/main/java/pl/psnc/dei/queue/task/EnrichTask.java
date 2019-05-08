@@ -1,17 +1,24 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.atlas.json.JsonValue;
+import org.springframework.beans.factory.annotation.Autowired;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.util.TranscriptionConverter;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class EnrichTask extends Task {
 
-//	String? Or JSON? Maybe additional JSON field for metadata?
-	private List<String> transcription;
+	@Autowired
+	private TranscriptionPlatformService tps;
+
+	@Autowired
+	private EuropeanaRestService ers;
 
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
@@ -19,33 +26,73 @@ public class EnrichTask extends Task {
 
 	public EnrichTask(Record record) {
 		super(record);
-		this.state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
-		for(Transcription t : record.getTranscriptions()) {
-			if(StringUtils.isNotBlank(t.getAnnotationId())) {
-				annotatedTranscriptions.add(t);
-			} else {
-				notAnnotatedTranscriptions.add(t);
-			}
-		}
 	}
 
 	@Override
-	public void process() throws Exception {
+	public void process() {
 		switch (state) {
 			case E_GET_TRANSCRIPTIONS_FROM_TP:
-//				TODO get transcription from TP and save it in memory + DB
-				state=TaskState.E_HANDLE_TRANSCRIPTIONS;
+				getTranscriptionsFromTp();
+				state = TaskState.E_HANDLE_TRANSCRIPTIONS;
 			case E_HANDLE_TRANSCRIPTIONS:
-//				TODO for every single transcription that have no annotation (notAnnotatedTranscriptions)
-//				POST transcription to EU, as response you should get annotationId
-//				transcription.setAnnotationId(...)
-//				save transcription to DB
-//				move transcription from notAnnotated... to annotated...
-				state=TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
+				handleTranscriptions();
+				state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
 			case E_SEND_ANNOTATION_IDS_TO_TP:
-//				TODO send transcriptions annotation ids to TP,
-				queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.NORMAL);
+				sendAnnotationIdsAndFinalizeTask();
 		}
+	}
+
+	private void getTranscriptionsFromTp() {
+		Map<String, Transcription> transcriptions = new HashMap<>();
+		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
+			Transcription transcription = new Transcription();
+			transcription.setRecord(record);
+//					transcription.setTp_id(val.get("transcriptionId").toString()); TODO change transcriptionId to value provided by TP
+			transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+			transcriptions.put(transcription.getTp_id(), transcription);
+		}
+		if (record.getTranscriptions().isEmpty()) {
+			record.getTranscriptions().addAll(transcriptions.values());
+			queueRecordService.saveRecord(record);
+			fillQueues();
+		} else {
+			fillQueues();
+			for (Transcription transcription : notAnnotatedTranscriptions)
+				transcription.setTranscriptionContent(transcriptions.get(transcription.getTp_id()).getTranscriptionContent());
+		}
+	}
+
+	private void fillQueues() {
+		notAnnotatedTranscriptions
+				.addAll(record.getTranscriptions().stream()
+						.filter(e -> StringUtils.isBlank(e.getAnnotationId()))
+						.collect(Collectors.toList()));
+		annotatedTranscriptions
+				.addAll(record.getTranscriptions().stream()
+						.filter(e -> StringUtils.isNotBlank(e.getAnnotationId()))
+						.collect(Collectors.toList()));
+	}
+
+	private void handleTranscriptions() {
+		while (!notAnnotatedTranscriptions.isEmpty()) {
+			Transcription transcription = notAnnotatedTranscriptions.peek();
+			String annotationId = ers.postTranscription(transcription);
+			transcription.setAnnotationId(annotationId);
+			queueRecordService.saveRecord(record);
+			notAnnotatedTranscriptions.remove(transcription);
+			annotatedTranscriptions.add(transcription);
+		}
+	}
+
+	private void sendAnnotationIdsAndFinalizeTask() {
+		Iterator<Transcription> it = record.getTranscriptions().iterator();
+		while (it.hasNext()) {
+			Transcription t = it.next();
+			tps.sendAnnotationUrl(t);
+			it.remove();
+		}
+		record.setState(Record.RecordState.NORMAL);
+		queueRecordService.saveRecord(record);
 	}
 
 }
