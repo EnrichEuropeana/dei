@@ -47,6 +47,10 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     // label used when no results were found
     private Label noResults;
 
+    private Button invertSelectionButton;
+
+    private Button selectAllButton;
+
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
@@ -172,10 +176,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             Dataset selectedDataset = (Dataset) event.getValue();
             currentUserRecordSelection.setSelectedDataSet(selectedDataset);
         });
-        //
-        //
-        //
-
 
         HorizontalLayout layout = new HorizontalLayout();
         layout.add(projects, datasets);
@@ -184,10 +184,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private Component createSelectionProperties() {
         HorizontalLayout horizontalLayout = new HorizontalLayout();
-        Button selectAll = new Button("Select all");
-        selectAll.addClickListener( e -> resultsComponent.selectAll());
-        Button invertSelection = new Button("Invert selection");
-        invertSelection.addClickListener(e -> resultsComponent.inverseSelection());
+        selectAllButton = new Button("Select all");
+        selectAllButton.setVisible(false);
+        selectAllButton.addClickListener(e -> resultsComponent.selectAll());
+        invertSelectionButton = new Button("Invert selection");
+        invertSelectionButton.addClickListener(e -> resultsComponent.inverseSelection());
+        invertSelectionButton.setVisible(false);
 
         Button addElements = new Button();
         addElements.setText("Add");
@@ -199,7 +201,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                     UI.getCurrent().getPage().reload();
                 });
 
-        horizontalLayout.add(selectAll, invertSelection, addElements);
+        horizontalLayout.add(selectAllButton, invertSelectionButton, addElements);
         return horizontalLayout;
     }
 
@@ -260,6 +262,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                 facets.updateState(qf);
                 showFacets(true);
                 noResults.setVisible(results.getTotalResults() == 0);
+                invertSelectionButton.setVisible(results.getTotalResults() > 0);
+                selectAllButton.setVisible(results.getTotalResults() > 0);
             }
         }
     }
