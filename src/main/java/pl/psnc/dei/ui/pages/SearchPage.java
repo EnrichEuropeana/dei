@@ -51,6 +51,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private Button selectAllButton;
 
+    private Button addElementsButton;
+
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
@@ -191,17 +193,17 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         invertSelectionButton.addClickListener(e -> resultsComponent.inverseSelection());
         invertSelectionButton.setVisible(false);
 
-        Button addElements = new Button();
-        addElements.setText("Add");
-
-        addElements.addClickListener(
+        addElementsButton = new Button();
+        addElementsButton.setText("Add");
+        addElementsButton.setVisible(false);
+        addElementsButton.addClickListener(
                 e -> {
                     recordsProjectsAssignmentService.saveSelectedRecords();
                     currentUserRecordSelection.clearSelectedRecords();
                     UI.getCurrent().getPage().reload();
                 });
 
-        horizontalLayout.add(selectAllButton, invertSelectionButton, addElements);
+        horizontalLayout.add(selectAllButton, invertSelectionButton, addElementsButton);
         return horizontalLayout;
     }
 
@@ -264,6 +266,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                 noResults.setVisible(results.getTotalResults() == 0);
                 invertSelectionButton.setVisible(results.getTotalResults() > 0);
                 selectAllButton.setVisible(results.getTotalResults() > 0);
+                addElementsButton.setVisible(results.getTotalResults() > 0);
             }
         }
     }
