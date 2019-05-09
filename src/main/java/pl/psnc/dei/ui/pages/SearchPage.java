@@ -20,6 +20,7 @@ import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
@@ -43,6 +44,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
+    private EuropeanaRestService europeanaRestService;
+
     private CurrentUserRecordSelection currentUserRecordSelection;
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
@@ -53,9 +56,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
+            EuropeanaRestService europeanaRestService,
             CurrentUserRecordSelection currentUserRecordSelection,
             RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
         this.transcriptionPlatformService = transcriptionPlatformService;
+        this.europeanaRestService = europeanaRestService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
         setDefaultVerticalComponentAlignment(Alignment.START);
@@ -135,7 +140,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(searchOnlyIiif);
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
+        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection, europeanaRestService);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 createSelectionProperties(),

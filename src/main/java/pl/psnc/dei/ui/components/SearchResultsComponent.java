@@ -1,6 +1,7 @@
 package pl.psnc.dei.ui.components;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.html.Image;
@@ -9,15 +10,19 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.controllers.SearchController;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.ui.pages.SearchPage;
+import pl.psnc.dei.util.RecordTransferValidationUtil;
 
 import java.util.ArrayList;
+import java.util.concurrent.CompletableFuture;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
@@ -66,10 +71,14 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private CurrentUserRecordSelection currentUserRecordSelection;
 
+    private EuropeanaRestService europeanaRestService;
+
     public SearchResultsComponent(SearchController searchController,
-                                  CurrentUserRecordSelection currentUserRecordSelection) {
+                                  CurrentUserRecordSelection currentUserRecordSelection,
+                                  EuropeanaRestService europeanaRestService) {
         this.searchController = searchController;
         this.currentUserRecordSelection = currentUserRecordSelection;
+        this.europeanaRestService = europeanaRestService;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -330,7 +339,7 @@ public class SearchResultsComponent extends VerticalLayout {
         createMetadataLine(metadata, AUTHOR_LABEL, searchResult.getAuthor());
         createMetadataLine(metadata, ISSUED_LABEL, searchResult.getIssued());
         createMetadataLine(metadata, PROVIDER_LABEL, searchResult.getProvider());
-        createMetadataLine(metadata, FORMAT_LABEL, searchResult.getFormat());
+        createFormatMetadataLine(metadata, searchResult.getId());
         createMetadataLine(metadata, LANGUAGE_LABEL, searchResult.getLanguage());
         createMetadataLine(metadata, LICENSE_LABEL, searchResult.getLicense());
         return metadata;
@@ -345,18 +354,52 @@ public class SearchResultsComponent extends VerticalLayout {
      */
     private void createMetadataLine(FlexComponent metadata, String label, String value) {
         if (value != null && !value.isEmpty()) {
-            HorizontalLayout line = new HorizontalLayout();
-            line.addClassName("metadata-line");
-            line.setPadding(false);
-            line.setVerticalComponentAlignment(Alignment.START);
-            Label name = new Label(label);
-            name.addClassName("metadata-label");
-            line.add(name);
-            Label valueLabel = new Label(value);
-            line.add(valueLabel);
-            line.expand(valueLabel);
+            HorizontalLayout line = createLine(label, value);
             metadata.add(line);
         }
+    }
+
+    /**
+     * Create a single line of the format metadata component. Data is loaded asynchronously.
+     *
+     * @param metadata metadata component where the line will be added
+     * @param recordId id of the record
+     */
+    private void createFormatMetadataLine(FlexComponent metadata, String recordId) {
+        UI ui = UI.getCurrent();
+        ui.setPollInterval(500);
+
+        HorizontalLayout line = createLine(FORMAT_LABEL, "Loading...");
+        metadata.add(line);
+
+        CompletableFuture.runAsync(() -> {
+            JsonObject jsonObject = europeanaRestService.retriveRecordFromEuropeanaAndConvertToJsonLd(recordId);
+            String mimeType = RecordTransferValidationUtil.getMimeType(jsonObject);
+            String s = RecordTransferValidationUtil.checkIfTransferPossible(jsonObject, mimeType);
+
+            ui.access(() -> {
+                HorizontalLayout newLine = createLine(FORMAT_LABEL, mimeType);
+                Label transferLabel = new Label(s);
+                transferLabel.getStyle().set("font-weight", "bold");
+                newLine.add(transferLabel);
+                newLine.expand(transferLabel);
+                metadata.replace(line, newLine);
+            });
+        });
+    }
+
+    private HorizontalLayout createLine(String label, String value) {
+        HorizontalLayout line = new HorizontalLayout();
+        line.addClassName("metadata-line");
+        line.setPadding(false);
+        line.setVerticalComponentAlignment(Alignment.START);
+        Label name = new Label(label);
+        name.addClassName("metadata-label");
+        line.add(name);
+        Label valueLabel = new Label(value);
+        line.add(valueLabel);
+        line.expand(valueLabel);
+        return line;
     }
 
     /**
