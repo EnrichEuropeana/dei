@@ -18,6 +18,7 @@ import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 import pl.psnc.dei.util.RecordTransferValidationUtil;
 
@@ -73,12 +74,16 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private EuropeanaRestService europeanaRestService;
 
+    private UIPollingManager uiPollingManager;
+
     public SearchResultsComponent(SearchController searchController,
                                   CurrentUserRecordSelection currentUserRecordSelection,
-                                  EuropeanaRestService europeanaRestService) {
+                                  EuropeanaRestService europeanaRestService,
+                                  UIPollingManager uiPollingManager) {
         this.searchController = searchController;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.europeanaRestService = europeanaRestService;
+        this.uiPollingManager = uiPollingManager;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -366,24 +371,24 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param recordId id of the record
      */
     private void createFormatMetadataLine(FlexComponent metadata, String recordId) {
+        HorizontalLayout tempLine = createLine(FORMAT_LABEL, "Loading...");
         UI ui = UI.getCurrent();
-        ui.setPollInterval(500);
-
-        HorizontalLayout line = createLine(FORMAT_LABEL, "Loading...");
-        metadata.add(line);
+        tempLine.addAttachListener(e -> uiPollingManager.registerPollRequest(ui, tempLine, 500));
+        tempLine.addDetachListener(e -> uiPollingManager.unregisterPollRequest(ui, tempLine));
+        metadata.add(tempLine);
 
         CompletableFuture.runAsync(() -> {
             JsonObject jsonObject = europeanaRestService.retriveRecordFromEuropeanaAndConvertToJsonLd(recordId);
             String mimeType = RecordTransferValidationUtil.getMimeType(jsonObject);
-            String s = RecordTransferValidationUtil.checkIfTransferPossible(jsonObject, mimeType);
+            String transferPossibility = RecordTransferValidationUtil.checkIfTransferPossible(jsonObject, mimeType);
 
             ui.access(() -> {
-                HorizontalLayout newLine = createLine(FORMAT_LABEL, mimeType);
-                Label transferLabel = new Label(s);
+                HorizontalLayout line = createLine(FORMAT_LABEL, mimeType);
+                Label transferLabel = new Label(transferPossibility);
                 transferLabel.getStyle().set("font-weight", "bold");
-                newLine.add(transferLabel);
-                newLine.expand(transferLabel);
-                metadata.replace(line, newLine);
+                line.add(transferLabel);
+                line.expand(transferLabel);
+                metadata.replace(tempLine, line);
             });
         });
     }
