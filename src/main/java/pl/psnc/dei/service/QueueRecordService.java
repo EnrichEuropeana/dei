@@ -6,7 +6,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.RecordsRepository;
+import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.Transcription;
 
 import java.util.List;
 import java.util.Optional;
@@ -17,6 +19,9 @@ public class QueueRecordService {
 
 	@Autowired
 	private RecordsRepository recordsRepository;
+
+	@Autowired
+	private TranscriptionRepository transcriptionRepository;
 
 	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNot(Record.RecordState.NORMAL);
@@ -47,4 +52,7 @@ public class QueueRecordService {
 		recordsRepository.save(record);
 	}
 
+	public void saveTranscription(Transcription transcription) {
+		transcriptionRepository.save(transcription);
+	}
 }
