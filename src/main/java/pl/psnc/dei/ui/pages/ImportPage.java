@@ -3,6 +3,7 @@ package pl.psnc.dei.ui.pages;
 import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
@@ -10,6 +11,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
+import pl.psnc.dei.ui.components.imports.ImportsListComponent;
 import pl.psnc.dei.ui.components.imports.SelectedRecordsList;
 
 import java.util.ArrayList;
@@ -23,6 +25,7 @@ import java.util.List;
 @Route(value = "import", layout = MainView.class)
 public class ImportPage extends VerticalLayout {
 
+    private ImportsRepository importsRepository;
     private RecordsRepository recordsRepository;
     private DefaultImportOptions defaultImportOptions;
     private Project selectedProject;
@@ -31,10 +34,12 @@ public class ImportPage extends VerticalLayout {
     private SelectedRecordsList selectedRecordsList = new SelectedRecordsList();
 
     public ImportPage(RecordsRepository repo,
-                      TranscriptionPlatformService transcriptionPlatformService) {
+                      TranscriptionPlatformService transcriptionPlatformService, ImportsRepository importsRepository) {
         this.recordsRepository = repo;
+        this.importsRepository = importsRepository;
         this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(), new DatasetChangeListener());
         add(defaultImportOptions);
+        add(new ImportsListComponent(importsRepository, this));
         add(selectedRecordsList);
     }
 
