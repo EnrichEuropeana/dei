@@ -160,8 +160,8 @@
             </activation>
             <dependencies>
                 <dependency>
-                    <groupId>com.h2database</groupId>
-                    <artifactId>h2</artifactId>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
@@ -189,8 +189,8 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>mysql</groupId>
-                    <artifactId>mysql-connector-java</artifactId>
+                    <groupId>com.h2database</groupId>
+                    <artifactId>h2</artifactId>
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>

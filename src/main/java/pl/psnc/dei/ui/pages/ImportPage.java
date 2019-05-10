@@ -1,12 +1,17 @@
 package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.queue.task.TranscribeTask;
+import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
@@ -14,6 +19,8 @@ import pl.psnc.dei.ui.components.imports.SelectedRecordsList;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Page for import generation.
@@ -24,18 +31,55 @@ import java.util.List;
 public class ImportPage extends VerticalLayout {
 
     private RecordsRepository recordsRepository;
+    private ImportPackageService importService;
+    private TasksQueueService tasksQueueService;
     private DefaultImportOptions defaultImportOptions;
     private Project selectedProject;
 
-    private List<Record> foundRecords = new ArrayList<>();
-    private SelectedRecordsList selectedRecordsList = new SelectedRecordsList();
+    private CurrentUserRecordSelection currentUserRecordSelection;
 
-    public ImportPage(RecordsRepository repo,
-                      TranscriptionPlatformService transcriptionPlatformService) {
+    private List<Record> foundRecords = new ArrayList<>();
+    private SelectedRecordsList selectedRecordsList;
+    private Button importButton = new Button();
+
+    public ImportPage(RecordsRepository repo, ImportPackageService importService,
+                      TranscriptionPlatformService transcriptionPlatformService,
+                      TasksQueueService tasksQueueService,
+                      CurrentUserRecordSelection currentUserRecordSelection) {
         this.recordsRepository = repo;
-        this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(), new DatasetChangeListener());
+        this.importService = importService;
+        this.tasksQueueService = tasksQueueService;
+        this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(),
+                new DatasetChangeListener());
+        this.currentUserRecordSelection = currentUserRecordSelection;
+        this.selectedRecordsList = new SelectedRecordsList(currentUserRecordSelection);
+        this.defaultImportOptions.add(importButton);
+
+        importButton.setText("Create import and send");
+        importButton.addClickListener(e -> handleImport());
+
         add(defaultImportOptions);
         add(selectedRecordsList);
+    }
+
+    private void handleImport() {
+        List<String> recordIds = currentUserRecordSelection.getSelectedRecordIdsForImport();
+        List<Record> records = recordIds.stream()
+                .map(i -> recordsRepository.findByIdentifier(i))
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .collect(Collectors.toList());
+
+        String importName = defaultImportOptions.getImportName();
+        importService.createImport(importName, selectedProject.getProjectId(), records);
+
+        for (Record record : records) {
+            record.setState(Record.RecordState.E_PENDING);
+            recordsRepository.save(record);
+            TranscribeTask task = new TranscribeTask(record);
+            tasksQueueService.addTaskToQueue(task);
+        }
+        currentUserRecordSelection.clearSelectedRecordsForImport();
     }
 
     class ProjectChangeListener implements HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Project>> {

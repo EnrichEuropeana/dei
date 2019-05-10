@@ -1,12 +1,37 @@
 #!/usr/bin/env groovy
+def deployOnProd= false
+def buildForEnv(def env){
+    echo "Environment $env"
+    sh "mvn -Dmaven.test.failure.ignore=true install -P $env"
+}
+
+def deployOnEnv(def env) {
+    def host = "ee-host"
+    def user = "ee-user"
+    def service = "dei"
+
+    if  (env == "test") {
+        host+="-test"
+        user+="-test"
+        service+="-test"
+    }
+    withCredentials([
+                    string(credentialsId: host, variable: 'HOST'),
+                    string(credentialsId: user, variable: 'USER')
+                ]) {
+
+                    sh "scp target/*.jar ${USER}@${HOST}:/home/${USER}/dei/artifacts"
+                    sh "ssh ${USER}@${HOST}  \"sudo systemctl restart $service\""
+                }
+}
 
 pipeline {
-    
-    tools { 
+
+    tools {
         maven 'maven-3.5.0'
-	    jdk 'java8' 
+	    jdk 'java8'
     }
-    
+
     agent { label 'DL-Team' }
     stages {
         stage ('Initialize') {
@@ -18,41 +43,77 @@ pipeline {
                 '''
             }
         }
-        
+
         stage('Checkout') {
             agent { label 'DL-Team' }
             steps {
-                checkout scm
+                checkout([$class: 'GitSCM', branches: [[name: '*/master']], doGenerateSubmoduleConfigurations: false, extensions: [], gitTool: 'git version 2.2.1', submoduleCfg: [], userRemoteConfigs: [[url: 'https://github.com/EnrichEuropeana/dei']]])
+
             }
         }
-        stage ('Build') {
+        stage ('Build for test') {
             agent { label 'DL-Team' }
+
             steps {
-                sh 'mvn -Dmaven.test.failure.ignore=true install' 
+                buildForEnv "test"
             }
             post {
                 success {
-                    junit 'target/surefire-reports/**/*.xml' 
+                    junit 'target/surefire-reports/**/*.xml'
                 }
             }
         }
-        
-        stage('Deploy') {
+        stage('Deploy on test') {
             agent { label 'DL-Team' }
             steps {
-                echo "deploying"
-                
-                withCredentials([
-                    string(credentialsId: 'ee-host', variable: 'HOST'),
-                    string(credentialsId: 'ee-user', variable: 'USER')
-                ]) {
-                    sh '''
-                        scp target/*.jar ${USER}@${HOST}:/home/${USER}/dei/artifacts
-                        ssh ${USER}@${HOST}  "sudo systemctl restart dei"
-                    '''
+                echo "deploying on test"
+                deployOnEnv "test"
+
+            }
+        }
+
+        stage('Deploy on prod?') {
+            agent none
+            steps {
+                timeout(60) {
+                    script {
+                        parametersMap = input id: 'test', message: 'Proceed on production?', ok: 'OK',
+                                parameters: [
+                                        booleanParam(name: 'DEPLOY_ON_PROD', defaultValue: false)
+                                ],
+                                submitterParameter: 'APPROVER'
+                    }
+                }
+                script {
+                    deployOnProd = parametersMap['DEPLOY_ON_PROD']
+                }
+            }
+        }
+        stage ('Build for prod') {
+            agent { label 'DL-Team' }
+            when {
+                expression { deployOnProd == true }
+            }
+
+            steps {
+                buildForEnv "prod"
+            }
+            post {
+                success {
+                    junit 'target/surefire-reports/**/*.xml'
                 }
             }
         }
 
+        stage('Deploy on prod') {
+            agent { label 'DL-Team' }
+            when {
+                expression { deployOnProd == true }
+            }
+            steps {
+                echo "deploying on production"
+                deployOnEnv "prod"
+            }
+        }
     }
 }

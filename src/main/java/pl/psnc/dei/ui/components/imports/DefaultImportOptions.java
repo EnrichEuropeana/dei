@@ -30,4 +30,8 @@ public class DefaultImportOptions extends HorizontalLayout {
     public void updateImportName(String newImportName) {
         importName.setValue(newImportName);
     }
+
+    public String getImportName() {
+        return importName.getValue();
+    }
 }
