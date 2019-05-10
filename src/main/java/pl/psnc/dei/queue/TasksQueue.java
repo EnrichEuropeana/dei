@@ -37,11 +37,8 @@ public class TasksQueue implements Runnable {
 
 	private static long HOUR = 60 * 60 * 1000;
 
-	private QueueRecordService queueRecordService;
-
 	@Autowired
 	public TasksQueue(QueueRecordService queueRecordService) {
-		this.queueRecordService = queueRecordService;
 		for (Record record : queueRecordService.getRecordsToProcess()) {
 			try {
 				tasks.add(createTask(record));

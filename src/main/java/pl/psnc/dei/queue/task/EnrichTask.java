@@ -22,8 +22,6 @@ public class EnrichTask extends Task {
 
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
-	private Queue<Transcription> annotatedTranscriptions = new LinkedList<>();
-
 	public EnrichTask(Record record) {
 		super(record);
 	}
@@ -54,22 +52,18 @@ public class EnrichTask extends Task {
 		if (record.getTranscriptions().isEmpty()) {
 			record.getTranscriptions().addAll(transcriptions.values());
 			queueRecordService.saveRecord(record);
-			fillQueues();
+			fillQueue();
 		} else {
-			fillQueues();
+			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions)
 				transcription.setTranscriptionContent(transcriptions.get(transcription.getTp_id()).getTranscriptionContent());
 		}
 	}
 
-	private void fillQueues() {
+	private void fillQueue() {
 		notAnnotatedTranscriptions
 				.addAll(record.getTranscriptions().stream()
 						.filter(e -> StringUtils.isBlank(e.getAnnotationId()))
-						.collect(Collectors.toList()));
-		annotatedTranscriptions
-				.addAll(record.getTranscriptions().stream()
-						.filter(e -> StringUtils.isNotBlank(e.getAnnotationId()))
 						.collect(Collectors.toList()));
 	}
 
@@ -78,9 +72,8 @@ public class EnrichTask extends Task {
 			Transcription transcription = notAnnotatedTranscriptions.peek();
 			String annotationId = ers.postTranscription(transcription);
 			transcription.setAnnotationId(annotationId);
-			queueRecordService.saveRecord(record);
+			queueRecordService.saveTranscription(transcription);
 			notAnnotatedTranscriptions.remove(transcription);
-			annotatedTranscriptions.add(transcription);
 		}
 	}
 

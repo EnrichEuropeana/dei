@@ -55,7 +55,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
-        String annotationId = webClient.post()
+        return webClient.post()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
@@ -63,12 +63,10 @@ public class EuropeanaRestService extends RestRequestExecutor {
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(String.class)
                 .block();
-
-        return annotationId;
     }
 
     public String updateTranscription(Transcription transcription) {
-        String annotationId = webClient.put()
+        return webClient.put()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
@@ -76,8 +74,6 @@ public class EuropeanaRestService extends RestRequestExecutor {
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(String.class)
                 .block();
-
-		return annotationId;
 	}
 
 	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
