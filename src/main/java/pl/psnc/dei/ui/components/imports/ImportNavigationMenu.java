@@ -17,7 +17,6 @@ public class ImportNavigationMenu extends VerticalLayout {
 	public ImportNavigationMenu(ImportPage importPage) {
 		this.importPage = importPage;
 		addClassName("facet-component");
-		setDefaultHorizontalComponentAlignment(Alignment.STRETCH);
 		setSizeFull();
 		add(createElements());
 	}
@@ -30,11 +29,11 @@ public class ImportNavigationMenu extends VerticalLayout {
 		layout.add(createElement(new Button("Create import"), e -> {
 			//todo attach component from task EN-55
 		}));
-		layout.add(createElement(new Button("List imports"), e -> {
-			importPage.createListImports();
-		}));
-		layout.add(createElement(new Button("History"), e -> {
+		layout.add(createElement(new Button("Imports history"), e -> {
 			importPage.createHistoryImports();
+		}));
+		layout.add(createElement(new Button("Imports list"), e -> {
+			importPage.createListImports();
 		}));
 		return layout;
 	}
