@@ -1,6 +1,7 @@
 package pl.psnc.dei.service;
 
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import org.apache.jena.atlas.json.JsonArray;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
@@ -19,8 +20,6 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
-
-import java.util.List;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -77,14 +76,14 @@ public class TranscriptionPlatformServiceTest {
         //
         Record testRecord = new Record();
         testRecord.setIdentifier("123");
-        List<Transcription> transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
+        JsonArray transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
 
         Assert.assertEquals(2, transcriptions.size());
-        Assert.assertEquals("test321", transcriptions.get(0).getTarget());
-        Assert.assertEquals("test54321", transcriptions.get(1).getTarget());
+        Assert.assertEquals("test321", transcriptions.get(0).getAsObject().get("target").getAsString().value());
+        Assert.assertEquals("test54321", transcriptions.get(1).getAsObject().get("target").getAsString().value());
 
-        Assert.assertEquals("test123", transcriptions.get(0).getTranscription());
-        Assert.assertEquals("test12345", transcriptions.get(1).getTranscription());
+        Assert.assertEquals("test123", transcriptions.get(0).getAsObject().get("transcription").getAsString().value());
+        Assert.assertEquals("test12345", transcriptions.get(1).getAsObject().get("transcription").getAsString().value());
     }
 
 
@@ -100,14 +99,14 @@ public class TranscriptionPlatformServiceTest {
         //
         Record testRecord = new Record();
         testRecord.setIdentifier("123");
-        List<Transcription> transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
+        JsonArray transcriptions = transcriptionPlatformService.fetchTranscriptionsFor(testRecord);
 
         Assert.assertEquals(2, transcriptions.size());
-        Assert.assertEquals("test321", transcriptions.get(0).getTarget());
-        Assert.assertEquals("test54321", transcriptions.get(1).getTarget());
+        Assert.assertEquals("test321", transcriptions.get(0).getAsObject().get("target").getAsString().value());
+        Assert.assertEquals("test54321", transcriptions.get(1).getAsObject().get("target").getAsString().value());
 
-        Assert.assertEquals("test123", transcriptions.get(0).getTranscription());
-        Assert.assertEquals("test12345", transcriptions.get(1).getTranscription());
+        Assert.assertEquals("test123", transcriptions.get(0).getAsObject().get("transcription").getAsString().value());
+        Assert.assertEquals("test12345", transcriptions.get(1).getAsObject().get("transcription").getAsString().value());
     }
 
     @Test(expected = TranscriptionPlatformException.class)
