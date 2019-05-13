@@ -1,17 +1,18 @@
 package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.HasValue;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.service.ImportsHistoryService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
-import pl.psnc.dei.ui.components.imports.ImportsListComponent;
+import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
 import pl.psnc.dei.ui.components.imports.SelectedRecordsList;
 
 import java.util.ArrayList;
@@ -23,24 +24,28 @@ import java.util.List;
  * Created by pwozniak on 4/8/19
  */
 @Route(value = "import", layout = MainView.class)
-public class ImportPage extends VerticalLayout {
+public class ImportPage extends HorizontalLayout {
 
-    private ImportsRepository importsRepository;
     private RecordsRepository recordsRepository;
     private DefaultImportOptions defaultImportOptions;
     private Project selectedProject;
+    private VerticalLayout displayingPlace;
+    private ImportsHistoryService importsHistoryService;
 
     private List<Record> foundRecords = new ArrayList<>();
     private SelectedRecordsList selectedRecordsList = new SelectedRecordsList();
 
     public ImportPage(RecordsRepository repo,
-                      TranscriptionPlatformService transcriptionPlatformService, ImportsRepository importsRepository) {
+                      TranscriptionPlatformService transcriptionPlatformService
+            , ImportsHistoryService importsHistoryService) {
         this.recordsRepository = repo;
-        this.importsRepository = importsRepository;
+        this.importsHistoryService = importsHistoryService;
+        add(new ImportNavigationMenu(this));
         this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(), new DatasetChangeListener());
         add(defaultImportOptions);
-        add(new ImportsListComponent(importsRepository, this));
         add(selectedRecordsList);
+        setWidthFull();
+        setHeightFull();
     }
 
     class ProjectChangeListener implements HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Project>> {
@@ -68,6 +73,14 @@ public class ImportPage extends VerticalLayout {
                 selectedRecordsList.update(foundRecords);
             }
         }
+    }
+
+    public void createHistoryImports() {
+        if(displayingPlace !=null) {
+            remove(displayingPlace);
+        }
+        displayingPlace = new ImportsHistory(importsHistoryService);
+        add(displayingPlace);
     }
 }
 

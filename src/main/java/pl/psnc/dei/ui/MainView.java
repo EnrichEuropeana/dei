@@ -53,22 +53,12 @@ public class MainView extends VerticalLayout implements RouterLayout, BeforeEnte
         logoutLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
         Tab logoutTab = new Tab(logoutLayout);
 
-        menuTabs.add(homeTab, searchTab, importTab, importsHistoryTab(), logoutTab);
+        menuTabs.add(homeTab, searchTab, importTab, logoutTab);
 
         HorizontalLayout header = new HorizontalLayout(title, menuTabs);
         header.setDefaultVerticalComponentAlignment(Alignment.CENTER);
         header.setAlignSelf(Alignment.START, title);
         add(header);
-    }
-
-    private Tab importsHistoryTab() {
-        RouterLink importsHistoryLink = new RouterLink("History", ImportsHistory.class);
-        importsHistoryLink.getStyle().set("font-size", "1em");
-        // Only show as active for the exact URL, but not for sub paths
-        importsHistoryLink.setHighlightCondition(HighlightConditions.sameLocation());
-        VerticalLayout importHistoryLayout = new VerticalLayout(new Icon(VaadinIcon.CALENDAR_O), importsHistoryLink);
-        importHistoryLayout.setDefaultHorizontalComponentAlignment(Alignment.CENTER);
-        return new Tab(importHistoryLayout);
     }
 
     @Override
