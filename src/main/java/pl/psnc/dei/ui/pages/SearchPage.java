@@ -21,10 +21,7 @@ import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.RecordsProjectsAssignmentService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.service.UIPollingManager;
+import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
@@ -54,6 +51,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private UIPollingManager uiPollingManager;
 
+	private RecordTransferValidationCache recordTransferValidationCache;
+
     // label used when no results were found
     private Label noResults;
 
@@ -63,12 +62,14 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             EuropeanaRestService europeanaRestService,
             CurrentUserRecordSelection currentUserRecordSelection,
             RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-            UIPollingManager uiPollingManager) {
+            UIPollingManager uiPollingManager,
+			RecordTransferValidationCache recordTransferValidationCache) {
         this.transcriptionPlatformService = transcriptionPlatformService;
         this.europeanaRestService = europeanaRestService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
         this.uiPollingManager = uiPollingManager;
+        this.recordTransferValidationCache = recordTransferValidationCache;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -147,7 +148,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         createNoResultsLabel();
         searchResultsList.add(noResults);
         resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection,
-                europeanaRestService, uiPollingManager);
+                europeanaRestService, uiPollingManager, recordTransferValidationCache);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 createSelectionProperties(),

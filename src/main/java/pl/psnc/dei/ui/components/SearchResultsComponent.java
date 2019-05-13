@@ -12,6 +12,7 @@ import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.RecordTransferValidationCache;
 import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 
@@ -54,14 +55,18 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private UIPollingManager uiPollingManager;
 
+    private RecordTransferValidationCache recordTransferValidationCache;
+
     public SearchResultsComponent(SearchController searchController,
                                   CurrentUserRecordSelection currentUserRecordSelection,
                                   EuropeanaRestService europeanaRestService,
-                                  UIPollingManager uiPollingManager) {
+                                  UIPollingManager uiPollingManager,
+                                  RecordTransferValidationCache recordTransferValidationCache) {
         this.searchController = searchController;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.europeanaRestService = europeanaRestService;
         this.uiPollingManager = uiPollingManager;
+        this.recordTransferValidationCache = recordTransferValidationCache;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -117,7 +122,8 @@ public class SearchResultsComponent extends VerticalLayout {
             resultsCount.setText(prepareResultsText());
             resultsList.removeAll();
             searchResults.getResults().forEach(searchResult ->
-					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService, uiPollingManager, searchResult)));
+					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService,
+                            uiPollingManager, recordTransferValidationCache, searchResult)));
         }
     }
 

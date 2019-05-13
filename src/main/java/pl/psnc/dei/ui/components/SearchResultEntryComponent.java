@@ -11,6 +11,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.RecordTransferValidationCache;
 import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.util.RecordTransferValidationUtil;
 
@@ -42,6 +43,8 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 
 	private UIPollingManager uiPollingManager;
 
+	private RecordTransferValidationCache recordTransferValidationCache;
+
 	private SearchResult searchResult;
 
 	private boolean recordEnabled = false;
@@ -49,10 +52,12 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	public SearchResultEntryComponent(CurrentUserRecordSelection currentUserRecordSelection,
 									  EuropeanaRestService europeanaRestService,
 									  UIPollingManager uiPollingManager,
+									  RecordTransferValidationCache recordTransferValidationCache,
 									  SearchResult searchResult) {
 		this.currentUserRecordSelection = currentUserRecordSelection;
 		this.europeanaRestService = europeanaRestService;
 		this.uiPollingManager = uiPollingManager;
+		this.recordTransferValidationCache = recordTransferValidationCache;
 		this.searchResult = searchResult;
 
 		addClassName("search-result-element");
@@ -135,12 +140,25 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		createMetadataLine(metadata, AUTHOR_LABEL, searchResult.getAuthor());
 		createMetadataLine(metadata, ISSUED_LABEL, searchResult.getIssued());
 		createMetadataLine(metadata, PROVIDER_LABEL, searchResult.getProvider());
-		createFormatMetadataLine(metadata, searchResult.getId());
+
+		RecordTransferValidationCache.ValidationResult validationResult = recordTransferValidationCache.getValidationResult(searchResult.getId());
+		if (validationResult == null) {
+			createFormatMetadataLine(metadata, searchResult.getId());
+		} else {
+			createMetadataLine(metadata, FORMAT_LABEL, validationResult.getMimeType());
+		}
+
 		createMetadataLine(metadata, LANGUAGE_LABEL, searchResult.getLanguage());
 		createMetadataLine(metadata, LICENSE_LABEL, searchResult.getLicense());
 
-		transferPossibilityLine = createLine(TRANSFER_POSSIBILITY_LABEL, TRANSFER_POSSIBILITY_PLACEHOLDER_LABEL);
-		metadata.add(transferPossibilityLine);
+		if (validationResult == null) {
+			transferPossibilityLine = createLine(TRANSFER_POSSIBILITY_LABEL, TRANSFER_POSSIBILITY_PLACEHOLDER_LABEL);
+			metadata.add(transferPossibilityLine);
+		} else {
+			RecordTransferValidationUtil.TransferPossibility transferPossibility = validationResult.getTransferPossibility();
+			transferPossibilityLine = createTransferPossibilityLine(transferPossibility.getMessage(), transferPossibility.isTransferPossible());
+			metadata.add(transferPossibilityLine);
+		}
 
 		add(metadata);
 	}
@@ -207,6 +225,8 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		RecordTransferValidationUtil.TransferPossibility transferPossibility = RecordTransferValidationUtil.checkIfTransferPossible(recordObject, mimeType);
 		String message = transferPossibility.getMessage();
 		boolean transferPossible = transferPossibility.isTransferPossible();
+
+		recordTransferValidationCache.addValidationResult(searchResult.getId(), mimeType, transferPossibility);
 
 		HorizontalLayout newTransferPossibilityLine = createTransferPossibilityLine(message, transferPossible);
 		metadata.replace(transferPossibilityLine, newTransferPossibilityLine);
