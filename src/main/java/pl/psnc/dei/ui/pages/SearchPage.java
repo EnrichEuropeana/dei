@@ -172,10 +172,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             Dataset selectedDataset = (Dataset) event.getValue();
             currentUserRecordSelection.setSelectedDataSet(selectedDataset);
         });
-        //
-        //
-        //
-
 
         HorizontalLayout layout = new HorizontalLayout();
         layout.add(projects, datasets);
