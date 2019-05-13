@@ -18,8 +18,14 @@ public class RecordTransferValidationUtil {
 	private static final String TYPE_SERVICE = "svcs:Service";
 	private static final String TYPE_AGGREGATION = "ore:Aggregation";
 
-	private static String[] allowedTypes = {"image/jpeg", "image/tiff", "image/png", "application/pdf"};
+	private static final String[] ALLOWED_TYPES = {"image/jpeg", "image/tiff", "image/png", "application/pdf"};
 
+	/**
+	 * Get mimeType for given record
+	 *
+	 * @param record record json-ld object
+	 * @return record's mimeType
+	 */
 	public static String getMimeType(JsonObject record) {
 		Optional<JsonObject> first = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
@@ -29,7 +35,14 @@ public class RecordTransferValidationUtil {
 		return first.map(jsonObject -> jsonObject.get(KEY_MIME_TYPE).getAsString().value()).orElse(null);
 	}
 
-	public static String checkIfTransferPossible(JsonObject record, String mimeType) {
+	/**
+	 * Checks if given record can be converted and/or transferred to TP
+	 *
+	 * @param record record json-ld object
+	 * @param mimeType record's mimeType
+	 * @return {@link TransferPossibility}
+	 */
+	public static TransferPossibility checkIfTransferPossible(JsonObject record, String mimeType) {
 		Optional<JsonObject> first = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(o -> (o.get(KEY_TYPE).getAsString().value().equals(TYPE_SERVICE)
@@ -40,12 +53,39 @@ public class RecordTransferValidationUtil {
 						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu")))
 				.findFirst();
 		if (first.isPresent()) {
-			return "Can be transferred to TP";
+			return TransferPossibility.POSSIBLE;
 		}
-		if (Arrays.asList(allowedTypes).contains(mimeType)) {
-			return "Can be converted and transferred to TP";
+		if (Arrays.asList(ALLOWED_TYPES).contains(mimeType)) {
+			return TransferPossibility.REQUIRES_CONVERSION;
+		}
+		return TransferPossibility.NOT_POSSIBLE;
+	}
+
+	/**
+	 * Possible results of check if record can be transferred to TP:
+	 * POSSIBLE - record already available via IIIF, can be transferred without conversion
+	 * REQUIRES_CONVERSION - record available in supported format, requires conversion to IIIF before transfer to TP
+	 * NOT_POSSIBLE - record not available in supported format, cannot be transferred to TP
+	 */
+	public enum TransferPossibility {
+		POSSIBLE("Can be transferred to TP", true),
+		REQUIRES_CONVERSION("Can be converted and transferred to TP", true),
+		NOT_POSSIBLE("Cannot be transferred to TP", false);
+
+		String message;
+		boolean transferPossible;
+
+		TransferPossibility(String message, boolean transferPossible) {
+			this.message = message;
+			this.transferPossible = transferPossible;
 		}
 
-		return "Cannot be transferred to TP";
+		public String getMessage() {
+			return message;
+		}
+
+		public boolean isTransferPossible() {
+			return transferPossible;
+		}
 	}
 }

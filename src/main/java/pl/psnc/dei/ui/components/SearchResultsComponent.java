@@ -1,16 +1,10 @@
 package pl.psnc.dei.ui.components;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.UI;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.StyleSheet;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.controllers.SearchController;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
@@ -20,28 +14,12 @@ import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
 
 import java.util.ArrayList;
-import java.util.concurrent.CompletableFuture;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 12;
-
-    private static final String AUTHOR_LABEL = "Author:";
-
-    private static final String TITLE_LABEL = "Title:";
-
-    private static final String ISSUED_LABEL = "Issued:";
-
-    private static final String PROVIDER_LABEL = "Provider institution:";
-
-    private static final String FORMAT_LABEL = "Format:";
-
-    private static final String LANGUAGE_LABEL = "Language:";
-
-    private static final String LICENSE_LABEL = "License:";
 
     // query string
     private transient String query;
@@ -138,7 +116,8 @@ public class SearchResultsComponent extends VerticalLayout {
             }
             resultsCount.setText(prepareResultsText());
             resultsList.removeAll();
-            searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, currentUserRecordSelection.isRecordSelected(searchResult.getId()))));
+            searchResults.getResults().forEach(searchResult ->
+					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService, uiPollingManager, searchResult)));
         }
     }
 
@@ -304,124 +283,6 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     /**
-     * Create a single result component
-     *
-     * @param searchResult search result from which all the data is retrieved
-     * @return created component
-     */
-    private Component createResultComponent(SearchResult searchResult, boolean isSelected) {
-        HorizontalLayout resultComponent = new HorizontalLayout();
-        resultComponent.addClassName("search-result-element");
-        resultComponent.setSizeFull();
-        resultComponent.setDefaultVerticalComponentAlignment(Alignment.CENTER);
-        Checkbox checkbox = new Checkbox();
-        checkbox.setId(searchResult.getId());
-        checkbox.addClassName("search-result-checkbox");
-        checkbox.setValue(isSelected);
-        checkbox.addValueChangeListener(event -> {
-            if (event.getValue()) {
-                currentUserRecordSelection.addSelectedRecordId(event.getSource().getId().get());
-            } else {
-                currentUserRecordSelection.removeSelectedRecordId(event.getSource().getId().get());
-            }
-        });
-        resultComponent.add(checkbox);
-        Image image = createImage(searchResult);
-        resultComponent.add(image);
-        resultComponent.add(createMetadataComponent(searchResult));
-        return resultComponent;
-    }
-
-    /**
-     * Create metadata component which is part of the result component
-     *
-     * @param searchResult source of the metadata
-     * @return created component
-     */
-    private Component createMetadataComponent(SearchResult searchResult) {
-        VerticalLayout metadata = new VerticalLayout();
-        createMetadataLine(metadata, TITLE_LABEL, searchResult.getTitle());
-        createMetadataLine(metadata, AUTHOR_LABEL, searchResult.getAuthor());
-        createMetadataLine(metadata, ISSUED_LABEL, searchResult.getIssued());
-        createMetadataLine(metadata, PROVIDER_LABEL, searchResult.getProvider());
-        createFormatMetadataLine(metadata, searchResult.getId());
-        createMetadataLine(metadata, LANGUAGE_LABEL, searchResult.getLanguage());
-        createMetadataLine(metadata, LICENSE_LABEL, searchResult.getLicense());
-        return metadata;
-    }
-
-    /**
-     * Create a single line of the metadata component
-     *
-     * @param metadata metadata component where the line will be added
-     * @param label    label of the attribute
-     * @param value    value of the attribute
-     */
-    private void createMetadataLine(FlexComponent metadata, String label, String value) {
-        if (value != null && !value.isEmpty()) {
-            HorizontalLayout line = createLine(label, value);
-            metadata.add(line);
-        }
-    }
-
-    /**
-     * Create a single line of the format metadata component. Data is loaded asynchronously.
-     *
-     * @param metadata metadata component where the line will be added
-     * @param recordId id of the record
-     */
-    private void createFormatMetadataLine(FlexComponent metadata, String recordId) {
-        HorizontalLayout tempLine = createLine(FORMAT_LABEL, "Loading...");
-        UI ui = UI.getCurrent();
-        tempLine.addAttachListener(e -> uiPollingManager.registerPollRequest(ui, tempLine, 500));
-        tempLine.addDetachListener(e -> uiPollingManager.unregisterPollRequest(ui, tempLine));
-        metadata.add(tempLine);
-
-        CompletableFuture.runAsync(() -> {
-            JsonObject jsonObject = europeanaRestService.retriveRecordFromEuropeanaAndConvertToJsonLd(recordId);
-            String mimeType = RecordTransferValidationUtil.getMimeType(jsonObject);
-            String transferPossibility = RecordTransferValidationUtil.checkIfTransferPossible(jsonObject, mimeType);
-
-            ui.access(() -> {
-                HorizontalLayout line = createLine(FORMAT_LABEL, mimeType);
-                Label transferLabel = new Label(transferPossibility);
-                transferLabel.getStyle().set("font-weight", "bold");
-                line.add(transferLabel);
-                line.expand(transferLabel);
-                metadata.replace(tempLine, line);
-            });
-        });
-    }
-
-    private HorizontalLayout createLine(String label, String value) {
-        HorizontalLayout line = new HorizontalLayout();
-        line.addClassName("metadata-line");
-        line.setPadding(false);
-        line.setVerticalComponentAlignment(Alignment.START);
-        Label name = new Label(label);
-        name.addClassName("metadata-label");
-        line.add(name);
-        Label valueLabel = new Label(value);
-        line.add(valueLabel);
-        line.expand(valueLabel);
-        return line;
-    }
-
-    /**
-     * Create thumbnail image
-     *
-     * @param result search result to get the URL to image
-     * @return created image
-     */
-    private Image createImage(SearchResult result) {
-        Image image = new Image();
-        image.setAlt(result.getTitle());
-        image.setSrc(result.getImageURL());
-        image.addClassName("metadata-image");
-        return image;
-    }
-
-    /**
      * Text with info which pages out of total are shown.
      *
      * @return info string
@@ -460,23 +321,18 @@ public class SearchResultsComponent extends VerticalLayout {
 
 
     public void selectAll() {
-        resultsList.removeAll();
-        searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, true)));
-        currentUserRecordSelection.clearSelectedRecords();
-        searchResults.getResults().forEach(r -> currentUserRecordSelection.addSelectedRecordId(r.getId()));
+        resultsList.getChildren()
+				.filter(c -> c instanceof SearchResultEntryComponent)
+				.map(c -> (SearchResultEntryComponent)c)
+                .filter(SearchResultEntryComponent::isRecordEnabled)
+				.forEach(e -> e.setRecordSelected(true));
     }
 
     public void inverseSelection() {
-        resultsList.removeAll();
-        for (SearchResult s : searchResults.getResults()) {
-            if (!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())) {
-                resultsList.add(createResultComponent(s, true));
-                currentUserRecordSelection.addSelectedRecordId(s.getId());
-            } else {
-                resultsList.add(createResultComponent(s, false));
-                currentUserRecordSelection.removeSelectedRecordId(s.getId());
-            }
-        }
-
+		resultsList.getChildren()
+				.filter(c -> c instanceof SearchResultEntryComponent)
+				.map(c -> (SearchResultEntryComponent)c)
+                .filter(SearchResultEntryComponent::isRecordEnabled)
+				.forEach(SearchResultEntryComponent::invertRecordSelection);
     }
 }

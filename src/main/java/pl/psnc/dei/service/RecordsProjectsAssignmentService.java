@@ -10,6 +10,7 @@ import pl.psnc.dei.model.Record;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Service
 public class RecordsProjectsAssignmentService {
@@ -23,7 +24,7 @@ public class RecordsProjectsAssignmentService {
     public void saveSelectedRecords() {
         Project project = currentUserRecordSelection.getSelectedProject();
         Dataset dataset = currentUserRecordSelection.getSelectedDataSet();
-        List<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
+        Set<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
         recordIds.forEach(recordId -> {
             if (recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset) == null) {
                 Record record = recordsRepository.findByIdentifierAndProject(recordId, project);

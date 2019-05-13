@@ -63,6 +63,16 @@
     margin-top: 0;
 }
 
+.can-transfer-label {
+    font-weight: bold;
+    color: green;
+}
+
+.cannot-transfer-label {
+    font-weight: bold;
+    color: red;
+}
+
 .metadata-image {
     width: 100px;
     height: 100px;
