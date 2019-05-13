@@ -21,7 +21,7 @@ public class ImportNavigationMenu extends VerticalLayout {
 		add(createElements());
 	}
 
-	public Component createElements() {
+	private Component createElements() {
 		VerticalLayout layout = new VerticalLayout();
 		Label label = new Label("Imports options");
 		label.addClassName("metadata-label");
@@ -29,16 +29,16 @@ public class ImportNavigationMenu extends VerticalLayout {
 		layout.add(createElement(new Button("Create import"), e -> {
 			//todo attach component from task EN-55
 		}));
+		layout.add(createElement(new Button("List imports"), e -> {
+			importPage.createListImports();
+		}));
 		layout.add(createElement(new Button("Imports history"), e -> {
 			importPage.createHistoryImports();
-		}));
-		layout.add(createElement(new Button("Imports list"), e -> {
-			importPage.createListImports();
 		}));
 		return layout;
 	}
 
-	public Component createElement(Button button, Consumer function){
+	private Component createElement(Button button, Consumer function){
 		button.setClassName("button-as-text");
 		button.addClickListener(function::accept);
 		return button;
