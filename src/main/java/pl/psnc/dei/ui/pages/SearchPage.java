@@ -1,6 +1,7 @@
 package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -324,4 +325,10 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         }
         return null;
     }
+
+	@Override
+	protected void onDetach(DetachEvent detachEvent) {
+		currentUserRecordSelection.clearSelectedRecords();
+		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
+	}
 }
