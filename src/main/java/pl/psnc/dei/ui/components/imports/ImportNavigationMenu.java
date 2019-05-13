@@ -30,6 +30,9 @@ public class ImportNavigationMenu extends VerticalLayout {
 		layout.add(createElement(new Button("Create import"), e -> {
 			//todo attach component from task EN-55
 		}));
+		layout.add(createElement(new Button("List imports"), e -> {
+			importPage.createListImports();
+		}));
 		layout.add(createElement(new Button("History"), e -> {
 			importPage.createHistoryImports();
 		}));

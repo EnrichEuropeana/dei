@@ -38,7 +38,7 @@ public class ImportsListGenerator {
 
     public Grid<Import> generate() {
         Grid<Import> importsGrid = new Grid<>();
-        importsGrid.setWidthFull();
+        importsGrid.setMaxWidth("70%");
         //
         ListDataProvider<Import> dataProvider = new ListDataProvider<>(
                 imports);
@@ -75,7 +75,6 @@ public class ImportsListGenerator {
         })).setHeader("Failures").setFlexGrow(10);
 
         Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
-        importsGrid.addComponentColumn(e -> addActionButtons()).setHeader("Action").setFlexGrow(5);
         //
         HeaderRow filterRow = importsGrid.appendHeaderRow();
         addFilter(dataProvider, filterRow, importNameColumn, nameFilter);
@@ -85,21 +84,6 @@ public class ImportsListGenerator {
         //
         importsGrid.setColumnReorderingAllowed(true);
         return importsGrid;
-    }
-
-    private Component addActionButtons() {
-        HorizontalLayout layout = new HorizontalLayout();
-        Button sendImportButton = new Button(new Icon(VaadinIcon.ENVELOPE_OPEN));
-        sendImportButton.addClickListener(click -> {
-            Notification.show("Sending imports not implemented yet");
-        });
-        Button editImportButton = new Button(new Icon(VaadinIcon.EDIT));
-        editImportButton.addClickListener(click -> {
-            Notification.show("Editing imports not implemented yet");
-        });
-        layout.add(editImportButton);
-        layout.add(sendImportButton);
-        return layout;
     }
 
     private void addFilter(ListDataProvider<Import> dataProvider, HeaderRow filterRow, Grid.Column<Import> columnName, FieldFilter fieldFilter) {

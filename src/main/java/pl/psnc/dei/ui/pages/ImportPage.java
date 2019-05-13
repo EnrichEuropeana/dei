@@ -4,6 +4,7 @@ import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
@@ -13,6 +14,7 @@ import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
 import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
+import pl.psnc.dei.ui.components.imports.ImportsListComponent;
 import pl.psnc.dei.ui.components.imports.SelectedRecordsList;
 
 import java.util.ArrayList;
@@ -30,6 +32,7 @@ public class ImportPage extends HorizontalLayout {
     private DefaultImportOptions defaultImportOptions;
     private Project selectedProject;
     private VerticalLayout displayingPlace;
+    private ImportsRepository importsRepository;
     private ImportsHistoryService importsHistoryService;
 
     private List<Record> foundRecords = new ArrayList<>();
@@ -37,11 +40,13 @@ public class ImportPage extends HorizontalLayout {
 
     public ImportPage(RecordsRepository repo,
                       TranscriptionPlatformService transcriptionPlatformService
+            , ImportsRepository importsRepository
             , ImportsHistoryService importsHistoryService) {
         this.recordsRepository = repo;
         this.importsHistoryService = importsHistoryService;
         add(new ImportNavigationMenu(this));
         this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(), new DatasetChangeListener());
+        this.importsRepository = importsRepository;
         add(defaultImportOptions);
         add(selectedRecordsList);
         setWidthFull();
@@ -80,6 +85,14 @@ public class ImportPage extends HorizontalLayout {
             remove(displayingPlace);
         }
         displayingPlace = new ImportsHistory(importsHistoryService);
+        add(displayingPlace);
+    }
+
+    public void createListImports() {
+        if(displayingPlace !=null) {
+            remove(displayingPlace);
+        }
+        displayingPlace = new ImportsListComponent(importsRepository, this);
         add(displayingPlace);
     }
 }
