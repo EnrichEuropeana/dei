@@ -9,6 +9,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -23,6 +24,7 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
+import pl.psnc.dei.ui.components.ConfirmationDialog;
 import pl.psnc.dei.ui.components.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
 
@@ -219,8 +221,15 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         addElements.addClickListener(
                 e -> {
                     recordsProjectsAssignmentService.saveSelectedRecords();
-                    currentUserRecordSelection.clearSelectedRecords();
-                    UI.getCurrent().getPage().reload();
+					Notification.show(currentUserRecordSelection.getSelectedRecordIds().size() + " record(s) added!",
+							3000, Notification.Position.TOP_CENTER);
+					UI ui = UI.getCurrent();
+					uiPollingManager.registerPollRequest(ui, addElements, 100);
+					ui.access(() -> {
+                    	resultsComponent.deselectAll();
+                    	uiPollingManager.unregisterPollRequest(ui, addElements);
+                    });
+					currentUserRecordSelection.clearSelectedRecords();
                 });
 
         horizontalLayout.add(selectAll, invertSelection, addElements);
@@ -242,23 +251,32 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.addClassName("search-field");
         search.setPlaceholder("Search in Europeana");
         search.addKeyUpListener(Key.ENTER,
-                keyUpEvent -> {
-                    currentUserRecordSelection.clearSelectedRecords();
-                    search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
-                });
+                keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search",
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
 
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
-                e -> {
-                    currentUserRecordSelection.clearSelectedRecords();
-                    e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
-                });
+                e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search",
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
         queryForm.expand();
         return queryForm;
+    }
+
+    private void search(String query, String qf, String cursor) {
+        if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
+            ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+                    "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+                            + " selected but not added record(s). Record selection will be lost with next search query execution.",
+                    e -> executeSearch(query, qf, cursor));
+            dialog.addContent("Are you sure you want to continue?");
+            dialog.open();
+        } else {
+            executeSearch(query, qf, cursor);
+        }
     }
 
     /**
@@ -269,6 +287,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param cursor cursor
      */
     private void executeSearch(String query, String qf, String cursor) {
+		currentUserRecordSelection.clearSelectedRecords();
         if (query == null || query.isEmpty()) {
             resultsComponent.clear();
             facets.addFacets(null);
@@ -303,7 +322,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             String query = getParameterValue(parametersMap.get("query"), true);
             String qf = getParameterValue(parametersMap.get("qf"), false);
             String cursor = getParameterValue(parametersMap.get("cursor"), true);
-            executeSearch(query, qf, cursor);
+            search(query, qf, cursor);
         }
     }
 
@@ -331,5 +350,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
 		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
+		recordTransferValidationCache.clear();
 	}
 }

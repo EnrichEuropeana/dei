@@ -159,6 +159,7 @@ public class SearchResultsComponent extends VerticalLayout {
             this.qf = "";
         }
         searchResults.clear();
+        recordTransferValidationCache.clear();
 
         SearchResponse result = searchController.search(query, qf, cursor, onlyIiif).block();
         if (result == null) {
@@ -325,13 +326,19 @@ public class SearchResultsComponent extends VerticalLayout {
         updateComponent();
     }
 
-
     public void selectAll() {
         resultsList.getChildren()
 				.filter(c -> c instanceof SearchResultEntryComponent)
 				.map(c -> (SearchResultEntryComponent)c)
                 .filter(SearchResultEntryComponent::isRecordEnabled)
 				.forEach(e -> e.setRecordSelected(true));
+    }
+
+    public void deselectAll() {
+        resultsList.getChildren()
+                .filter(c -> c instanceof SearchResultEntryComponent)
+                .map(c -> (SearchResultEntryComponent)c)
+                .forEach(e -> e.setRecordSelected(false));
     }
 
     public void inverseSelection() {

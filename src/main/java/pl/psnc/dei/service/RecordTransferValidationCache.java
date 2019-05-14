@@ -19,6 +19,10 @@ public class RecordTransferValidationCache {
 		cache.put(recordId, new ValidationResult(mimeType, transferPossibility));
 	}
 
+	public void clear() {
+		cache.clear();
+	}
+
 	public class ValidationResult {
 
 		private String mimeType;

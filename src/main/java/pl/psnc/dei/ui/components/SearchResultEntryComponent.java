@@ -124,11 +124,17 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 * Create thumbnail image
 	 */
 	private void createImage() {
+		VerticalLayout thumbnailContainer = new VerticalLayout();
+		thumbnailContainer.addClassName("metadata-image-container");
+		thumbnailContainer.setAlignItems(Alignment.CENTER);
+
 		thumbnail = new Image();
 		thumbnail.setAlt(searchResult.getTitle());
 		thumbnail.setSrc(searchResult.getImageURL());
 		thumbnail.addClassName("metadata-image");
-		add(thumbnail);
+
+		thumbnailContainer.add(thumbnail);
+		add(thumbnailContainer);
 	}
 
 	/**
@@ -158,6 +164,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 			RecordTransferValidationUtil.TransferPossibility transferPossibility = validationResult.getTransferPossibility();
 			transferPossibilityLine = createTransferPossibilityLine(transferPossibility.getMessage(), transferPossibility.isTransferPossible());
 			metadata.add(transferPossibilityLine);
+			searchResultCheckBox.setEnabled(transferPossibility.isTransferPossible());
 		}
 
 		add(metadata);
