@@ -27,23 +27,39 @@ public class RecordTransferValidationUtil {
 	 * @return record's mimeType
 	 */
 	public static String getMimeType(JsonObject record) {
-		Optional<JsonObject> first = record.get(KEY_GRAPH).getAsArray().stream()
+		Optional<JsonObject> mimeTypeEntry = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
 						&& o.get(KEY_MIME_TYPE) != null)
 				.findFirst();
-		return first.map(jsonObject -> jsonObject.get(KEY_MIME_TYPE).getAsString().value()).orElse(null);
+		return mimeTypeEntry.map(jsonObject -> jsonObject.get(KEY_MIME_TYPE).getAsString().value()).orElse(null);
 	}
 
 	/**
 	 * Checks if given record can be converted and/or transferred to TP
 	 *
-	 * @param record record json-ld object
+	 * @param record   record json-ld object
 	 * @param mimeType record's mimeType
 	 * @return {@link TransferPossibility}
 	 */
 	public static TransferPossibility checkIfTransferPossible(JsonObject record, String mimeType) {
-		Optional<JsonObject> first = record.get(KEY_GRAPH).getAsArray().stream()
+		if (checkIfIiif(record)) {
+			return TransferPossibility.POSSIBLE;
+		}
+		if (Arrays.asList(ALLOWED_TYPES).contains(mimeType)) {
+			return TransferPossibility.REQUIRES_CONVERSION;
+		}
+		return TransferPossibility.NOT_POSSIBLE;
+	}
+
+	/**
+	 * Checks if given record is already available via IIIF
+	 *
+	 * @param record record json-ld object
+	 * @return true, if record is available via IIIF, false otherwise
+	 */
+	public static boolean checkIfIiif(JsonObject record) {
+		Optional<JsonObject> iiifEntry = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(o -> (o.get(KEY_TYPE).getAsString().value().equals(TYPE_SERVICE)
 						&& o.get(KEY_CONFORMS_TO) != null
@@ -52,13 +68,7 @@ public class RecordTransferValidationUtil {
 						&& o.get(KEY_IS_SHOWN_BY) != null
 						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu")))
 				.findFirst();
-		if (first.isPresent()) {
-			return TransferPossibility.POSSIBLE;
-		}
-		if (Arrays.asList(ALLOWED_TYPES).contains(mimeType)) {
-			return TransferPossibility.REQUIRES_CONVERSION;
-		}
-		return TransferPossibility.NOT_POSSIBLE;
+		return iiifEntry.isPresent();
 	}
 
 	/**
