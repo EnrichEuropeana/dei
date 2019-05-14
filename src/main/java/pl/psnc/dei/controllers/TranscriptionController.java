@@ -1,5 +1,6 @@
 package pl.psnc.dei.controllers;
 
+import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,8 @@ public class TranscriptionController {
 	private TasksQueueService tasksQueueService;
 
 	@Autowired
-	public TranscriptionController(TranscriptionPlatformService transcriptionPlatformService, TasksQueueService tasksQueueService) {
+	public TranscriptionController(TranscriptionPlatformService transcriptionPlatformService,
+								   TasksQueueService tasksQueueService) {
 		this.transcriptionPlatformService = transcriptionPlatformService;
 		this.tasksQueueService = tasksQueueService;
 	}
@@ -55,6 +57,16 @@ public class TranscriptionController {
 			return new ResponseEntity(HttpStatus.NOT_FOUND);
 		}
 		return new ResponseEntity(HttpStatus.OK);
+	}
+
+	@GetMapping(value = "/iiif/manifest", produces = "application/json")
+	public ResponseEntity getManifest(@RequestParam("recordId") String recordId) {
+		try {
+			JsonObject manifest = transcriptionPlatformService.getManifest(recordId);
+			return ResponseEntity.status(HttpStatus.OK).body(manifest.toString());
+		} catch (NotFoundException e) {
+			return new ResponseEntity(HttpStatus.NOT_FOUND);
+		}
 	}
 
 }

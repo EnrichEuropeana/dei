@@ -37,8 +37,12 @@ public class Record {
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Import anImport;
 
+    @JsonIgnore
     @OneToMany(orphanRemoval = true)
     private List<Transcription> transcriptions;
+
+    @JsonIgnore
+    private String iiifManifest;
 
     public Record() {
     }
@@ -47,13 +51,14 @@ public class Record {
         this.identifier = identifier;
     }
 
-	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions) {
+	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest) {
 		this.identifier = identifier;
 		this.state = state;
 		this.project = project;
 		this.dataset = dataset;
 		this.anImport = anImport;
 		this.transcriptions = transcriptions;
+		this.iiifManifest = iiifManifest;
 	}
 
 	public long getId() {
@@ -106,6 +111,14 @@ public class Record {
 
 	public void setTranscriptions(List<Transcription> transcriptions) {
 		this.transcriptions = transcriptions;
+	}
+
+	public String getIiifManifest() {
+		return iiifManifest;
+	}
+
+	public void setIiifManifest(String iiifManifest) {
+		this.iiifManifest = iiifManifest;
 	}
 
 	/**

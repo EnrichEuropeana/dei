@@ -26,7 +26,7 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				recordJson = ers.retriveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
 				state = TaskState.T_SEND_RESULT;
 			case T_SEND_RESULT:
 				tps.sendRecord(recordJson);
