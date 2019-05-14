@@ -9,6 +9,7 @@ import pl.psnc.dei.model.Record;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface RecordsRepository extends JpaRepository<Record, Long> {
@@ -19,15 +20,15 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     List<Record> findAllByProjectAndDatasetNullAndAnImportNull(Project project);
 
-    List<Record> findAllByProjectAndAnImportNull(Project project);
+    Set<Record> findAllByProjectAndAnImportNull(Project project);
 
-    List<Record> findAllByProjectAndDatasetAndAnImportNull(Project project, Dataset dataset);
+    Set<Record> findAllByProjectAndDatasetAndAnImportNull(Project project, Dataset dataset);
 
     Record findByIdentifierAndProject(String identifier, Project project);
 
     Record findByIdentifierAndProjectAndDataset(String identifier, Project project, Dataset dataset);
 
-    List<Record> findAllByAnImport(Import anImport);
+    Set<Record> findAllByAnImport(Import anImport);
 
     Optional<Record> findByIdentifier(String id);
 

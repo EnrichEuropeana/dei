@@ -47,7 +47,7 @@ public class ImportsListComponent extends VerticalLayout {
 		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(10);
 		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
 		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
-		importsGrid.addComponentColumn(e -> addActionButtons()).setHeader("Action").setFlexGrow(5);
+		importsGrid.addComponentColumn(this::addActionButtons).setHeader("Action").setFlexGrow(5);
 
 		//
 		HeaderRow filterRow = importsGrid.appendHeaderRow();
@@ -59,15 +59,15 @@ public class ImportsListComponent extends VerticalLayout {
 		return importsGrid;
 	}
 
-	private Component addActionButtons() {
+	private Component addActionButtons(Import anImport) {
 		HorizontalLayout layout = new HorizontalLayout();
 		Button sendImportButton = new Button(new Icon(VaadinIcon.ENVELOPE_OPEN));
 		sendImportButton.addClickListener(click -> {
-			Notification.show("Sending imports not implemented yet");
+			importPage.sendImport(anImport);
 		});
 		Button editImportButton = new Button(new Icon(VaadinIcon.EDIT));
 		editImportButton.addClickListener(click -> {
-			Notification.show("Editing imports not implemented yet");
+			importPage.editImport(anImport);
 		});
 		layout.add(editImportButton);
 		layout.add(sendImportButton);
