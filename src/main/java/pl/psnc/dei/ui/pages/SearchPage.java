@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
 
 @Route(value = "search", layout = MainView.class)
 @Secured(Role.OPERATOR)
-public class SearchPage extends HorizontalLayout implements HasUrlParameter<String> {
+public class SearchPage extends HorizontalLayout implements HasUrlParameter<String>, BeforeLeaveObserver, AfterNavigationObserver {
     private TextField search;
 
     private Checkbox searchOnlyIiif;
@@ -57,6 +57,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     // label used when no results were found
     private Label noResults;
+
+    private String originalLocation;
 
     public SearchPage(
             SearchController searchController,
@@ -351,5 +353,34 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 		currentUserRecordSelection.clearSelectedRecords();
 		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
 		recordTransferValidationCache.clear();
+	}
+
+	@Override
+	public void afterNavigation(AfterNavigationEvent afterNavigationEvent) {
+		// store the current location so that we can restore that in beforeLeave if needed
+		originalLocation = afterNavigationEvent.getLocation().getPathWithQueryParameters();
+	}
+
+	@Override
+	public void beforeLeave(BeforeLeaveEvent beforeLeaveEvent) {
+		if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty() && beforeLeaveEvent.getNavigationTarget() != getClass()) {
+			BeforeLeaveEvent.ContinueNavigationAction action = beforeLeaveEvent.postpone();
+
+			// replace the top most history state in the browser with this view's location
+			// https://github.com/vaadin/flow/issues/3619
+			UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + originalLocation + "');");
+
+			ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+					"There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+							+ " selected but not added record(s). Record selection will be lost if you leave this page.",
+					e -> {
+						action.proceed();
+						// update the address bar to reflect location of the view where the user was trying to navigate to
+						String destination = beforeLeaveEvent.getLocation().getPathWithQueryParameters();
+						UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + destination + "');");
+					});
+			dialog.addContent("Are you sure you want to continue?");
+			dialog.open();
+		}
 	}
 }
