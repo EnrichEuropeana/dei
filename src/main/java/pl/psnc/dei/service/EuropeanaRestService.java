@@ -5,6 +5,8 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
+import org.apache.jena.riot.RDFDataMgr;
+import org.apache.jena.riot.RDFFormat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,49 +42,49 @@ public class EuropeanaRestService extends RestRequestExecutor {
 	@Value("${api.userToken}")
 	private String userToken;
 
-    public EuropeanaRestService(WebClient.Builder webClientBuilder) {
-    	configure(webClientBuilder);
-    }
+	public EuropeanaRestService(WebClient.Builder webClientBuilder) {
+		configure(webClientBuilder);
+	}
 
-    @PostConstruct
-    private void init() {
-    	if(StringUtils.isNotBlank(europeanaApiUrl))
+	@PostConstruct
+	private void init() {
+		if (StringUtils.isNotBlank(europeanaApiUrl))
 			setRootUri(europeanaApiUrl);
-    }
+	}
 
-    /**
-     * @param transcription JSON that contains target, body and optionally annotation metadata
-     * @return String that contains annotationId generated for given transcription
-     */
-    public String postTranscription(Transcription transcription) {
-        return webClient.post()
-                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(String.class)
-                .block();
-    }
+	/**
+	 * @param transcription JSON that contains target, body and optionally annotation metadata
+	 * @return String that contains annotationId generated for given transcription
+	 */
+	public String postTranscription(Transcription transcription) {
+		return webClient.post()
+				.uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+				.body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
+				.retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.bodyToMono(String.class)
+				.block();
+	}
 
-    public String updateTranscription(Transcription transcription) {
-        return webClient.put()
-                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(String.class)
-                .block();
+	public String updateTranscription(Transcription transcription) {
+		return webClient.put()
+				.uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+				.body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
+				.retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.bodyToMono(String.class)
+				.block();
 	}
 
 	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from europeana {}", recordId);
 		final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
 		final Model model = ModelFactory.createDefaultModel();
-		model.read(url);
+		model.read(url, "RDF/XML");
 		final StringWriter writer = new StringWriter();
-		model.write(writer, "JSON-LD");
+		RDFDataMgr.write(writer, model, RDFFormat.JSONLD_FLATTEN_PRETTY);
 		return JSON.parse(writer.toString());
 	}
 }
