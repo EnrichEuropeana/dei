@@ -11,7 +11,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.EuropeanaRestService;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.util.stream.Collectors;
  * Converter needs vips and poppler to run
  * At first install poppler as shown in there: https://gist.github.com/Dayjo/618794d4ff37bb82ddfb02c63b450a81
  * Then install vips as shown in there: https://github.com/jcupitt/libvips/wiki/Build-for-Ubuntu
+ * And then install libvips-tools for command-line tools
  */
 public class Converter {
 
@@ -36,11 +36,10 @@ public class Converter {
 
 	private final Record record;
 
-	@Autowired
-	private RecordsRepository recordsRepository;
+	private final JsonObject recordJson;
 
 	@Autowired
-	private EuropeanaRestService ers;
+	private RecordsRepository recordsRepository;
 
 	@Autowired
 	private FilesStore fs;
@@ -51,12 +50,12 @@ public class Converter {
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
 
-	public Converter(Record record) {
+	public Converter(Record record, JsonObject recordJson) {
 		this.record = record;
+		this.recordJson = recordJson;
 	}
 
 	public void convertAndGenerateManifest() throws ConversionException, IOException, InterruptedException {
-		JsonObject recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
 		Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(e -> e.get("isShownBy") != null)
@@ -65,20 +64,17 @@ public class Converter {
 		if (!aggregatorData.isPresent())
 			throw new ConversionException("Can't convert! Record doesn't contain files list!");
 
-		List<URL> filesUrls = extractFilesUrls(aggregatorData.get());
-		cleanDirectory(new File(conversionDirectory, record.getIdentifier()));
-		List<File> filesToConvert = saveFilesInTempDirectory(filesUrls);
-
-		List<String> storedFilesIds;
-//		if(RecordTransferValidationUtil.checkIfTransferPossible(recordJson)) {TODO change after merge with EN-63
-		storedFilesIds = fs.storeFiles(record, filesToConvert);    /** IIIF record case */
-//		} else {
-		storedFilesIds = fs.storeFiles(record, convertFiles(filesToConvert));
-//		}
-
-		cleanDirectory(new File(conversionDirectory, record.getIdentifier()));
-		record.setIiifManifest(getManifest(storedFilesIds).toString());
-		recordsRepository.save(record);
+		File recordTempDir = new File(conversionDirectory, record.getIdentifier());
+		recordTempDir.mkdirs();
+		try {
+			List<URL> filesUrls = extractFilesUrls(aggregatorData.get());
+			List<File> filesToConvert = saveFilesInTempDirectory(filesUrls);
+			List<String> storedFilesIds = fs.storeFiles(record, convertFiles(filesToConvert));
+			record.setIiifManifest(getManifest(storedFilesIds).toString());
+			recordsRepository.save(record);
+		} finally {
+			FileUtils.deleteDirectory(recordTempDir);
+		}
 	}
 
 	private List<URL> extractFilesUrls(JsonObject aggregatorData) {
@@ -218,14 +214,6 @@ public class Converter {
 		}
 
 		return canvases;
-	}
-
-	private void cleanDirectory(File directory) {
-		try {
-			FileUtils.cleanDirectory(directory);
-		} catch (IOException e) {
-			logger.info("Cleaning " + directory.getAbsolutePath() + " failed...", e);
-		}
 	}
 
 }
