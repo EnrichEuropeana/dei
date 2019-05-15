@@ -63,9 +63,28 @@
     margin-top: 0;
 }
 
-.metadata-image {
+.can-transfer-label {
+    font-weight: bold;
+    color: green;
+}
+
+.cannot-transfer-label {
+    font-weight: bold;
+    color: red;
+}
+
+.metadata-image-container {
     width: 100px;
-    height: 100px;
+    height: fit-content;
+    max-width: 100px;
+    max-height: 100px;
+    padding-bottom: 0;
+}
+
+.metadata-image {
+    max-width: 100px;
+    max-height: 100px;
+    margin: 0;
 }
 
 .query-form {
@@ -100,4 +119,9 @@
 
 .page-navigation-bar {
     margin-left: auto;
+}
+
+.confirmation-dialog-title {
+    font-weight: bold;
+    font-size: large;
 }

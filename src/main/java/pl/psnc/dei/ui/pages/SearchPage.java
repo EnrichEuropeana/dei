@@ -1,6 +1,7 @@
 package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
 import com.vaadin.flow.component.Key;
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
@@ -8,6 +9,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
@@ -20,9 +22,9 @@ import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.RecordsProjectsAssignmentService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
+import pl.psnc.dei.ui.components.ConfirmationDialog;
 import pl.psnc.dei.ui.components.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
 
@@ -32,7 +34,7 @@ import java.util.stream.Collectors;
 
 @Route(value = "search", layout = MainView.class)
 @Secured(Role.OPERATOR)
-public class SearchPage extends HorizontalLayout implements HasUrlParameter<String> {
+public class SearchPage extends HorizontalLayout implements HasUrlParameter<String>, BeforeLeaveObserver, AfterNavigationObserver {
     private TextField search;
 
     private Checkbox searchOnlyIiif;
@@ -43,21 +45,35 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
+    private EuropeanaRestService europeanaRestService;
+
     private CurrentUserRecordSelection currentUserRecordSelection;
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
+    private UIPollingManager uiPollingManager;
+
+	private RecordTransferValidationCache recordTransferValidationCache;
+
     // label used when no results were found
     private Label noResults;
+
+    private String originalLocation;
 
     public SearchPage(
             SearchController searchController,
             TranscriptionPlatformService transcriptionPlatformService,
+            EuropeanaRestService europeanaRestService,
             CurrentUserRecordSelection currentUserRecordSelection,
-            RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
+            RecordsProjectsAssignmentService recordsProjectsAssignmentService,
+            UIPollingManager uiPollingManager,
+			RecordTransferValidationCache recordTransferValidationCache) {
         this.transcriptionPlatformService = transcriptionPlatformService;
+        this.europeanaRestService = europeanaRestService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
+        this.uiPollingManager = uiPollingManager;
+        this.recordTransferValidationCache = recordTransferValidationCache;
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -135,7 +151,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(searchOnlyIiif);
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection);
+        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection,
+                europeanaRestService, uiPollingManager, recordTransferValidationCache);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 createSelectionProperties(),
@@ -206,8 +223,15 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         addElements.addClickListener(
                 e -> {
                     recordsProjectsAssignmentService.saveSelectedRecords();
-                    currentUserRecordSelection.clearSelectedRecords();
-                    UI.getCurrent().getPage().reload();
+					Notification.show(currentUserRecordSelection.getSelectedRecordIds().size() + " record(s) added!",
+							3000, Notification.Position.TOP_CENTER);
+					UI ui = UI.getCurrent();
+					uiPollingManager.registerPollRequest(ui, addElements, 100);
+					ui.access(() -> {
+                    	resultsComponent.deselectAll();
+                    	uiPollingManager.unregisterPollRequest(ui, addElements);
+                    });
+					currentUserRecordSelection.clearSelectedRecords();
                 });
 
         horizontalLayout.add(selectAll, invertSelection, addElements);
@@ -229,23 +253,32 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.addClassName("search-field");
         search.setPlaceholder("Search in Europeana");
         search.addKeyUpListener(Key.ENTER,
-                keyUpEvent -> {
-                    currentUserRecordSelection.clearSelectedRecords();
-                    search.getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
-                });
+                keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search",
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
 
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
-                e -> {
-                    currentUserRecordSelection.clearSelectedRecords();
-                    e.getSource().getUI().ifPresent(ui -> ui.navigate("search", prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR)));
-                });
+                e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search",
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
         queryForm.expand();
         return queryForm;
+    }
+
+    private void search(String query, String qf, String cursor) {
+        if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
+            ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+                    "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+                            + " selected but not added record(s). Record selection will be lost with next search query execution.",
+                    e -> executeSearch(query, qf, cursor));
+            dialog.addContent("Are you sure you want to continue?");
+            dialog.open();
+        } else {
+            executeSearch(query, qf, cursor);
+        }
     }
 
     /**
@@ -256,6 +289,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param cursor cursor
      */
     private void executeSearch(String query, String qf, String cursor) {
+		currentUserRecordSelection.clearSelectedRecords();
         if (query == null || query.isEmpty()) {
             resultsComponent.clear();
             facets.addFacets(null);
@@ -290,7 +324,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             String query = getParameterValue(parametersMap.get("query"), true);
             String qf = getParameterValue(parametersMap.get("qf"), false);
             String cursor = getParameterValue(parametersMap.get("cursor"), true);
-            executeSearch(query, qf, cursor);
+            search(query, qf, cursor);
         }
     }
 
@@ -313,4 +347,40 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         }
         return null;
     }
+
+	@Override
+	protected void onDetach(DetachEvent detachEvent) {
+		currentUserRecordSelection.clearSelectedRecords();
+		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
+		recordTransferValidationCache.clear();
+	}
+
+	@Override
+	public void afterNavigation(AfterNavigationEvent afterNavigationEvent) {
+		// store the current location so that we can restore that in beforeLeave if needed
+		originalLocation = afterNavigationEvent.getLocation().getPathWithQueryParameters();
+	}
+
+	@Override
+	public void beforeLeave(BeforeLeaveEvent beforeLeaveEvent) {
+		if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty() && beforeLeaveEvent.getNavigationTarget() != getClass()) {
+			BeforeLeaveEvent.ContinueNavigationAction action = beforeLeaveEvent.postpone();
+
+			// replace the top most history state in the browser with this view's location
+			// https://github.com/vaadin/flow/issues/3619
+			UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + originalLocation + "');");
+
+			ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+					"There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+							+ " selected but not added record(s). Record selection will be lost if you leave this page.",
+					e -> {
+						action.proceed();
+						// update the address bar to reflect location of the view where the user was trying to navigate to
+						String destination = beforeLeaveEvent.getLocation().getPathWithQueryParameters();
+						UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + destination + "');");
+					});
+			dialog.addContent("Are you sure you want to continue?");
+			dialog.open();
+		}
+	}
 }
