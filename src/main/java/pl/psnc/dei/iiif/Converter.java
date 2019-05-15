@@ -9,10 +9,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.EuropeanaRestService;
 
-import javax.persistence.Convert;
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -30,11 +30,14 @@ import java.util.stream.Collectors;
  */
 public class Converter {
 
-	private static final Logger logger = LoggerFactory.getLogger(Convert.class);
+	private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
 	private static final CommandExecutor executor = new CommandExecutor();
 
 	private final Record record;
+
+	@Autowired
+	private RecordsRepository recordsRepository;
 
 	@Autowired
 	private EuropeanaRestService ers;
@@ -75,6 +78,7 @@ public class Converter {
 
 		cleanDirectory(new File(conversionDirectory, record.getIdentifier()));
 		record.setIiifManifest(getManifest(storedFilesIds).toString());
+		recordsRepository.save(record);
 	}
 
 	private List<URL> extractFilesUrls(JsonObject aggregatorData) {
@@ -183,16 +187,18 @@ public class Converter {
 	private JsonArray getSequenceJson(List<String> storedFilesIds) {
 		JsonArray canvases = new JsonArray();
 
-		for (int i = 0; i < storedFilesIds.size(); i++) {
-			String imageId = storedFilesIds.get(i);
-
+		for (String imageId : storedFilesIds) {
 			JsonObject canvas = new JsonObject();
+			canvases.add(canvas);
+
 			canvas.put("@id", iiifImageServerUrl + "/canvas/" + imageId);
 			canvas.put("@type", "sc:canvas");
+			canvas.put("label", imageId);
 			canvas.put("width", "1000");
 			canvas.put("height", "1000");
 
 			JsonArray images = new JsonArray();
+			canvas.put("images", images);
 			JsonObject image = new JsonObject();
 			images.add(image);
 
