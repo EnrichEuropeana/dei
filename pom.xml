@@ -101,6 +101,12 @@
             <artifactId>jena-text</artifactId>
             <version>${jena.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>runtime</scope>
+        </dependency>
 	</dependencies>
 
 	<dependencyManagement>
@@ -174,13 +180,6 @@
             <activation>
                 <activeByDefault>true</activeByDefault>
             </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.h2database</groupId>
-                    <artifactId>h2</artifactId>
-                    <scope>runtime</scope>
-                </dependency>
-            </dependencies>
         </profile>
         <profile>
             <id>test</id>
@@ -189,8 +188,8 @@
             </properties>
             <dependencies>
                 <dependency>
-                    <groupId>com.h2database</groupId>
-                    <artifactId>h2</artifactId>
+                    <groupId>mysql</groupId>
+                    <artifactId>mysql-connector-java</artifactId>
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
