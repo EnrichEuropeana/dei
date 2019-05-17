@@ -3,7 +3,7 @@
 readonly localUser="user"
 readonly remoteLocation="location"
 readonly localDir="/home/$localUser/files/"
-readonly logFile="./synchronization.log"
+readonly logFile="/home/$localUser/bin/synchronization.log"
 
 #1. Check if 'lock_synchro' file exists in specified directory
 if [ -e /home/$localUser/bin/lock_synchro ]
