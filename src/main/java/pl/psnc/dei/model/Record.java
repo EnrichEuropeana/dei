@@ -127,13 +127,16 @@ public class Record {
 	 * E_PENDING - Enrichment process for given record is pending, transcriptions are ready to be taken from TP to EU
 	 * T_PENDING - Transcription process for given record is pending, records will be transferred from EU to TP
 	 * U_PENDING - Update process for given record annotations is pending
+	 * C_PENDING - Non IIIF record, needs to bo converted before sending to TP
 	 */
 	public enum RecordState {
 
 		NORMAL(0),
 		E_PENDING(1),
 		T_PENDING(2),
-		U_PENDING(3);
+		U_PENDING(3),
+		C_PENDING(4),
+		C_FAILED(5);
 
 		private final int value;
 

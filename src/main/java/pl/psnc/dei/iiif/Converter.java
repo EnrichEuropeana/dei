@@ -50,6 +50,9 @@ public class Converter {
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
 
+	@Value("${application.server.url}")
+	private String serverUrl;
+
 	public Converter(Record record, JsonObject recordJson) {
 		this.record = record;
 		this.recordJson = recordJson;
@@ -62,74 +65,57 @@ public class Converter {
 				.findFirst();
 
 		if (!aggregatorData.isPresent())
-			throw new ConversionException("Can't convert! Record doesn't contain files list!");
+			throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 
 		File recordTempDir = new File(conversionDirectory, record.getIdentifier());
 		recordTempDir.mkdirs();
 		try {
-			List<URL> filesUrls = extractFilesUrls(aggregatorData.get());
-			List<File> filesToConvert = saveFilesInTempDirectory(filesUrls);
-			List<String> storedFilesIds = fs.storeFiles(record, convertFiles(filesToConvert));
-			record.setIiifManifest(getManifest(storedFilesIds).toString());
+			ConversionDataHolder conversionDataHolder = new ConversionDataHolder(aggregatorData.get());
+			saveFilesInTempDirectory(conversionDataHolder);
+			convertFiles(conversionDataHolder);
+			List<ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+					.filter(e -> e.outFile != null)
+					.collect(Collectors.toList());
+			List<String> storedFilesIds = fs.storeFiles(record, convertedFiles.stream().map(e -> e.outFile).collect(Collectors.toList()));
+
+			for (int i = 0; i < storedFilesIds.size(); i++)
+				convertedFiles.get(i).imageId = storedFilesIds.get(i);
+
+			record.setIiifManifest(getManifest(convertedFiles).toString());
 			recordsRepository.save(record);
 		} finally {
 			FileUtils.deleteDirectory(recordTempDir);
 		}
 	}
 
-	private List<URL> extractFilesUrls(JsonObject aggregatorData) {
-		String mainFileUrl = aggregatorData.get("isShownBy").getAsString().value();
-		String mainFileFormat = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
-
-		List<String> links = new ArrayList<>();
-		links.add(mainFileUrl);
-		if (aggregatorData.get("hasView") != null)
-			links.addAll(aggregatorData.get("hasView").getAsArray().stream()
-					.map(e -> e.getAsString().value())
-					.filter(s -> s.endsWith(mainFileFormat))
-					.collect(Collectors.toList()));
-
-		List<URL> result = new ArrayList<>();
-		for (String link : links) {
-			try {
-				result.add(new URL(link));
-			} catch (MalformedURLException e) {
-				logger.error("Incorrect file URL for record: {}, url: {}", record.getIdentifier(), link, e);
-			}
-		}
-
-		return result;
-	}
-
-	private List<File> saveFilesInTempDirectory(List<URL> filesUrls) throws ConversionException {
+	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
 		File tempDir = new File(conversionDirectory, record.getIdentifier() + "/src");
 		tempDir.mkdirs();
 
-		for (URL url : filesUrls) {
+		for (ConversionData data : dataHolder.fileObjects) {
+			if (data.srcFileUrl == null)
+				continue;
+
 			try {
-				String filePath = url.getPath();
+				String filePath = data.srcFileUrl.getPath();
 				String fileName = filePath.substring(filePath.lastIndexOf("/"));
 				File tempFile = new File(tempDir, fileName);
-				FileUtils.copyURLToFile(url, tempFile);
+				FileUtils.copyURLToFile(data.srcFileUrl, tempFile);
+				data.srcFile = tempFile;
 			} catch (IOException e) {
-				logger.error("Couldn't get file: {}", url.toString(), e);
+				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
+				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
 			}
-		}
-
-		if (tempDir.listFiles().length == 0) {
-			throw new ConversionException("Couldn't get even 1 file, conversion aborted!");
-		} else {
-			return Arrays.asList(tempDir.listFiles());
 		}
 	}
 
-	private List<File> convertFiles(List<File> filesToConvert) throws InterruptedException, IOException {
+	private void convertFiles(ConversionDataHolder dataHolder) throws InterruptedException, IOException, ConversionImpossibleException {
 		File outDir = new File(conversionDirectory, record.getIdentifier() + "/out");
 		outDir.mkdirs();
 
-		if (filesToConvert.get(0).getAbsolutePath().endsWith("pdf")) {
+		if (dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
-			File pdfFile = filesToConvert.get(0);
+			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
 				executor.runCommand(Arrays.asList(
 						pdfConversionScript,
@@ -139,35 +125,45 @@ public class Converter {
 				logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier());
 			}
 		} else {
-			for (File file : filesToConvert) {
+			for (ConversionData convData : dataHolder.fileObjects) {
+				if (convData.srcFile == null)
+					continue;
+
 				try {
 					executor.runCommand(Arrays.asList("vips",
 							"tiffsave",
-							file.getAbsolutePath(),
-							outDir.getAbsolutePath() + "/" + getTiffFileName(file),
+							convData.srcFile.getAbsolutePath(),
+							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile),
 							"--compression=jpeg",
 							"--Q=70",
 							"--tile",
 							"--tile-width=512",
 							"--tile-height=512",
 							"--pyramid"));
+
+					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile));
+					if (convertedFile.exists()) {
+						convData.outFile = convertedFile;
+					} else {
+						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+					}
 				} catch (ConversionException e) {
-					logger.error("Conversion failed for file: " + file.getName() + " from record: " + record.getIdentifier());
+					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 				}
 			}
 		}
-
-		return Arrays.asList(outDir.listFiles());
+		if(outDir.listFiles().length == 0)
+			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 	}
 
 	private String getTiffFileName(File file) {
 		return file.getName().split(".")[0] + ".tif";
 	}
 
-	private JsonObject getManifest(List<String> storedFilesIds) {
+	private JsonObject getManifest(List<ConversionData> storedFilesData) {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
-		manifest.put("@id", "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
+		manifest.put("@id", serverUrl + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 		manifest.put("@type", "sc:manifest");
 
 		JsonObject sequence = new JsonObject();
@@ -175,21 +171,21 @@ public class Converter {
 		sequences.add(sequence);
 		manifest.put("sequences", sequences);
 		sequence.put("@type", "sc:Sequence");
-		sequence.put("canvases", getSequenceJson(storedFilesIds));
+		sequence.put("canvases", getSequenceJson(storedFilesData));
 
 		return manifest;
 	}
 
-	private JsonArray getSequenceJson(List<String> storedFilesIds) {
+	private JsonArray getSequenceJson(List<ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
 
-		for (String imageId : storedFilesIds) {
+		for (ConversionData data : storedFilesData) {
 			JsonObject canvas = new JsonObject();
 			canvases.add(canvas);
 
-			canvas.put("@id", iiifImageServerUrl + "/canvas/" + imageId);
+			canvas.put("@id", iiifImageServerUrl + "/canvas/" + data.imageId);
 			canvas.put("@type", "sc:canvas");
-			canvas.put("label", imageId);
+			canvas.put("label", data.imageId);
 			canvas.put("width", "1000");
 			canvas.put("height", "1000");
 
@@ -204,16 +200,62 @@ public class Converter {
 			JsonObject resource = new JsonObject();
 			image.put("resource", resource);
 
-			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imageId + "/full/full/0/default.jpg");
+			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId + "/full/full/0/default.jpg");
+			data.json.put("manifestFileId", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId + "/full/full/0/default.jpg");
 			resource.put("@type", "dctypes:Image");
 			JsonObject service = new JsonObject();
 
-			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imageId);
+			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId);
 			service.put("@context", "http://iiif.io/api/image/2/context.json");
 			service.put("profile", "http://iiif.io/api/image/2/level1.json");
 		}
 
 		return canvases;
+	}
+
+	private class ConversionDataHolder {
+
+		List<ConversionData> fileObjects = new ArrayList<>();
+
+		ConversionDataHolder(JsonObject aggregatorData) {
+			ConversionData isShownBy = new ConversionData();
+			isShownBy.json = aggregatorData.get("isShownBy").getAsObject();
+			fileObjects.add(isShownBy);
+			String mainFileUrl = isShownBy.json.getAsString().value();
+			String mainFileFormat = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
+
+			if (aggregatorData.get("hasView") != null)
+				fileObjects.addAll(aggregatorData.get("hasView").getAsArray().stream()
+						.filter(e -> e.getAsString().value().endsWith(mainFileFormat))
+						.map(e -> {
+							ConversionData data = new ConversionData();
+							data.json = e.getAsObject();
+							return data;
+						})
+						.collect(Collectors.toList()));
+
+			initFileUrls();
+		}
+
+		void initFileUrls() {
+			for (ConversionData data : fileObjects) {
+				String url = data.json.getAsString().value();
+				try {
+					data.srcFileUrl = new URL(url);
+				} catch (MalformedURLException e) {
+					logger.error("Incorrect file URL for record: {}, url: {}", record.getIdentifier(), url, e);
+				}
+			}
+		}
+
+	}
+
+	private class ConversionData {
+		JsonObject json;
+		URL srcFileUrl;
+		File outFile;
+		File srcFile;
+		String imageId;
 	}
 
 }
