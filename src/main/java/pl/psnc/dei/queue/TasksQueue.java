@@ -6,10 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.exception.TaskCreationException;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.EnrichTask;
-import pl.psnc.dei.queue.task.Task;
-import pl.psnc.dei.queue.task.TranscribeTask;
-import pl.psnc.dei.queue.task.UpdateTask;
+import pl.psnc.dei.queue.task.*;
 import pl.psnc.dei.service.QueueRecordService;
 
 import java.time.Instant;
@@ -109,6 +106,8 @@ public class TasksQueue implements Runnable {
 				return new TranscribeTask(record);
 			case U_PENDING:
 				return new UpdateTask(record);
+			case C_PENDING:
+				return new ConversionTask(record);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
