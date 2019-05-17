@@ -2,10 +2,7 @@ package pl.psnc.dei.model;
 
 import org.apache.jena.atlas.json.JsonObject;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.persistence.ManyToOne;
+import javax.persistence.*;
 
 @Entity
 public class Transcription {
@@ -19,6 +16,7 @@ public class Transcription {
 	@ManyToOne
 	private Record record;
 
+	@Transient
 	private JsonObject transcriptionContent;
 
 	private String annotationId;

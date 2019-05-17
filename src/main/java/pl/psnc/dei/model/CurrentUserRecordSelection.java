@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -23,6 +24,7 @@ public class CurrentUserRecordSelection {
     private Project selectedProject;
     private Dataset selectedDataSet;
     private List<String> selectedRecordIds = new ArrayList<>();
+    private List<String> selectedRecordIdsForImport = new ArrayList<>();
 
     public Project getSelectedProject() {
         return selectedProject;
@@ -47,8 +49,16 @@ public class CurrentUserRecordSelection {
         return selectedRecordIds.contains(recordId);
     }
 
+    public boolean isRecordSelectedForImport(String recordId) {
+        return selectedRecordIdsForImport.contains(recordId);
+    }
+
     public List<String> getSelectedRecordIds() {
         return selectedRecordIds;
+    }
+
+    public List<String> getSelectedRecordIdsForImport() {
+        return Collections.unmodifiableList(selectedRecordIdsForImport);
     }
 
     public void addSelectedRecordId(String recordId) {
@@ -64,5 +74,20 @@ public class CurrentUserRecordSelection {
     public void clearSelectedRecords() {
         log.info("Removing all records");
         selectedRecordIds = new ArrayList<>();
+    }
+
+    public void addSelectedRecordIdForImport(String recordId) {
+        log.info("Adding new record id ({}) to import", recordId);
+        selectedRecordIdsForImport.add(recordId);
+    }
+
+    public void removeSelectedRecordIdForImport(String recordId) {
+        log.info("Removing record id ({}) from import", recordId);
+        selectedRecordIdsForImport.remove(recordId);
+    }
+
+    public void clearSelectedRecordsForImport() {
+        log.info("Removing all records from import");
+        selectedRecordIdsForImport = new ArrayList<>();
     }
 }

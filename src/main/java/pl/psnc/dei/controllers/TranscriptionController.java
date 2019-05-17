@@ -32,7 +32,7 @@ public class TranscriptionController {
 		}
 
 		try {
-			transcriptionPlatformService.createNewTranscribeTask(recordId);
+			transcriptionPlatformService.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);

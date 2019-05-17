@@ -21,7 +21,7 @@ public abstract class Task {
 		return record;
 	}
 
-	public abstract void process() throws Exception;
+	public abstract void process();
 
 	/**
 	 * Task states representing task processing progress for:
@@ -35,7 +35,6 @@ public abstract class Task {
 		E_SEND_ANNOTATION_IDS_TO_TP,
 
 		T_RETRIEVE_RECORD,
-		T_CONVERT_RECORD,
 		T_SEND_RESULT,
 
 		U_GET_TRANSCRIPTION_FROM_TP,
