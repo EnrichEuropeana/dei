@@ -31,10 +31,18 @@ import pl.psnc.dei.ui.components.SearchResultsComponent;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static pl.psnc.dei.ui.components.FacetComponent.DEFAULT_FACETS;
+
 
 @Route(value = "search", layout = MainView.class)
 @Secured(Role.OPERATOR)
 public class SearchPage extends HorizontalLayout implements HasUrlParameter<String>, BeforeLeaveObserver, AfterNavigationObserver {
+
+    public static final String QUERY_PARAM_NAME = "query";
+    public static final String QF_PARAM_NAME = "qf";
+    public static final String CURSOR_PARAM_NAME = "cursor";
+    public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
+
     private TextField search;
 
     private Checkbox searchOnlyIiif;
@@ -59,6 +67,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private Label noResults;
 
     private String originalLocation;
+
+    private static boolean onlyIiif = true;
 
     public SearchPage(
             SearchController searchController,
@@ -89,13 +99,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param query  query string
      * @param qf     query filter
      * @param cursor cursor
+     * @param otherParams other request parameters e.g. media, requsability
      * @return QueryParameters used by the search page
      */
-    public static QueryParameters prepareQueryParameters(String query, String qf, String cursor) {
+    public static QueryParameters prepareQueryParameters(String query, String qf, String cursor, Map<String, String> otherParams) {
         Map<String, List<String>> parameters = new HashMap<>();
-        addParameter("query", query, parameters);
-        addParameter("qf", qf, parameters);
-        addParameter("cursor", cursor, parameters);
+        addParameter(QUERY_PARAM_NAME, query, parameters);
+        addParameter(QF_PARAM_NAME, qf, parameters);
+        addParameter(CURSOR_PARAM_NAME, cursor, parameters);
+        addParameter(ONLY_IIIF_PARAM_NAME, String.valueOf(onlyIiif), parameters);
+        otherParams.forEach((s, s2) -> addParameter(s.toLowerCase(), s2, parameters));
         return new QueryParameters(parameters);
     }
 
@@ -173,6 +186,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private void createSearchOnlyIiifBox() {
         searchOnlyIiif = new Checkbox();
         searchOnlyIiif.setLabel("Search objects only available via IIIF");
+        searchOnlyIiif.addValueChangeListener(e -> setOnlyIiif(e.getValue()));
         searchOnlyIiif.setValue(true);
     }
 
@@ -254,13 +268,13 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.setPlaceholder("Search in Europeana");
         search.addKeyUpListener(Key.ENTER,
                 keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search",
-                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR, DEFAULT_FACETS))));
 
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
         searchButton.addClickListener(
                 e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search",
-                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR))));
+                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR, DEFAULT_FACETS))));
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
@@ -268,16 +282,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         return queryForm;
     }
 
-    private void search(String query, String qf, String cursor) {
+    private void search(String query, String qf, String cursor, Map<String, List<String>> requestParams) {
         if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
             ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
                     "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
                             + " selected but not added record(s). Record selection will be lost with next search query execution.",
-                    e -> executeSearch(query, qf, cursor));
+                    e -> executeSearch(query, qf, cursor, requestParams));
             dialog.addContent("Are you sure you want to continue?");
             dialog.open();
         } else {
-            executeSearch(query, qf, cursor);
+            executeSearch(query, qf, cursor, requestParams);
         }
     }
 
@@ -287,8 +301,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param query  query string
      * @param qf     query filter
      * @param cursor cursor
+     * @param requestParams other request parameters e.g. media, reusability
      */
-    private void executeSearch(String query, String qf, String cursor) {
+    private void executeSearch(String query, String qf, String cursor, Map<String, List<String>> requestParams) {
 		currentUserRecordSelection.clearSelectedRecords();
         if (query == null || query.isEmpty()) {
             resultsComponent.clear();
@@ -299,10 +314,10 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             if (search.isEmpty()) {
                 search.setValue(query);
             }
-            SearchResults results = resultsComponent.executeSearch(query, qf, cursor, searchOnlyIiif.getValue());
+            SearchResults results = resultsComponent.executeSearch(query, qf, cursor, onlyIiif, requestParams);
             if (results != null) {
                 facets.addFacets(results.getFacets());
-                facets.updateState(qf);
+                facets.updateState(qf, requestParams);
                 showFacets(true);
                 noResults.setVisible(results.getTotalResults() == 0);
             }
@@ -321,10 +336,21 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         QueryParameters queryParameters = location.getQueryParameters();
         if (queryParameters != null) {
             Map<String, List<String>> parametersMap = queryParameters.getParameters();
-            String query = getParameterValue(parametersMap.get("query"), true);
-            String qf = getParameterValue(parametersMap.get("qf"), false);
-            String cursor = getParameterValue(parametersMap.get("cursor"), true);
-            search(query, qf, cursor);
+            String query = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
+            String qf = getParameterValue(parametersMap.get(QF_PARAM_NAME), false);
+            String cursor = getParameterValue(parametersMap.get(CURSOR_PARAM_NAME), true);
+            String onlyIiifParam = getParameterValue(parametersMap.get(ONLY_IIIF_PARAM_NAME), true);
+            setOnlyIiif(onlyIiifParam == null || Boolean.parseBoolean(onlyIiifParam));
+            searchOnlyIiif.setValue(onlyIiif);
+            Map<String, List<String>> requestParams = new HashMap<>();
+            parametersMap.entrySet().stream()
+                    .filter(e -> {
+                                String key = e.getKey();
+                                return !(key.equalsIgnoreCase(QUERY_PARAM_NAME) || key.equalsIgnoreCase(QF_PARAM_NAME)
+                                        || key.equalsIgnoreCase(CURSOR_PARAM_NAME) || key.equalsIgnoreCase(ONLY_IIIF_PARAM_NAME));
+                            })
+                    .forEach(e -> requestParams.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).addAll(e.getValue()));
+            search(query, qf, cursor, requestParams);
         }
     }
 
@@ -348,7 +374,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         return null;
     }
 
-	@Override
+    public static void setOnlyIiif(boolean onlyIiif) {
+        SearchPage.onlyIiif = onlyIiif;
+    }
+
+    @Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
 		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());

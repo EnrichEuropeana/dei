@@ -15,6 +15,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class SearchService
@@ -46,13 +47,15 @@ extends RestRequestExecutor {
 
     /**
      * Execute search request. Note that cursor parameter must be URL encoded.
+	 *
      * @param query query string
      * @param queryFilter query filter
      * @param cursor cursor for next page of values
      * @param onlyIiif true to query only objects available via IIIF, false otherwise
+     * @param otherParams other request parameters e.g. media, reusability
      * @return response from search API associated with web client
      */
-    public Mono<SearchResponse> search(String query, String queryFilter, String cursor, boolean onlyIiif) {
+    public Mono<SearchResponse> search(String query, String queryFilter, String cursor, boolean onlyIiif, Map<String, String> otherParams) {
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
@@ -64,6 +67,9 @@ extends RestRequestExecutor {
                     }
                     if (onlyIiif) {
                         uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"));
+                    }
+                    if (!otherParams.isEmpty()) {
+                        otherParams.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, "UTF-8")));
                     }
                     return uriBuilder.queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
                             .build();

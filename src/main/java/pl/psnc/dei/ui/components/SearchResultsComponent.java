@@ -5,6 +5,7 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import org.springframework.util.LinkedMultiValueMap;
 import pl.psnc.dei.controllers.SearchController;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
@@ -17,6 +18,8 @@ import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
@@ -30,6 +33,9 @@ public class SearchResultsComponent extends VerticalLayout {
 
     // search only objects available via iiif
     private transient boolean onlyIiif;
+
+    // other request parameters
+    private transient Map<String, List<String>> requestParams;
 
     // search results container
     private transient SearchResults searchResults;
@@ -138,8 +144,8 @@ public class SearchResultsComponent extends VerticalLayout {
      * Execute facet search after a facet was selected or deselected. The current query string is used and the cursor is
      * set as for the first execution.
      */
-    public void executeFacetSearch(String qf) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR)));
+    public void executeFacetSearch(String qf, Map<String, String> requestParams) {
+        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR, requestParams)));
     }
 
     /**
@@ -149,19 +155,21 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param qf     query filter from facets
      * @param cursor cursor for a search
      * @param onlyIiif true to query only objects available via IIIF, false otherwise
+     * @param requestParams other request parameters e.g. media, reusability
      * @return search results object
      */
-    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif) {
+    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif, Map<String, List<String>> requestParams) {
         this.query = query;
         this.qf = qf;
         this.onlyIiif = onlyIiif;
         if (this.qf == null) {
             this.qf = "";
         }
+        this.requestParams = requestParams;
         searchResults.clear();
         recordTransferValidationCache.clear();
 
-        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif).block();
+        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
         if (result == null) {
             // we should show failure warning
             Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
@@ -201,7 +209,7 @@ public class SearchResultsComponent extends VerticalLayout {
             return;
         }
         while (++page <= newPage) {
-            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif).block();
+            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
             if (result == null) {
                 // redirect to error page
                 return;
