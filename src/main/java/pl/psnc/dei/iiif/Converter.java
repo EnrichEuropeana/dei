@@ -58,7 +58,7 @@ public class Converter {
 		this.recordJson = recordJson;
 	}
 
-	public void convertAndGenerateManifest() throws ConversionException, IOException, InterruptedException {
+	public void convertAndGenerateManifest() throws ConversionException {
 		Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(e -> e.get("isShownBy") != null)
@@ -82,9 +82,10 @@ public class Converter {
 				convertedFiles.get(i).imageId = storedFilesIds.get(i);
 
 			record.setIiifManifest(getManifest(convertedFiles).toString());
+			record.setState(Record.RecordState.T_PENDING);
 			recordsRepository.save(record);
 		} finally {
-			FileUtils.deleteDirectory(recordTempDir);
+			FileUtils.deleteQuietly(recordTempDir);
 		}
 	}
 
@@ -109,20 +110,20 @@ public class Converter {
 		}
 	}
 
-	private void convertFiles(ConversionDataHolder dataHolder) throws InterruptedException, IOException, ConversionImpossibleException {
+	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionImpossibleException {
 		File outDir = new File(conversionDirectory, record.getIdentifier() + "/out");
 		outDir.mkdirs();
 
 		if (dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
-			String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
+				String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
 				executor.runCommand(Arrays.asList(
 						pdfConversionScript,
 						pdfFile.getAbsolutePath(),
 						outDir.getAbsolutePath()));
-			} catch (ConversionException e) {
-				logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier());
+			} catch (ConversionException | InterruptedException | IOException e) {
+				logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier(), e);
 			}
 		} else {
 			for (ConversionData convData : dataHolder.fileObjects) {
@@ -147,12 +148,12 @@ public class Converter {
 					} else {
 						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
-				} catch (ConversionException e) {
+				} catch (ConversionException | InterruptedException | IOException e) {
 					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 				}
 			}
 		}
-		if(outDir.listFiles().length == 0)
+		if (outDir.listFiles().length == 0)
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 	}
 

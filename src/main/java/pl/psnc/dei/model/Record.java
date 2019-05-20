@@ -128,6 +128,7 @@ public class Record {
 	 * T_PENDING - Transcription process for given record is pending, records will be transferred from EU to TP
 	 * U_PENDING - Update process for given record annotations is pending
 	 * C_PENDING - Non IIIF record, needs to bo converted before sending to TP
+	 * C_FAILED - Record isn't in IIIF, and record conversion failed
 	 */
 	public enum RecordState {
 
