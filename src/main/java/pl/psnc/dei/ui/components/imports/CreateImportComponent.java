@@ -31,7 +31,7 @@ import java.util.Set;
 public class CreateImportComponent extends VerticalLayout {
 
 	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
-	private final CreateImportComponent.FieldFilter projectFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getProject().toString(), currentValue);
+	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getProject().toString(), currentValue);
 
 	private RecordsRepository recordsRepository;
 	private ImportPackageService importPackageService;
@@ -71,6 +71,7 @@ public class CreateImportComponent extends VerticalLayout {
 		} else {
 			this.projectsRepository = projectsRepository;
 			this.selectedRecordsForImport = new HashSet<>();
+			this.allRecords = new HashSet<>();
 			this.anImport = null;
 		}
 		createComponent();
@@ -173,6 +174,10 @@ public class CreateImportComponent extends VerticalLayout {
 		Button createButton = new Button("Create");
 		createButton.setEnabled(shouldShowCreateButton());
 		createButton.addClickListener(e -> {
+			if(selectedRecordsForImport.isEmpty()){
+				Notification.show("Import cannot be empty");
+				return;
+			}
 			importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
 		});
 		actionButtons.add(createButton);
@@ -180,6 +185,10 @@ public class CreateImportComponent extends VerticalLayout {
 		Button updateButton = new Button("Update");
 		updateButton.setEnabled(shouldShowUpdateButton());
 		updateButton.addClickListener(e -> {
+			if(selectedRecordsForImport.isEmpty()){
+				Notification.show("Import cannot be empty");
+				return;
+			}
 			importPackageService.updateImport(anImport, selectedRecordsForImport);
 		});
 		actionButtons.add(updateButton);
@@ -219,13 +228,13 @@ public class CreateImportComponent extends VerticalLayout {
 		recordsGrid.setDataProvider(dataProvider);
 
 		Grid.Column<Record> importIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("id").setSortable(true).setFlexGrow(10);
-		Grid.Column<Record> importProjectColumn = recordsGrid.addColumn(Record::getProject).setHeader("project").setSortable(true).setFlexGrow(10);
+		Grid.Column<Record> importDatasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("dataset").setSortable(true).setFlexGrow(10);
 
 		recordsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
 //
 		HeaderRow filterRow = recordsGrid.appendHeaderRow();
 		addFilter(dataProvider, filterRow, importIdColumn, importIdFilter);
-		addFilter(dataProvider, filterRow, importProjectColumn, projectFilter);
+		addFilter(dataProvider, filterRow, importDatasetColumn, datasetFilter);
 		//
 		recordsGrid.setColumnReorderingAllowed(true);
 		return recordsGrid;
