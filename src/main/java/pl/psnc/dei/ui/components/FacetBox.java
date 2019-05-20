@@ -71,7 +71,7 @@ public class FacetBox extends AccordionPanel {
      * @param fieldCheckbox clicked checkbox
      */
     private void handleFacetField(Checkbox fieldCheckbox) {
-        facetComponent.excuteFacetSearch(facet, values.get(fieldCheckbox).getLabel(), fieldCheckbox.getValue());
+        facetComponent.executeFacetSearch(facet, values.get(fieldCheckbox).getLabel(), fieldCheckbox.getValue());
     }
 
     /**

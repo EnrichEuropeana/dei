@@ -24,7 +24,19 @@ public class FacetComponent extends VerticalLayout {
     private SearchResultsComponent searchResultsComponent;
 
     // Filter query from facets
-    Map<String, List<String>> fq = new HashMap<>();
+    private Map<String, List<String>> fq = new HashMap<>();
+
+    // Facets that are separate request params
+    private Map<String, List<String>> facetParams = new HashMap<>();
+
+    public static final Map<String, String> DEFAULT_FACETS = new HashMap<>();
+
+    private static final String[] PARAM_FACETS = {"COLOURPALETTE", "LANDINGPAGE", "MEDIA", "REUSABILITY", "TEXT_FULLTEXT", "THUMBNAIL"};
+
+    static {
+        DEFAULT_FACETS.put("MEDIA", "true");
+        DEFAULT_FACETS.put("REUSABILITY", "open");
+    }
 
     public FacetComponent(SearchResultsComponent resultsComponent) {
         addClassName("facet-component");
@@ -66,18 +78,27 @@ public class FacetComponent extends VerticalLayout {
      * @param facetValue facet value
      * @param add indicator whether the value was selected or deselected
      */
-    public void excuteFacetSearch(String facet, String facetValue, boolean add) {
-        if (add) {
-            fq.computeIfAbsent(facet, k -> new ArrayList<>()).add(facetValue);
+    public void executeFacetSearch(String facet, String facetValue, boolean add) {
+
+        if (Arrays.asList(PARAM_FACETS).contains(facet.toUpperCase())) {
+            handleFacet(facet, facetValue, add, facetParams);
         } else {
-            if (fq.containsKey(facet)) {
-                fq.get(facet).remove(facetValue);
-                if (fq.get(facet).isEmpty()) {
-                    fq.remove(facet);
+            handleFacet(facet, facetValue, add, fq);
+        }
+        searchResultsComponent.executeFacetSearch(prepareQueryFilter(), prepareRequestParams());
+    }
+
+    private void handleFacet(String facet, String facetValue, boolean add, Map<String, List<String>> facets) {
+        if (add) {
+            facets.computeIfAbsent(facet, k -> new ArrayList<>()).add(facetValue);
+        } else {
+            if (facets.containsKey(facet)) {
+                facets.get(facet).remove(facetValue);
+                if (facets.get(facet).isEmpty()) {
+                    facets.remove(facet);
                 }
             }
         }
-        searchResultsComponent.executeFacetSearch(prepareQueryFilter());
     }
 
     /**
@@ -102,36 +123,86 @@ public class FacetComponent extends VerticalLayout {
     }
 
     /**
-     * Select the necessary facet value checkboxes based on the filter query
+     * Prepare request parameters where all selected values for the same facet are joined with comma
+     *
+     * @return request parameters collection
+     */
+    private Map<String, String> prepareRequestParams() {
+        Map<String, String> requestParams = new HashMap<>();
+
+        facetParams.forEach((s, strings) -> requestParams.put(s, String.join(",", strings)));
+
+        return requestParams;
+    }
+
+    /**
+     * Select the necessary facet value checkboxes based on the filter query and request parameters
      *
      * @param qf query filter
+     * @param requestParams other request parameters
      */
-    public void updateState(String qf) {
-        if (qf == null || qf.isEmpty()) {
-            fq.clear();
+    public void updateState(String qf, Map<String, List<String>> requestParams) {
+        handleQueryFilterString(qf);
+        handleRequestParams(requestParams);
+
+        if ((qf == null || qf.isEmpty()) && (requestParams == null || requestParams.isEmpty())) {
             selectedFacetsComponent.clear();
-            return;
         }
+    }
 
-        fq.clear();
+    /**
+     * Select the necessary facet checkboxes based on the filter query string
+     *
+     * @param qf query filter string
+     */
+    private void handleQueryFilterString(String qf) {
+        if (qf != null && !qf.isEmpty()) {
+            fq.clear();
 
-        List<String> filterQueries = Arrays.asList(qf.split(" AND "));
-        filterQueries.stream().map(String::trim).map(s -> removeTrailing(s, "(")).
-                map(s -> removeTrailing(s, ")")).forEach(s -> {
-            List<String> filterValues = Arrays.asList(s.split(" OR "));
-            filterValues.stream().map(String::trim).map(f -> removeTrailing(f, "(")).
-                    map(f -> removeTrailing(f, ")")).forEach(f -> {
-                int pos = f.indexOf(':');
-                if (pos != -1) {
-                    fq.computeIfAbsent(f.substring(0, pos), v -> new ArrayList<>()).add(removeTrailing(f.substring(pos + 1), "\""));
-                }
+            List<String> filterQueries = Arrays.asList(qf.split(" AND "));
+            filterQueries.stream().map(String::trim).map(s -> removeTrailing(s, "(")).
+                    map(s -> removeTrailing(s, ")")).forEach(s -> {
+                List<String> filterValues = Arrays.asList(s.split(" OR "));
+                filterValues.stream().map(String::trim).map(f -> removeTrailing(f, "(")).
+                        map(f -> removeTrailing(f, ")")).forEach(f -> {
+                    int pos = f.indexOf(':');
+                    if (pos != -1) {
+                        fq.computeIfAbsent(f.substring(0, pos), v -> new ArrayList<>()).add(removeTrailing(f.substring(pos + 1), "\""));
+                    }
+                });
             });
-        });
-        if (!fq.isEmpty()) {
-            fq.keySet().forEach(s -> {
-                facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equals(s)).forEach(facetBox -> facetBox.updateFacets(fq.get(s)));
-                selectedFacetsComponent.addSelectedValues(s, fq.get(s));
-            });
+            if (!fq.isEmpty()) {
+                fq.keySet().forEach(s -> {
+                    facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equals(s)).forEach(facetBox -> facetBox.updateFacets(fq.get(s)));
+                    selectedFacetsComponent.addSelectedValues(s, fq.get(s));
+                });
+            }
+        } else {
+            fq.clear();
+        }
+    }
+
+    /**
+     * Select the necessary facet checkboxes based on the request parameters collection
+     *
+     * @param requestParams request parameters collection
+     */
+    private void handleRequestParams(Map<String, List<String>> requestParams) {
+        if (requestParams != null && !requestParams.isEmpty()) {
+            facetParams.clear();
+            requestParams.forEach((key, value) -> value.forEach(v -> {
+                List<String> strings = Arrays.asList(v.split(","));
+                facetParams.computeIfAbsent(key.toUpperCase(), k -> new ArrayList<>()).addAll(strings);
+            }));
+
+            if (!facetParams.isEmpty()) {
+                facetParams.keySet().forEach(s -> {
+                    facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equalsIgnoreCase(s)).forEach(facetBox -> facetBox.updateFacets(facetParams.get(s)));
+                    selectedFacetsComponent.addSelectedValues(s, facetParams.get(s));
+                });
+            }
+        } else {
+            facetParams.clear();
         }
     }
 
