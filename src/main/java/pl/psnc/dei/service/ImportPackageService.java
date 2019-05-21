@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import com.google.common.collect.Sets;
 import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,10 +18,7 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
@@ -49,12 +47,33 @@ public class ImportPackageService extends RestRequestExecutor {
         return StringUtil.isNullOrEmpty(name) ? generateImportName(projectName) : name;
     }
 
+    public void updateImport(Import updatedImport, Set<Record> records) {
+        importsRepository.findById(updatedImport.getId()).ifPresent(oldImport -> {
+
+            Set<Record> oldRecords = recordsRepository.findAllByAnImport(updatedImport);
+            for(Record record: oldRecords){
+                record.setAnImport(null);
+                recordsRepository.save(record);
+            }
+
+            Set<Record> removed = Sets.difference(oldRecords, records);
+            Set<Record> addedToImport = Sets.difference(records, oldRecords);
+
+            for(Record record: removed) {
+                record.setAnImport(null);
+                recordsRepository.save(record);
+            }
+            updateRecords(addedToImport, oldImport);
+        });
+    }
+
+
     /**
      * @param projectId project id for searching candidates
      * @param datasetId dataset id (optional)
      * @return list of records which are candidates
      */
-    public List<Record> getCandidates(String projectId, String datasetId) {
+    public Set<Record> getCandidates(String projectId, String datasetId) {
         Project project = projectsRepository.findByProjectId(projectId);
         if (datasetId == null) {
             return recordsRepository.findAllByProjectAndAnImportNull(project);
@@ -71,7 +90,7 @@ public class ImportPackageService extends RestRequestExecutor {
      * @param projectId project id from which come records
      * @param records   list of records to assign to the import
      */
-    public Import createImport(String name, String projectId, List<Record> records) {
+    public Import createImport(String name, String projectId, Set<Record> records) {
         log.info("Creating import name {}, projectId {}, records {}", name, projectId, records);
         if (projectId == null) {
             throw new IllegalArgumentException("Project cannot be null");
@@ -145,7 +164,7 @@ public class ImportPackageService extends RestRequestExecutor {
         return ImportReport.from(anImport.getStatus(), new ArrayList<>(anImport.getFailures()));
     }
 
-    public Import addRecordsToImport(String importName, List<Record> records) throws NotFoundException {
+    public Import addRecordsToImport(String importName, Set<Record> records) throws NotFoundException {
         log.info("Adding records to import {}, records {}", importName, records);
         Import anImport = importsRepository.findImportByName(importName);
         if (anImport == null) {
@@ -155,7 +174,7 @@ public class ImportPackageService extends RestRequestExecutor {
         return anImport;
     }
 
-    private void updateRecords(List<Record> records, Import anImport) {
+    private void updateRecords(Set<Record> records, Import anImport) {
         records.forEach(record -> {
             record.setAnImport(anImport);
             recordsRepository.findById(record.getId()).ifPresent(r -> {
@@ -165,5 +184,4 @@ public class ImportPackageService extends RestRequestExecutor {
             });
         });
     }
-
 }
