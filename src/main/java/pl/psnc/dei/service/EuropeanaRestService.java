@@ -76,7 +76,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
                 .block();
 	}
 
-	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+	public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from europeana {}", recordId);
 		final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
 		final Model model = ModelFactory.createDefaultModel();

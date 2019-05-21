@@ -3,6 +3,7 @@ package pl.psnc.dei.service;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
@@ -239,4 +240,16 @@ public class TranscriptionPlatformService {
 		}
 	}
 
+	public JsonObject getManifest(String recordId) throws NotFoundException {
+		Optional<Record> oRecord = recordsRepository.findByIdentifier(recordId);
+		if(oRecord.isPresent()) {
+			Record record = oRecord.get();
+			if(StringUtils.isNotBlank(record.getIiifManifest())) {
+				return JSON.parse(record.getIiifManifest());
+			} else {
+				throw new NotFoundException("Manifest for record " + recordId + " doesn't exists!");
+			}
+		}
+		throw new NotFoundException("Record " + recordId + " not found!");
+	}
 }

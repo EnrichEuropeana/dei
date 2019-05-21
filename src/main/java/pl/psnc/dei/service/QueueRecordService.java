@@ -10,6 +10,7 @@ import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,7 +25,7 @@ public class QueueRecordService {
 	private TranscriptionRepository transcriptionRepository;
 
 	public List<Record> getRecordsToProcess() {
-		return recordsRepository.findAllByStateIsNot(Record.RecordState.NORMAL);
+		return recordsRepository.findAllByStateIsNotIn(Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED));
 	}
 
 	public void setNewStateForRecord(long recordId, Record.RecordState state) throws NotFoundException {
