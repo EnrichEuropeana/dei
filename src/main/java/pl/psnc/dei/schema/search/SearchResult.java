@@ -20,6 +20,11 @@ public class SearchResult {
 
     private String license;
 
+    /**
+     * URL to object on aggregator portal
+     */
+    private String sourceObjectURL;
+
 
     public String getId() {
         return id;
@@ -91,5 +96,13 @@ public class SearchResult {
 
     public void setLicense(String license) {
         this.license = license;
+    }
+
+    public String getSourceObjectURL() {
+        return sourceObjectURL;
+    }
+
+    public void setSourceObjectURL(String sourceObjectURL) {
+        this.sourceObjectURL = sourceObjectURL;
     }
 }

@@ -2,6 +2,7 @@ package pl.psnc.dei.ui.components;
 
 import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.checkbox.Checkbox;
+import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -133,7 +134,15 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		thumbnail.setSrc(searchResult.getImageURL());
 		thumbnail.addClassName("metadata-image");
 
-		thumbnailContainer.add(thumbnail);
+		String sourceObjectURL = searchResult.getSourceObjectURL();
+		if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
+			Anchor link = new Anchor(sourceObjectURL, thumbnail);
+			link.setTarget("_blank");
+			thumbnailContainer.add(link);
+		} else {
+			thumbnailContainer.add(thumbnail);
+		}
+
 		add(thumbnailContainer);
 	}
 
@@ -142,7 +151,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 */
 	private void createMetadataComponent() {
 		VerticalLayout metadata = new VerticalLayout();
-		createMetadataLine(metadata, TITLE_LABEL, searchResult.getTitle());
+		createTitleMetadataLine(metadata, searchResult.getTitle(), searchResult.getSourceObjectURL());
 		createMetadataLine(metadata, AUTHOR_LABEL, searchResult.getAuthor());
 		createMetadataLine(metadata, ISSUED_LABEL, searchResult.getIssued());
 		createMetadataLine(metadata, PROVIDER_LABEL, searchResult.getProvider());
@@ -168,6 +177,30 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		}
 
 		add(metadata);
+	}
+
+	/**
+	 * Creates a single line of the title metadata component. If possible title label will redirect to object on
+	 * aggregator portal
+	 *
+	 * @param metadata        metadata component the line will be added to
+	 * @param value           record title
+	 * @param sourceObjectURL URL to the object on aggregator portal
+	 */
+	private void createTitleMetadataLine(FlexComponent metadata, String value, String sourceObjectURL) {
+		if (value != null && !value.isEmpty()) {
+			if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
+				HorizontalLayout line = createLineWithMetadataLabel(TITLE_LABEL);
+				Label valueLabel = new Label(value);
+				Anchor link = new Anchor(sourceObjectURL, valueLabel);
+				link.setTarget("_blank");
+				line.add(link);
+				line.expand(link);
+				metadata.add(line);
+			} else {
+				createMetadataLine(metadata, TITLE_LABEL, value);
+			}
+		}
 	}
 
 	/**
