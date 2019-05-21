@@ -7,9 +7,7 @@ import org.springframework.context.annotation.ScopedProxyMode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.WebApplicationContext;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * Stores information about currently selected project, dataset and records;
@@ -23,7 +21,7 @@ public class CurrentUserRecordSelection {
 
     private Project selectedProject;
     private Dataset selectedDataSet;
-    private List<String> selectedRecordIds = new ArrayList<>();
+    private Set<String> selectedRecordIds = new HashSet<>();
     private List<String> selectedRecordIdsForImport = new ArrayList<>();
 
     public Project getSelectedProject() {
@@ -53,7 +51,7 @@ public class CurrentUserRecordSelection {
         return selectedRecordIdsForImport.contains(recordId);
     }
 
-    public List<String> getSelectedRecordIds() {
+    public Set<String> getSelectedRecordIds() {
         return selectedRecordIds;
     }
 
@@ -62,18 +60,18 @@ public class CurrentUserRecordSelection {
     }
 
     public void addSelectedRecordId(String recordId) {
-        log.info("Adding new record id ({}) to selected records list", recordId);
+        log.info("Adding new record id ({}) to selected records set", recordId);
         selectedRecordIds.add(recordId);
     }
 
     public void removeSelectedRecordId(String recordId) {
-        log.info("Removing record id ({}) from selected records list", recordId);
+        log.info("Removing record id ({}) from selected records set", recordId);
         selectedRecordIds.remove(recordId);
     }
 
     public void clearSelectedRecords() {
         log.info("Removing all records");
-        selectedRecordIds = new ArrayList<>();
+        selectedRecordIds = new HashSet<>();
     }
 
     public void addSelectedRecordIdForImport(String recordId) {

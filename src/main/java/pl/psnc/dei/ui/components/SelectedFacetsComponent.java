@@ -37,7 +37,7 @@ public class SelectedFacetsComponent extends HorizontalLayout {
             button.addClickListener(buttonClickEvent -> {
                 selectedValues.get(s).remove(v);
                 remove(button);
-                facetComponent.excuteFacetSearch(s, v, false);
+                facetComponent.executeFacetSearch(s, v, false);
             });
             button.setIconAfterText(false);
             add(button);
