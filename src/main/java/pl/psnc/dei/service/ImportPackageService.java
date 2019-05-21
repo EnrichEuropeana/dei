@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import com.google.common.collect.Sets;
 import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,11 +56,8 @@ public class ImportPackageService extends RestRequestExecutor {
                 recordsRepository.save(record);
             }
 
-            Set<Record> removed = new HashSet<>(oldRecords);
-            removed.removeAll(records);
-
-            Set<Record> addedToImport = new HashSet<>(records);
-            addedToImport.removeAll(oldRecords);
+            Set<Record> removed = Sets.difference(oldRecords, records);
+            Set<Record> addedToImport = Sets.difference(records, oldRecords);
 
             for(Record record: removed) {
                 record.setAnImport(null);

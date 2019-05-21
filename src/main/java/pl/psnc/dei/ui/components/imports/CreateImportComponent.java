@@ -6,6 +6,8 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Input;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -22,6 +24,7 @@ import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -88,6 +91,7 @@ public class CreateImportComponent extends VerticalLayout {
 			this.project = project;
 			allRecords = recordsRepository.findAllByProjectAndAnImportNull(project);
 			selectedRecordsForImport = new HashSet<>();
+			importName.setValue(ImportNameCreatorUtil.generateImportName(project.getName()));
 			refresh();
 		});
 		HorizontalLayout projectSelectionLayout = new HorizontalLayout();
@@ -104,6 +108,7 @@ public class CreateImportComponent extends VerticalLayout {
 			remove(actionButtons);
 		}
 		switchingTables = new HorizontalLayout();
+		switchingTables.setWidthFull();
 		allRecordsGrid = generateRecordsGrid(allRecords);
 		switchingTables.add(allRecordsGrid);
 		switchingTables.add(generateSwitchingButtons());
@@ -115,11 +120,11 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private void createComponent() {
+		setWidthFull();
 		if (anImport == null) {
 			add(createProjectSelection());
 			HorizontalLayout importNameLayout = new HorizontalLayout();
 			importName = new Input();
-			importName.setPlaceholder("select import name");
 			importNameLayout.add(new Label("Import name"));
 			importNameLayout.add(importName);
 			add(importNameLayout);
@@ -148,7 +153,7 @@ public class CreateImportComponent extends VerticalLayout {
 	private Component generateSwitchingButtons() {
 		VerticalLayout switchingButtons = new VerticalLayout();
 		switchingButtons.setMaxWidth("100px");
-		Button addToSelected = new Button("->");
+		Button addToSelected = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_RIGHT));
 		addToSelected.addClickListener(e -> {
 			List<Record> waitingForMovingToSelected = new ArrayList<>(allRecordsGrid.getSelectionModel().getSelectedItems());
 			selectedRecordsForImport.addAll(waitingForMovingToSelected);
@@ -157,7 +162,7 @@ public class CreateImportComponent extends VerticalLayout {
 		});
 		switchingButtons.add(addToSelected);
 
-		Button moveFromSelectedToAll = new Button("<-");
+		Button moveFromSelectedToAll = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_LEFT));
 		moveFromSelectedToAll.addClickListener(e -> {
 			List<Record> waitingForMovingToAll = new ArrayList<>(selectedRecordsGrid.getSelectionModel().getSelectedItems());
 			allRecords.addAll(waitingForMovingToAll);
@@ -222,8 +227,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private Grid<Record> generateRecordsGrid(Set<Record> records) {
 		Grid<Record> recordsGrid = new Grid<>();
-		recordsGrid.setWidth("600px");
-		//
+		recordsGrid.setWidthFull();
 		ListDataProvider<Record> dataProvider = new ListDataProvider<>(records);
 		recordsGrid.setDataProvider(dataProvider);
 

@@ -27,7 +27,7 @@ public class ImportNavigationMenu extends VerticalLayout {
 		label.addClassName("metadata-label");
 		layout.add(label);
 		layout.add(createElement(new Button("Create import"), e -> {
-			importPage.createImportCreate();
+			importPage.createImportPage();
 		}));
 		layout.add(createElement(new Button("List imports"), e -> {
 			importPage.createListImports();

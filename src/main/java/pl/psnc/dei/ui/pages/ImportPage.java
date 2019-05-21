@@ -57,7 +57,7 @@ public class ImportPage extends HorizontalLayout {
 		add(displayingPlace);
 	}
 
-	public void createImportCreate() {
+	public void createImportPage() {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
