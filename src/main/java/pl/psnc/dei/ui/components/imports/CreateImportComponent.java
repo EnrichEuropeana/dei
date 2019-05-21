@@ -160,6 +160,7 @@ public class CreateImportComponent extends VerticalLayout {
 			allRecords.removeAll(waitingForMovingToSelected);
 			refresh();
 		});
+		addToSelected.setEnabled(shouldBeReadOnly());
 		switchingButtons.add(addToSelected);
 
 		Button moveFromSelectedToAll = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_LEFT));
@@ -170,7 +171,12 @@ public class CreateImportComponent extends VerticalLayout {
 			refresh();
 		});
 		switchingButtons.add(moveFromSelectedToAll);
+		moveFromSelectedToAll.setEnabled(shouldBeReadOnly());
 		return switchingButtons;
+	}
+
+	private boolean shouldBeReadOnly() {
+		return !(anImport != null && ImportStatus.SENT == anImport.getStatus());
 	}
 
 	private Component generateActionButtons() {
@@ -218,7 +224,7 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private boolean shouldShowUpdateButton() {
-		return anImport != null && !(ImportStatus.IN_PROGRESS.equals(anImport.getStatus()) && ImportStatus.SENT.equals(anImport.getStatus()));
+		return anImport != null && !(ImportStatus.IN_PROGRESS.equals(anImport.getStatus()) || ImportStatus.SENT.equals(anImport.getStatus()));
 	}
 
 	private boolean shouldShowCreateButton() {
