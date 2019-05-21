@@ -99,7 +99,8 @@ public class Converter {
 
 			try {
 				String filePath = data.srcFileUrl.getPath();
-				String fileName = filePath.substring(filePath.lastIndexOf("/"));
+				filePath = filePath.endsWith("/") ? filePath.substring(0, filePath.length() - 1) : filePath;
+				String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
 				File tempFile = new File(tempDir, fileName);
 				FileUtils.copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
@@ -114,7 +115,8 @@ public class Converter {
 		File outDir = new File(conversionDirectory, record.getIdentifier() + "/out");
 		outDir.mkdirs();
 
-		if (dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
+		if (!dataHolder.fileObjects.isEmpty() && dataHolder.fileObjects.get(0).srcFile != null
+				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
 				String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
