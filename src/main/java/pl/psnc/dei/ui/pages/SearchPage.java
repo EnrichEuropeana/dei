@@ -270,6 +270,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search = new TextField();
         search.addClassName("search-field");
         search.setPlaceholder("Search in Europeana");
+        search.setAutofocus(true);
         search.addKeyUpListener(Key.ENTER,
                 keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search",
                         prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR, DEFAULT_FACETS))));
