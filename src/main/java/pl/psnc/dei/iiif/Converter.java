@@ -41,9 +41,6 @@ public class Converter {
 	@Autowired
 	private RecordsRepository recordsRepository;
 
-	@Autowired
-	private FilesStore fs;
-
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
@@ -53,9 +50,22 @@ public class Converter {
 	@Value("${application.server.url}")
 	private String serverUrl;
 
+	private final File srcDir;
+
+	private final File outDir;
+
 	public Converter(Record record, JsonObject recordJson) {
 		this.record = record;
 		this.recordJson = recordJson;
+		String imagePath = record.getProject().getProjectId() + "/"
+				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+				+ record.getIdentifier();
+
+		srcDir = new File(conversionDirectory, "/src/" + imagePath);
+		srcDir.mkdirs();
+
+		outDir = new File(conversionDirectory, "/out/" + imagePath);
+		outDir.mkdirs();
 	}
 
 	public void convertAndGenerateManifest() throws ConversionException {
@@ -67,8 +77,6 @@ public class Converter {
 		if (!aggregatorData.isPresent())
 			throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 
-		File recordTempDir = new File(conversionDirectory, record.getIdentifier());
-		recordTempDir.mkdirs();
 		try {
 			ConversionDataHolder conversionDataHolder = new ConversionDataHolder(aggregatorData.get());
 			saveFilesInTempDirectory(conversionDataHolder);
@@ -76,23 +84,19 @@ public class Converter {
 			List<ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 					.filter(e -> e.outFile != null)
 					.collect(Collectors.toList());
-			List<String> storedFilesIds = fs.storeFiles(record, convertedFiles.stream().map(e -> e.outFile).collect(Collectors.toList()));
-
-			for (int i = 0; i < storedFilesIds.size(); i++)
-				convertedFiles.get(i).imageId = storedFilesIds.get(i);
 
 			record.setIiifManifest(getManifest(convertedFiles).toString());
 			record.setState(Record.RecordState.T_PENDING);
 			recordsRepository.save(record);
+		} catch (Exception e) {
+			FileUtils.deleteQuietly(outDir);
+			throw e;
 		} finally {
-			FileUtils.deleteQuietly(recordTempDir);
+			FileUtils.deleteQuietly(srcDir);
 		}
 	}
 
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
-		File tempDir = new File(conversionDirectory, record.getIdentifier() + "/src");
-		tempDir.mkdirs();
-
 		for (ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
 				continue;
@@ -101,7 +105,7 @@ public class Converter {
 				String filePath = data.srcFileUrl.getPath();
 				filePath = filePath.endsWith("/") ? filePath.substring(0, filePath.length() - 1) : filePath;
 				String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
-				File tempFile = new File(tempDir, fileName);
+				File tempFile = new File(srcDir, fileName);
 				FileUtils.copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
 			} catch (IOException e) {
@@ -112,10 +116,7 @@ public class Converter {
 	}
 
 	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionImpossibleException {
-		File outDir = new File(conversionDirectory, record.getIdentifier() + "/out");
-		outDir.mkdirs();
-
-		if (!dataHolder.fileObjects.isEmpty() && dataHolder.fileObjects.get(0).srcFile != null
+		if (dataHolder.fileObjects.get(0).srcFile != null
 				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
@@ -147,6 +148,10 @@ public class Converter {
 					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile));
 					if (convertedFile.exists()) {
 						convData.outFile = convertedFile;
+						convData.imagePath = record.getProject().getProjectId() + "/"
+								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+								+ record.getIdentifier() + "/"
+								+ getTiffFileName(convData.srcFile);
 					} else {
 						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
@@ -186,9 +191,9 @@ public class Converter {
 			JsonObject canvas = new JsonObject();
 			canvases.add(canvas);
 
-			canvas.put("@id", iiifImageServerUrl + "/canvas/" + data.imageId);
+			canvas.put("@id", iiifImageServerUrl + "/canvas/" + data.imagePath);
 			canvas.put("@type", "sc:canvas");
-			canvas.put("label", data.imageId);
+			canvas.put("label", data.imagePath);
 			canvas.put("width", "1000");
 			canvas.put("height", "1000");
 
@@ -203,12 +208,12 @@ public class Converter {
 			JsonObject resource = new JsonObject();
 			image.put("resource", resource);
 
-			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId + "/full/full/0/default.jpg");
-			data.json.put("manifestFileId", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId + "/full/full/0/default.jpg");
+			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath + "/full/full/0/default.jpg");
+			data.json.put("manifestFileId", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath + "/full/full/0/default.jpg");
 			resource.put("@type", "dctypes:Image");
 			JsonObject service = new JsonObject();
 
-			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imageId);
+			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath);
 			service.put("@context", "http://iiif.io/api/image/2/context.json");
 			service.put("profile", "http://iiif.io/api/image/2/level1.json");
 		}
@@ -258,7 +263,7 @@ public class Converter {
 		URL srcFileUrl;
 		File outFile;
 		File srcFile;
-		String imageId;
+		String imagePath;
 	}
 
 }
