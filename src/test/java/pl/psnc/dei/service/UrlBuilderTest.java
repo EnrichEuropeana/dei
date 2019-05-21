@@ -13,10 +13,10 @@ public class UrlBuilderTest {
         ReflectionTestUtils.setField(urlBuilder, "transcriptionPlatformLocation", "sampleUrl");
 
         Assert.assertEquals("sampleUrl", urlBuilder.getBaseUrl());
-        Assert.assertEquals("sampleUrl/Project/all", urlBuilder.urlForAllProjects());
+        Assert.assertEquals("sampleUrl/projects", urlBuilder.urlForAllProjects());
         Project project = new Project();
         project.setProjectId("sampleProjectID");
-        Assert.assertEquals("sampleUrl/Dataset/search?ProjectId=sampleProjectID", urlBuilder.urlForProjectDatasets(project));
+        Assert.assertEquals("sampleUrl/datasets?ProjectId=sampleProjectID", urlBuilder.urlForProjectDatasets(project));
 
     }
 }

@@ -9,16 +9,16 @@ import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class UpdateTask extends Task {
 
 	@Autowired
-	private static TranscriptionPlatformService transcriptionPlatformService;
+	private TranscriptionPlatformService tps;
 
 	@Autowired
-	private static EuropeanaRestService europeanaRestService;
+	private EuropeanaRestService ers;
 
 	/**
 	 * It is possible that there will be more than 1 transcription update pending, so it has to be list, that situation
@@ -28,11 +28,12 @@ public class UpdateTask extends Task {
 
 	public UpdateTask(Record record) throws TaskCreationException {
 		super(record);
-		if(record.getTranscriptions().isEmpty()) {
+		if (record.getTranscriptions().isEmpty()) {
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
 			} catch (NotFoundException e) {
-//				Actually, this is impossible
+				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+						+ ", identifier: " + record.getIdentifier(), e);
 			}
 			throw new TaskCreationException("Database inconsistency, update pending task has to have at" +
 					" least one transcription! Changing state to normal. Record identifier: " + record.getIdentifier());
@@ -47,31 +48,35 @@ public class UpdateTask extends Task {
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
 
-		transcriptions = new ArrayList<>();
-		transcriptions.add(newTranscription);
+		transcriptions = Arrays.asList(newTranscription);
 
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 	}
 
 	@Override
-	public void process() throws Exception {
+	public void process() {
 		switch (state) {
 			case U_GET_TRANSCRIPTION_FROM_TP:
-				for(Transcription t : transcriptions) {
-					JsonObject tContent = transcriptionPlatformService.fetchTranscriptionUpdate(t);
-//					t.setContent(tContent);
+				for (Transcription t : transcriptions) {
+					JsonObject tContent = tps.fetchTranscriptionUpdate(t);
+					t.setTranscriptionContent(tContent);
 				}
 				state = TaskState.U_HANDLE_TRANSCRIPTION;
 			case U_HANDLE_TRANSCRIPTION:
-				for(Transcription t : transcriptions) {
-					europeanaRestService.updateTranscription(t);
+				for (Transcription t : transcriptions) {
+					ers.updateTranscription(t);
 					record.getTranscriptions().remove(t);
 					queueRecordService.saveRecord(record);
 				}
 
-				if(record.getTranscriptions().isEmpty())
-					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
+				if (record.getTranscriptions().isEmpty()) {
+					try {
+						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
+					} catch (NotFoundException e) {
+//						Actually, this is not possible
+					}
+				}
 		}
 	}
 }

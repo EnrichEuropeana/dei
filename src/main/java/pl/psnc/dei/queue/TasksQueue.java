@@ -6,17 +6,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.exception.TaskCreationException;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.EnrichTask;
-import pl.psnc.dei.queue.task.Task;
-import pl.psnc.dei.queue.task.TranscribeTask;
-import pl.psnc.dei.queue.task.UpdateTask;
+import pl.psnc.dei.queue.task.*;
 import pl.psnc.dei.service.QueueRecordService;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
 @Component
@@ -24,7 +21,7 @@ public class TasksQueue implements Runnable {
 
 	private static Logger logger = LoggerFactory.getLogger(TasksQueue.class);
 
-	private Queue<Task> tasks = new ConcurrentLinkedQueue<>();
+	private BlockingQueue<Task> tasks = new LinkedBlockingQueue<>();
 
 	private long lastSuccessfulTask = System.currentTimeMillis();
 
@@ -37,11 +34,8 @@ public class TasksQueue implements Runnable {
 
 	private static long HOUR = 60 * 60 * 1000;
 
-	private QueueRecordService queueRecordService;
-
 	@Autowired
 	public TasksQueue(QueueRecordService queueRecordService) {
-		this.queueRecordService = queueRecordService;
 		for (Record record : queueRecordService.getRecordsToProcess()) {
 			try {
 				tasks.add(createTask(record));
@@ -55,19 +49,13 @@ public class TasksQueue implements Runnable {
 	public void run() {
 		while (true) {
 			try {
-				Task task = tasks.poll();
-				if (task == null) {
-					synchronized (this) {
-						this.wait();
-					}
-				} else {
-					try {
-						task.process();
-						processingSuccessful();
-					} catch (Exception e) {
-						tasks.add(task);
-						processingFailed();
-					}
+				Task task = tasks.take();
+				try {
+					task.process();
+					processingSuccessful();
+				} catch (Exception e) {
+					tasks.add(task);
+					processingFailed(e);
 				}
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
@@ -82,10 +70,11 @@ public class TasksQueue implements Runnable {
 		waitingTime = 0;
 	}
 
-	private void processingFailed() throws InterruptedException {
+	private void processingFailed(Exception e) throws InterruptedException {
 		failsCount++;
+		logger.error("Task processing failed...", e);
+		logQueueState();
 		if (failsCount > 5) {
-			logQueueState();
 			if (waitingTime == 0) {
 				waitingTime = HOUR;
 			} else if (waitingTime == HOUR) {
@@ -97,9 +86,8 @@ public class TasksQueue implements Runnable {
 		}
 	}
 
-	public synchronized void addToQueue(Task task) {
+	public void addToQueue(Task task) {
 		tasks.add(task);
-		notifyAll();
 	}
 
 	private void logQueueState() {
@@ -118,6 +106,8 @@ public class TasksQueue implements Runnable {
 				return new TranscribeTask(record);
 			case U_PENDING:
 				return new UpdateTask(record);
+			case C_PENDING:
+				return new ConversionTask(record);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");

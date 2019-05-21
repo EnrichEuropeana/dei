@@ -22,7 +22,7 @@ public class ImportController {
 		this.importService = importService;
 	}
 
-	@PostMapping("import")
+	@PostMapping("/import")
 	public ResponseEntity<Import> createImport(@RequestParam(value = "projectId") String projectId, @RequestParam(value = "name", required = false) String name, @RequestBody Set<Record> records) {
 		return new ResponseEntity<>(importService.createImport(name, projectId, records), HttpStatus.OK);
 	}

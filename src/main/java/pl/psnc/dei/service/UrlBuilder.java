@@ -15,8 +15,8 @@ import pl.psnc.dei.model.Transcription;
 public class UrlBuilder {
 
 
-    private static final String ALL_PROJECTS_SUFFIX = "/Project/all";
-    private static final String DATASETS_SEARCH_SUFFIX = "/Dataset/search";
+    private static final String ALL_PROJECTS_SUFFIX = "/projects";
+    private static final String DATASETS_SEARCH_SUFFIX = "/datasets";
     private static final String IMPORTS_ADD_SUFFIX = "/";
     private static final String RECORDS_SUFFIX = "/records";
     private static final String TRANSCRIPTIONS_SUFFIX = "/transcription";

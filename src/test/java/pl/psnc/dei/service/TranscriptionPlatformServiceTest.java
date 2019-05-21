@@ -46,6 +46,9 @@ public class TranscriptionPlatformServiceTest {
     @MockBean
     private RecordsRepository recordsRepository;
 
+    @MockBean
+    private TasksQueueService tasksQueueService;
+
     @TestConfiguration
     static class TranscriptionPlatformServiceContextConfiguration {
 

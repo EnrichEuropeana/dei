@@ -1,18 +1,25 @@
 package pl.psnc.dei.ui.pages;
 
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
+import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.queue.task.TranscribeTask;
+import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.ImportsHistoryService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.imports.CreateImportComponent;
 import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
 import pl.psnc.dei.ui.components.imports.ImportsListComponent;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Page for import generation.

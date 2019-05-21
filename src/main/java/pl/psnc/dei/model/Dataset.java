@@ -27,7 +27,7 @@ public class Dataset implements Serializable {
     @ManyToOne(cascade = CascadeType.ALL)
     private Project project;
 
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "dataset")
+    @OneToMany(cascade = CascadeType.MERGE, fetch = FetchType.LAZY, mappedBy = "dataset")
     private List<Record> records;
 
     public String getDatasetId() {

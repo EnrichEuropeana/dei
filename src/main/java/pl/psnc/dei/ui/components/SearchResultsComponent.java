@@ -1,47 +1,41 @@
 package pl.psnc.dei.ui.components;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.dependency.StyleSheet;
-import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
-import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import org.springframework.util.LinkedMultiValueMap;
 import pl.psnc.dei.controllers.SearchController;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 12;
-
-    private static final String AUTHOR_LABEL = "Author:";
-
-    private static final String TITLE_LABEL = "Title:";
-
-    private static final String ISSUED_LABEL = "Issued:";
-
-    private static final String PROVIDER_LABEL = "Provider institution:";
-
-    private static final String FORMAT_LABEL = "Format:";
-
-    private static final String LANGUAGE_LABEL = "Language:";
-
-    private static final String LICENSE_LABEL = "License:";
 
     // query string
     private transient String query;
 
     // query filter
     private transient String qf;
+
+    // search only objects available via iiif
+    private transient boolean onlyIiif;
+
+    // other request parameters
+    private transient Map<String, List<String>> requestParams;
 
     // search results container
     private transient SearchResults searchResults;
@@ -63,10 +57,22 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private CurrentUserRecordSelection currentUserRecordSelection;
 
+    private EuropeanaRestService europeanaRestService;
+
+    private UIPollingManager uiPollingManager;
+
+    private RecordTransferValidationCache recordTransferValidationCache;
+
     public SearchResultsComponent(SearchController searchController,
-                                  CurrentUserRecordSelection currentUserRecordSelection) {
+                                  CurrentUserRecordSelection currentUserRecordSelection,
+                                  EuropeanaRestService europeanaRestService,
+                                  UIPollingManager uiPollingManager,
+                                  RecordTransferValidationCache recordTransferValidationCache) {
         this.searchController = searchController;
         this.currentUserRecordSelection = currentUserRecordSelection;
+        this.europeanaRestService = europeanaRestService;
+        this.uiPollingManager = uiPollingManager;
+        this.recordTransferValidationCache = recordTransferValidationCache;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -121,7 +127,9 @@ public class SearchResultsComponent extends VerticalLayout {
             }
             resultsCount.setText(prepareResultsText());
             resultsList.removeAll();
-            searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, currentUserRecordSelection.isRecordSelected(searchResult.getId()))));
+            searchResults.getResults().forEach(searchResult ->
+					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService,
+                            uiPollingManager, recordTransferValidationCache, searchResult)));
         }
     }
 
@@ -136,8 +144,8 @@ public class SearchResultsComponent extends VerticalLayout {
      * Execute facet search after a facet was selected or deselected. The current query string is used and the cursor is
      * set as for the first execution.
      */
-    public void executeFacetSearch(String qf) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR)));
+    public void executeFacetSearch(String qf, Map<String, String> requestParams) {
+        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR, requestParams)));
     }
 
     /**
@@ -146,17 +154,22 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param query  query entered by the user
      * @param qf     query filter from facets
      * @param cursor cursor for a search
+     * @param onlyIiif true to query only objects available via IIIF, false otherwise
+     * @param requestParams other request parameters e.g. media, reusability
      * @return search results object
      */
-    public SearchResults executeSearch(String query, String qf, String cursor) {
+    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif, Map<String, List<String>> requestParams) {
         this.query = query;
         this.qf = qf;
+        this.onlyIiif = onlyIiif;
         if (this.qf == null) {
             this.qf = "";
         }
+        this.requestParams = requestParams;
         searchResults.clear();
+        recordTransferValidationCache.clear();
 
-        SearchResponse result = searchController.search(query, qf, cursor).block();
+        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
         if (result == null) {
             // we should show failure warning
             Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
@@ -196,7 +209,7 @@ public class SearchResultsComponent extends VerticalLayout {
             return;
         }
         while (++page <= newPage) {
-            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor()).block();
+            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
             if (result == null) {
                 // redirect to error page
                 return;
@@ -285,90 +298,6 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     /**
-     * Create a single result component
-     *
-     * @param searchResult search result from which all the data is retrieved
-     * @return created component
-     */
-    private Component createResultComponent(SearchResult searchResult, boolean isSelected) {
-        HorizontalLayout resultComponent = new HorizontalLayout();
-        resultComponent.addClassName("search-result-element");
-        resultComponent.setSizeFull();
-        resultComponent.setDefaultVerticalComponentAlignment(Alignment.CENTER);
-        Checkbox checkbox = new Checkbox();
-        checkbox.setId(searchResult.getId());
-        checkbox.addClassName("search-result-checkbox");
-        checkbox.setValue(isSelected);
-        checkbox.addValueChangeListener(event -> {
-            if (event.getValue()) {
-                currentUserRecordSelection.addSelectedRecordId(event.getSource().getId().get());
-            } else {
-                currentUserRecordSelection.removeSelectedRecordId(event.getSource().getId().get());
-            }
-        });
-        resultComponent.add(checkbox);
-        Image image = createImage(searchResult);
-        resultComponent.add(image);
-        resultComponent.add(createMetadataComponent(searchResult));
-        return resultComponent;
-    }
-
-    /**
-     * Create metadata component which is part of the result component
-     *
-     * @param searchResult source of the metadata
-     * @return created component
-     */
-    private Component createMetadataComponent(SearchResult searchResult) {
-        VerticalLayout metadata = new VerticalLayout();
-        createMetadataLine(metadata, TITLE_LABEL, searchResult.getTitle());
-        createMetadataLine(metadata, AUTHOR_LABEL, searchResult.getAuthor());
-        createMetadataLine(metadata, ISSUED_LABEL, searchResult.getIssued());
-        createMetadataLine(metadata, PROVIDER_LABEL, searchResult.getProvider());
-        createMetadataLine(metadata, FORMAT_LABEL, searchResult.getFormat());
-        createMetadataLine(metadata, LANGUAGE_LABEL, searchResult.getLanguage());
-        createMetadataLine(metadata, LICENSE_LABEL, searchResult.getLicense());
-        return metadata;
-    }
-
-    /**
-     * Create a single line of the metadata component
-     *
-     * @param metadata metadata component where the line will be added
-     * @param label    label of the attribute
-     * @param value    value of the attribute
-     */
-    private void createMetadataLine(FlexComponent metadata, String label, String value) {
-        if (value != null && !value.isEmpty()) {
-            HorizontalLayout line = new HorizontalLayout();
-            line.addClassName("metadata-line");
-            line.setPadding(false);
-            line.setVerticalComponentAlignment(Alignment.START);
-            Label name = new Label(label);
-            name.addClassName("metadata-label");
-            line.add(name);
-            Label valueLabel = new Label(value);
-            line.add(valueLabel);
-            line.expand(valueLabel);
-            metadata.add(line);
-        }
-    }
-
-    /**
-     * Create thumbnail image
-     *
-     * @param result search result to get the URL to image
-     * @return created image
-     */
-    private Image createImage(SearchResult result) {
-        Image image = new Image();
-        image.setAlt(result.getTitle());
-        image.setSrc(result.getImageURL());
-        image.addClassName("metadata-image");
-        return image;
-    }
-
-    /**
      * Text with info which pages out of total are shown.
      *
      * @return info string
@@ -405,25 +334,26 @@ public class SearchResultsComponent extends VerticalLayout {
         updateComponent();
     }
 
-
     public void selectAll() {
-        resultsList.removeAll();
-        searchResults.getResults().forEach(searchResult -> resultsList.add(createResultComponent(searchResult, true)));
-        currentUserRecordSelection.clearSelectedRecords();
-        searchResults.getResults().forEach(r -> currentUserRecordSelection.addSelectedRecordId(r.getId()));
+        resultsList.getChildren()
+				.filter(c -> c instanceof SearchResultEntryComponent)
+				.map(c -> (SearchResultEntryComponent)c)
+                .filter(SearchResultEntryComponent::isRecordEnabled)
+				.forEach(e -> e.setRecordSelected(true));
+    }
+
+    public void deselectAll() {
+        resultsList.getChildren()
+                .filter(c -> c instanceof SearchResultEntryComponent)
+                .map(c -> (SearchResultEntryComponent)c)
+                .forEach(e -> e.setRecordSelected(false));
     }
 
     public void inverseSelection() {
-        resultsList.removeAll();
-        for (SearchResult s : searchResults.getResults()) {
-            if (!currentUserRecordSelection.getSelectedRecordIds().contains(s.getId())) {
-                resultsList.add(createResultComponent(s, true));
-                currentUserRecordSelection.addSelectedRecordId(s.getId());
-            } else {
-                resultsList.add(createResultComponent(s, false));
-                currentUserRecordSelection.removeSelectedRecordId(s.getId());
-            }
-        }
-
+		resultsList.getChildren()
+				.filter(c -> c instanceof SearchResultEntryComponent)
+				.map(c -> (SearchResultEntryComponent)c)
+                .filter(SearchResultEntryComponent::isRecordEnabled)
+				.forEach(SearchResultEntryComponent::invertRecordSelection);
     }
 }

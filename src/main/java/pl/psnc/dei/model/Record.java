@@ -30,15 +30,19 @@ public class Record {
     private Project project;
 
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     private Dataset dataset;
 
     @JsonIgnore
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Import anImport;
 
+    @JsonIgnore
     @OneToMany(orphanRemoval = true)
     private List<Transcription> transcriptions;
+
+    @JsonIgnore
+    private String iiifManifest;
 
     public Record() {
     }
@@ -47,13 +51,14 @@ public class Record {
         this.identifier = identifier;
     }
 
-	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions) {
+	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest) {
 		this.identifier = identifier;
 		this.state = state;
 		this.project = project;
 		this.dataset = dataset;
 		this.anImport = anImport;
 		this.transcriptions = transcriptions;
+		this.iiifManifest = iiifManifest;
 	}
 
 	public long getId() {
@@ -108,19 +113,31 @@ public class Record {
 		this.transcriptions = transcriptions;
 	}
 
+	public String getIiifManifest() {
+		return iiifManifest;
+	}
+
+	public void setIiifManifest(String iiifManifest) {
+		this.iiifManifest = iiifManifest;
+	}
+
 	/**
 	 * States representing record state, meanings:
 	 * NORMAL - no action needed, just a normal record
 	 * E_PENDING - Enrichment process for given record is pending, transcriptions are ready to be taken from TP to EU
-	 * T_PENDING - Transcription process for given record is pending, records will be transfered from EU to TP
+	 * T_PENDING - Transcription process for given record is pending, records will be transferred from EU to TP
 	 * U_PENDING - Update process for given record annotations is pending
+	 * C_PENDING - Non IIIF record, needs to bo converted before sending to TP
+	 * C_FAILED - Record isn't in IIIF, and record conversion failed
 	 */
 	public enum RecordState {
 
 		NORMAL(0),
 		E_PENDING(1),
 		T_PENDING(2),
-		U_PENDING(3);
+		U_PENDING(3),
+		C_PENDING(4),
+		C_FAILED(5);
 
 		private final int value;
 

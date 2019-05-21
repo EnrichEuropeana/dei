@@ -55,34 +55,28 @@ public class EuropeanaRestService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
-        String annotationId = webClient.post()
+        return webClient.post()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-//                TODO when parser will be ready change transcription to some kind of json object?
-                .body(BodyInserters.fromObject(transcription))
+                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(String.class)
                 .block();
-
-        return annotationId;
     }
 
     public String updateTranscription(Transcription transcription) {
-        String annotationId = webClient.put()
+        return webClient.put()
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
-//                TODO when parser will be ready change transcription to some kind of json object?
-                .body(BodyInserters.fromObject(transcription))
+                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .bodyToMono(String.class)
                 .block();
-
-		return annotationId;
 	}
 
-	public JsonObject retriveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+	public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from europeana {}", recordId);
 		final String url = europeanaApiUrl + recordApiEndpoint + recordId + ".rdf?wskey=" + apiKey;
 		final Model model = ModelFactory.createDefaultModel();
