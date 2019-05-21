@@ -19,6 +19,7 @@ import reactor.core.publisher.Mono;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -80,20 +81,20 @@ public class SearchServiceTest {
     @Test(expected = IllegalStateException.class)
     public void searchWhenQueryEmpty() {
         mockWebClientResponse(getResponseOK());
-        searchService.search("", null, "*");
+        searchService.search("", null, "*", true, new HashMap<>());
     }
 
     @Test(expected = IllegalStateException.class)
     public void searchWhenCursorEmpty() {
         mockWebClientResponse(getResponseOK());
-        searchService.search("abc", null, null);
+        searchService.search("abc", null, null, true, new HashMap<>());
     }
 
     @Test
     public void searchWhenResultsOK() {
         SearchResponse responseOK = getResponseOK();
         mockWebClientResponse(responseOK);
-        Mono<SearchResponse> response = searchService.search("abc", null, "*");
+        Mono<SearchResponse> response = searchService.search("abc", null, "*", true, new HashMap<>());
 
         Assert.assertNotNull(response);
         Assert.assertEquals(response.block(), responseOK);
