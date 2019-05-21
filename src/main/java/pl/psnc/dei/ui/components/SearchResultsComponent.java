@@ -294,6 +294,11 @@ public class SearchResultsComponent extends VerticalLayout {
             searchResult.setImageURL(item.getEdmPreview().get(0));
         }
 
+        // source object URL
+        if (item.getGuid() != null && !item.getGuid().isEmpty()) {
+            searchResult.setSourceObjectURL(item.getGuid());
+        }
+
         return searchResult;
     }
 
