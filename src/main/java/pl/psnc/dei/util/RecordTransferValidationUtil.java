@@ -78,9 +78,9 @@ public class RecordTransferValidationUtil {
 	 * NOT_POSSIBLE - record not available in supported format, cannot be transferred to TP
 	 */
 	public enum TransferPossibility {
-		POSSIBLE("Can be transferred to TP", true),
-		REQUIRES_CONVERSION("Can be converted and transferred to TP", true),
-		NOT_POSSIBLE("Cannot be transferred to TP", false);
+		POSSIBLE("Can be transferred to Transcription Platform", true),
+		REQUIRES_CONVERSION("Can be converted and transferred to Transcription Platform", true),
+		NOT_POSSIBLE("Cannot be transferred to Transcription Platform", false);
 
 		String message;
 		boolean transferPossible;
