@@ -198,7 +198,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		metadata.add(tempLine);
 
 		CompletableFuture.runAsync(() -> {
-			JsonObject recordObject = europeanaRestService.retriveRecordFromEuropeanaAndConvertToJsonLd(recordId);
+			JsonObject recordObject = europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(recordId);
 			String mimeType = RecordTransferValidationUtil.getMimeType(recordObject);
 
 			ui.access(() -> {
