@@ -10,7 +10,7 @@ public class RecordTransferValidationUtil {
 
 	private static final String KEY_GRAPH = "@graph";
 	private static final String KEY_TYPE = "@type";
-	private static final String KEY_MIME_TYPE = "ebucore:hasMimeType";
+	private static final String KEY_MIME_TYPE = "hasMimeType";
 	private static final String KEY_CONFORMS_TO = "conformsTo";
 	private static final String KEY_IS_SHOWN_BY = "isShownBy";
 
@@ -30,9 +30,15 @@ public class RecordTransferValidationUtil {
 		Optional<JsonObject> mimeTypeEntry = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
-						&& o.get(KEY_MIME_TYPE) != null)
+						&& o.keySet().stream().anyMatch(k -> k.contains(KEY_MIME_TYPE)))
 				.findFirst();
-		return mimeTypeEntry.map(jsonObject -> jsonObject.get(KEY_MIME_TYPE).getAsString().value()).orElse(null);
+		if (mimeTypeEntry.isPresent()) {
+			JsonObject object = mimeTypeEntry.get();
+			return object.get(KEY_MIME_TYPE) != null ?
+					object.get(KEY_MIME_TYPE).getAsString().value() :
+					object.get("ebucore:" + KEY_MIME_TYPE).getAsString().value();
+		}
+		return null;
 	}
 
 	/**

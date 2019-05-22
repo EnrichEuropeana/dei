@@ -30,7 +30,7 @@ public class Record {
     private Project project;
 
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
     private Dataset dataset;
 
     @JsonIgnore

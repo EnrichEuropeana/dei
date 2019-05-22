@@ -15,7 +15,10 @@ import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.mockito.Mockito.*;
 
@@ -34,7 +37,9 @@ public class ImportPackageServiceTest {
     @Test
     public void shouldCreateImportWithGivenName() {
         //given
-        List<Record> records = Lists.list(new Record("id1"), new Record("id2"));
+        Set<Record> records = new HashSet<>();
+        records.add(new Record("id1"));
+        records.add(new Record("id2"));
         Project project = new Project();
         project.setName("projectName");
         String projectId = "id";
@@ -55,7 +60,9 @@ public class ImportPackageServiceTest {
     public void shouldCreateImportWithDefaultName() {
         //given
         String regexDefaultProjectName = "IMPORT_projectName_[0-9]{4}-[0-9]{2}-[0-9]{2}.*";
-        List<Record> records = Lists.list(new Record("id1"), new Record("id2"));
+        Set<Record> records = new HashSet<>();
+        records.add(new Record("id1"));
+        records.add(new Record("id2"));
         Project project = new Project();
         project.setName("projectName");
         String projectId = "id";

@@ -1,26 +1,18 @@
 package pl.psnc.dei.ui.pages;
 
-import com.vaadin.flow.component.HasValue;
-import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.DAO.ImportsRepository;
+import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.TranscribeTask;
+import pl.psnc.dei.model.Import;
 import pl.psnc.dei.service.ImportPackageService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.ImportsHistoryService;
 import pl.psnc.dei.ui.MainView;
-import pl.psnc.dei.ui.components.imports.DefaultImportOptions;
-import pl.psnc.dei.ui.components.imports.SelectedRecordsList;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import pl.psnc.dei.ui.components.imports.CreateImportComponent;
+import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
+import pl.psnc.dei.ui.components.imports.ImportsListComponent;
 
 /**
  * Page for import generation.
@@ -28,86 +20,67 @@ import java.util.stream.Collectors;
  * Created by pwozniak on 4/8/19
  */
 @Route(value = "import", layout = MainView.class)
-public class ImportPage extends VerticalLayout {
+public class ImportPage extends HorizontalLayout {
 
-    private RecordsRepository recordsRepository;
-    private ImportPackageService importService;
-    private TasksQueueService tasksQueueService;
-    private DefaultImportOptions defaultImportOptions;
-    private Project selectedProject;
+	private VerticalLayout displayingPlace;
+	private ImportsRepository importsRepository;
+	private ImportPackageService importPackageService;
+	private ImportsHistoryService importsHistoryService;
+	private RecordsRepository recordsRepository;
+	private ProjectsRepository projectsRepository;
 
-    private CurrentUserRecordSelection currentUserRecordSelection;
+	public ImportPage(ImportsRepository importsRepository
+			, ImportPackageService importPackageService, ImportsHistoryService importsHistoryService, RecordsRepository recordsRepository, ProjectsRepository projectsRepository) {
+		this.importPackageService = importPackageService;
+		this.importsHistoryService = importsHistoryService;
+		this.recordsRepository = recordsRepository;
+		this.projectsRepository = projectsRepository;
+		add(new ImportNavigationMenu(this));
+		this.importsRepository = importsRepository;
+		setWidthFull();
+		setHeightFull();
+		createImportPage();
+	}
 
-    private List<Record> foundRecords = new ArrayList<>();
-    private SelectedRecordsList selectedRecordsList;
-    private Button importButton = new Button();
+	public void createHistoryImports() {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new ImportsHistory(importsHistoryService);
+		add(displayingPlace);
+	}
 
-    public ImportPage(RecordsRepository repo, ImportPackageService importService,
-                      TranscriptionPlatformService transcriptionPlatformService,
-                      TasksQueueService tasksQueueService,
-                      CurrentUserRecordSelection currentUserRecordSelection) {
-        this.recordsRepository = repo;
-        this.importService = importService;
-        this.tasksQueueService = tasksQueueService;
-        this.defaultImportOptions = new DefaultImportOptions(transcriptionPlatformService, new ProjectChangeListener(),
-                new DatasetChangeListener());
-        this.currentUserRecordSelection = currentUserRecordSelection;
-        this.selectedRecordsList = new SelectedRecordsList(currentUserRecordSelection);
-        this.defaultImportOptions.add(importButton);
+	public void createListImports() {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new ImportsListComponent(importsRepository, this);
+		add(displayingPlace);
+	}
 
-        importButton.setText("Create import and send");
-        importButton.addClickListener(e -> handleImport());
+	public void createImportPage() {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new CreateImportComponent(importPackageService, recordsRepository, projectsRepository);
+		add(displayingPlace);
+	}
 
-        add(defaultImportOptions);
-        add(selectedRecordsList);
-    }
+	public void editImport(Import anImport) {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository);
+		add(displayingPlace);
+	}
 
-    private void handleImport() {
-        List<String> recordIds = currentUserRecordSelection.getSelectedRecordIdsForImport();
-        List<Record> records = recordIds.stream()
-                .map(i -> recordsRepository.findByIdentifier(i))
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
-
-        String importName = defaultImportOptions.getImportName();
-        importService.createImport(importName, selectedProject.getProjectId(), records);
-
-        for (Record record : records) {
-            record.setState(Record.RecordState.E_PENDING);
-            recordsRepository.save(record);
-            TranscribeTask task = new TranscribeTask(record);
-            tasksQueueService.addTaskToQueue(task);
-        }
-        currentUserRecordSelection.clearSelectedRecordsForImport();
-    }
-
-    class ProjectChangeListener implements HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Project>> {
-
-        @Override
-        public void valueChanged(HasValue.ValueChangeEvent<Project> event) {
-            Project project = event.getValue();
-            defaultImportOptions.updateImportName(project.getName());
-            foundRecords = recordsRepository.findAllByProjectAndDatasetNullAndAnImportNull(project);
-            selectedRecordsList.update(foundRecords);
-            selectedProject = project;
-        }
-    }
-
-    class DatasetChangeListener implements HasValue.ValueChangeListener<HasValue.ValueChangeEvent<Dataset>> {
-
-        @Override
-        public void valueChanged(HasValue.ValueChangeEvent<Dataset> event) {
-            Dataset selectedDataset = event.getValue();
-            if (selectedDataset != null) {
-                foundRecords = recordsRepository.findAllByProjectAndDatasetAndAnImportNull(selectedDataset.getProject(), selectedDataset);
-                selectedRecordsList.update(foundRecords);
-            } else {
-                foundRecords = recordsRepository.findAllByProjectAndDatasetNullAndAnImportNull(selectedProject);
-                selectedRecordsList.update(foundRecords);
-            }
-        }
-    }
+	public void sendImport(Import anImport) {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository);
+		add(displayingPlace);
+	}
 }
 
 

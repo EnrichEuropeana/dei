@@ -7,6 +7,7 @@ import javax.persistence.*;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Describes Project entity taken from the Transcription Platform
@@ -33,7 +34,7 @@ public class Project implements Serializable {
 
     @JsonIgnore
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
-    private List<Record> records;
+    private Set<Record> records;
 
     public String getProjectId() {
         return projectId;
@@ -51,11 +52,11 @@ public class Project implements Serializable {
         this.name = name;
     }
 
-    public List<Record> getRecords() {
+    public Set<Record> getRecords() {
         return records;
     }
 
-    public void setRecords(List<Record> records) {
+    public void setRecords(Set<Record> records) {
         this.records = records;
     }
 

@@ -27,6 +27,9 @@ public class RecordsRepositoryTest {
     @Autowired
     RecordsRepository recordsRepository;
 
+    @Autowired
+    DatasetsReposotory datasetsReposotory;
+
     private Record record;
 
     private Project project;
@@ -49,6 +52,7 @@ public class RecordsRepositoryTest {
     @Test
     public void findAllByProject() {
         recordsRepository.save(record);
+        datasetsReposotory.save(dataset);
 
         List<Record> records = recordsRepository.findAllByProject(project);
 
@@ -60,6 +64,7 @@ public class RecordsRepositoryTest {
     @Test
     public void findAllByDataset() {
         recordsRepository.save(record);
+        datasetsReposotory.save(dataset);
 
         List<Record> records = recordsRepository.findAllByDataset(dataset);
 

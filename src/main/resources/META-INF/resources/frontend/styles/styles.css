@@ -121,6 +121,16 @@
     margin-left: auto;
 }
 
+.button-as-text{
+    background:none!important;
+     color:inherit;
+     border:none;
+     padding:0!important;
+     font: inherit;
+     border:0;
+     cursor: pointer;
+}
+
 .confirmation-dialog-title {
     font-weight: bold;
     font-size: large;
