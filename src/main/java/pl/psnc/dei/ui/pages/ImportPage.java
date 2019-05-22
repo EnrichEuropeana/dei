@@ -39,7 +39,7 @@ public class ImportPage extends HorizontalLayout {
 		this.importsRepository = importsRepository;
 		setWidthFull();
 		setHeightFull();
-		createImportPage();
+		createListImports();
 	}
 
 	public void createHistoryImports() {
