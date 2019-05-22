@@ -109,11 +109,18 @@ public class CreateImportComponent extends VerticalLayout {
 		}
 		switchingTables = new HorizontalLayout();
 		switchingTables.setWidthFull();
+		switchingTables.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 		allRecordsGrid = generateRecordsGrid(allRecords);
-		switchingTables.add(allRecordsGrid);
+		Label allRecordsLabel = new Label("All records");
+		allRecordsLabel.addClassName("import-grid-label");
+		VerticalLayout allRecordsLayout = new VerticalLayout(allRecordsLabel, allRecordsGrid);
+		switchingTables.add(allRecordsLayout);
 		switchingTables.add(generateSwitchingButtons());
 		selectedRecordsGrid = generateRecordsGrid(selectedRecordsForImport);
-		switchingTables.add(selectedRecordsGrid);
+		Label selectedRecordsLabel = new Label("Selected records");
+		selectedRecordsLabel.addClassName("import-grid-label");
+		VerticalLayout selectedRecordsLayout = new VerticalLayout(selectedRecordsLabel, selectedRecordsGrid);
+		switchingTables.add(selectedRecordsLayout);
 		add(switchingTables);
 		actionButtons = generateActionButtons();
 		add(actionButtons);
@@ -185,7 +192,7 @@ public class CreateImportComponent extends VerticalLayout {
 		Button createButton = new Button("Create");
 		createButton.setEnabled(shouldShowCreateButton());
 		createButton.addClickListener(e -> {
-			if(selectedRecordsForImport.isEmpty()){
+			if (selectedRecordsForImport.isEmpty()) {
 				Notification.show("Import cannot be empty");
 				return;
 			}
@@ -196,7 +203,7 @@ public class CreateImportComponent extends VerticalLayout {
 		Button updateButton = new Button("Update");
 		updateButton.setEnabled(shouldShowUpdateButton());
 		updateButton.addClickListener(e -> {
-			if(selectedRecordsForImport.isEmpty()){
+			if (selectedRecordsForImport.isEmpty()) {
 				Notification.show("Import cannot be empty");
 				return;
 			}
