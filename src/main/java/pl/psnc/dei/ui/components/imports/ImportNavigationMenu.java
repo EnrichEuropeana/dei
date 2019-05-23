@@ -35,6 +35,9 @@ public class ImportNavigationMenu extends VerticalLayout {
 		layout.add(createElement(new Button("Imports history"), e -> {
 			importPage.createHistoryImports();
 		}));
+		layout.add(createElement(new Button("Current candidates"), e -> {
+			importPage.createCandidatesPage();
+		}));
 		return layout;
 	}
 

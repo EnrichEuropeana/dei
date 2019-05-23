@@ -34,7 +34,7 @@ import java.util.Set;
 public class CreateImportComponent extends VerticalLayout {
 
 	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
-	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getProject().toString(), currentValue);
+	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private RecordsRepository recordsRepository;
 	private ImportPackageService importPackageService;
@@ -124,6 +124,10 @@ public class CreateImportComponent extends VerticalLayout {
 		add(switchingTables);
 		actionButtons = generateActionButtons();
 		add(actionButtons);
+	}
+
+	private String getDatasetValue(Record record){
+		return record.getDataset() != null? record.getDataset().getName() : "";
 	}
 
 	private void createComponent() {

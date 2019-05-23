@@ -10,6 +10,7 @@ import pl.psnc.dei.model.Import;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.service.ImportsHistoryService;
 import pl.psnc.dei.ui.MainView;
+import pl.psnc.dei.ui.components.imports.CandidatesListsComponent;
 import pl.psnc.dei.ui.components.imports.CreateImportComponent;
 import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
 import pl.psnc.dei.ui.components.imports.ImportsListComponent;
@@ -79,6 +80,14 @@ public class ImportPage extends HorizontalLayout {
 			remove(displayingPlace);
 		}
 		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository);
+		add(displayingPlace);
+	}
+
+	public void createCandidatesPage() {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new CandidatesListsComponent(projectsRepository, recordsRepository);
 		add(displayingPlace);
 	}
 }
