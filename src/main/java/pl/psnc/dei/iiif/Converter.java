@@ -71,7 +71,7 @@ public class Converter {
 	public void convertAndGenerateManifest() throws ConversionException {
 		Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
 				.map(JsonValue::getAsObject)
-				.filter(e -> e.get("isShownBy") != null)
+				.filter(e -> e.get("edm:isShownBy") != null)
 				.findFirst();
 
 		if (!aggregatorData.isPresent())
@@ -227,14 +227,14 @@ public class Converter {
 
 		ConversionDataHolder(JsonObject aggregatorData) {
 			ConversionData isShownBy = new ConversionData();
-			isShownBy.json = aggregatorData.get("isShownBy").getAsObject();
+			isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
 			fileObjects.add(isShownBy);
-			String mainFileUrl = isShownBy.json.getAsString().value();
+			String mainFileUrl = isShownBy.json.get("@id").getAsString().value();
 			String mainFileFormat = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
 
-			if (aggregatorData.get("hasView") != null)
-				fileObjects.addAll(aggregatorData.get("hasView").getAsArray().stream()
-						.filter(e -> e.getAsString().value().endsWith(mainFileFormat))
+			if (aggregatorData.get("edm:hasView") != null)
+				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
+						.filter(e -> e.getAsObject().get("@id").getAsString().value().endsWith(mainFileFormat))
 						.map(e -> {
 							ConversionData data = new ConversionData();
 							data.json = e.getAsObject();
@@ -247,7 +247,7 @@ public class Converter {
 
 		void initFileUrls() {
 			for (ConversionData data : fileObjects) {
-				String url = data.json.getAsString().value();
+				String url = data.json.get("@id").getAsString().value();
 				try {
 					data.srcFileUrl = new URL(url);
 				} catch (MalformedURLException e) {
