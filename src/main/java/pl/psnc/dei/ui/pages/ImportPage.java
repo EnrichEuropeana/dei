@@ -87,7 +87,7 @@ public class ImportPage extends HorizontalLayout {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new CandidatesListsComponent(projectsRepository, recordsRepository);
+		displayingPlace = new CandidatesListsComponent(projectsRepository, importPackageService);
 		add(displayingPlace);
 	}
 }

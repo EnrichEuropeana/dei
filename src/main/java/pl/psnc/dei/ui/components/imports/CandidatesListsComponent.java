@@ -13,9 +13,9 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.apache.commons.lang3.StringUtils;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
-import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.service.ImportPackageService;
 
 import java.util.Set;
 
@@ -25,7 +25,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 	private final CreateImportComponent.FieldFilter recordDatasetField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private ProjectsRepository projectsRepository;
-	private RecordsRepository recordsRepository;
+	private ImportPackageService importPackageService;
 
 	private Set<Record> records;
 
@@ -33,14 +33,14 @@ public class CandidatesListsComponent extends VerticalLayout {
 	private Button deleteButton;
 	private Project project;
 
-	public CandidatesListsComponent(ProjectsRepository projectsRepository, RecordsRepository recordsRepository) {
+	public CandidatesListsComponent(ProjectsRepository projectsRepository, ImportPackageService importPackageService) {
 		this.projectsRepository = projectsRepository;
-		this.recordsRepository = recordsRepository;
+		this.importPackageService = importPackageService;
 		add(createProjectSelection());
 	}
 
 	private void refresh() {
-		records = recordsRepository.findAllByProjectAndAnImportNull(project);
+		records = importPackageService.getCandidates(project.getProjectId(), null);
 		if (recordsList != null) {
 			remove(recordsList);
 		}
@@ -56,9 +56,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 	private Button generateDeleteButton() {
 		Button button = new Button("Remove selected records");
 		button.addClickListener(e -> {
-			for (Record record : recordsList.getSelectedItems()) {
-				recordsRepository.delete(record);
-			}
+			importPackageService.removeRecordsFromCandidates(recordsList.getSelectedItems());
 			refresh();
 		});
 		return button;
@@ -66,7 +64,6 @@ public class CandidatesListsComponent extends VerticalLayout {
 
 	private Grid<Record> generateGrid() {
 		Grid<Record> recordsGrid = new Grid<>();
-		recordsGrid.setMaxWidth("70%");
 
 		ListDataProvider<Record> dataProvider = new ListDataProvider<>(records);
 		recordsGrid.setDataProvider(dataProvider);
@@ -83,8 +80,8 @@ public class CandidatesListsComponent extends VerticalLayout {
 		return recordsGrid;
 	}
 
-	private String getDatasetValue(Record record){
-		return record.getDataset() != null? record.getDataset().getName() : "";
+	private String getDatasetValue(Record record) {
+		return record.getDataset() != null ? record.getDataset().getName() : "";
 	}
 
 	private Component createProjectSelection() {
