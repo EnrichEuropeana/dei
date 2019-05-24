@@ -24,6 +24,7 @@ import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.ui.pages.ImportPage;
 import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import java.util.ArrayList;
@@ -52,18 +53,21 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private Input importName;
 	private Project project;
+	private ImportPage importPage;
 
-	public CreateImportComponent(ImportPackageService importPackageService, RecordsRepository recordsRepository, ProjectsRepository projectsRepository) {
+	public CreateImportComponent(ImportPackageService importPackageService, RecordsRepository recordsRepository, ProjectsRepository projectsRepository, ImportPage importPage) {
 		this.importPackageService = importPackageService;
 		this.recordsRepository = recordsRepository;
 		this.allRecords = new HashSet<>();
 		this.projectsRepository = projectsRepository;
 		this.selectedRecordsForImport = new HashSet<>();
+		this.importPage = importPage;
 		createComponent();
 	}
 
-	public CreateImportComponent(ImportPackageService importPackageService, Import anImport, RecordsRepository recordsRepository, ProjectsRepository projectsRepository) {
+	public CreateImportComponent(ImportPackageService importPackageService, Import anImport, RecordsRepository recordsRepository, ProjectsRepository projectsRepository, ImportPage importPage) {
 		this.anImport = anImport;
+		this.importPage = importPage;
 		this.importPackageService = importPackageService;
 		this.recordsRepository = recordsRepository;
 		this.projectsRepository = projectsRepository;
@@ -136,6 +140,7 @@ public class CreateImportComponent extends VerticalLayout {
 			add(createProjectSelection());
 			HorizontalLayout importNameLayout = new HorizontalLayout();
 			importName = new Input();
+			importName.setWidth("300px");
 			importNameLayout.add(new Label("Import name"));
 			importNameLayout.add(importName);
 			add(importNameLayout);
@@ -201,6 +206,8 @@ public class CreateImportComponent extends VerticalLayout {
 				return;
 			}
 			importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
+			Notification.show("Import was created");
+			importPage.showCreateListImportView();
 		});
 		actionButtons.add(createButton);
 
@@ -212,6 +219,8 @@ public class CreateImportComponent extends VerticalLayout {
 				return;
 			}
 			importPackageService.updateImport(anImport, selectedRecordsForImport);
+			Notification.show("Import was updated");
+			importPage.showCreateListImportView();
 		});
 		actionButtons.add(updateButton);
 
@@ -220,6 +229,8 @@ public class CreateImportComponent extends VerticalLayout {
 		sendButton.addClickListener(e -> {
 			try {
 				importPackageService.sendExistingImport(anImport.getName());
+				Notification.show("Import was send");
+				importPage.showCreateListImportView();
 			} catch (NotFoundException ex) {
 				Notification.show("Something goes wrong");
 				ex.printStackTrace();
