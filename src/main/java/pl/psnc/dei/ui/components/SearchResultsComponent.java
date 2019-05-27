@@ -7,32 +7,27 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import org.springframework.util.LinkedMultiValueMap;
 import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
-import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.schema.search.SearchResults;
+import pl.psnc.dei.schema.search.*;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordTransferValidationCache;
 import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 12;
 
+    // aggregator id
+    private transient int aggregatorId;
+
     // query string
     private transient String query;
-
-    // query filter
-    private transient String qf;
-
-    // search only objects available via iiif
-    private transient boolean onlyIiif;
 
     // other request parameters
     private transient Map<String, List<String>> requestParams;
@@ -141,35 +136,29 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     /**
-     * Execute facet search after a facet was selected or deselected. The current query string is used and the cursor is
+     * Execute facet search after a facet was selected or deselected. The current query string is used and the pagination is
      * set as for the first execution.
      */
-    public void executeFacetSearch(String qf, Map<String, String> requestParams) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR, requestParams)));
+    public void executeFacetSearch(Map<String, String> requestParams) {
+        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(aggregatorId, query, requestParams)));
     }
 
     /**
      * Execute new search
      *
      * @param query  query entered by the user
-     * @param qf     query filter from facets
-     * @param cursor cursor for a search
-     * @param onlyIiif true to query only objects available via IIIF, false otherwise
-     * @param requestParams other request parameters e.g. media, reusability
+     * @param requestParams request parameters e.g. media, reusability
      * @return search results object
      */
-    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif, Map<String, List<String>> requestParams) {
+    public SearchResults executeSearch(int aggregatorId, String query, Map<String, List<String>> requestParams) {
+        this.aggregatorId = aggregatorId;
         this.query = query;
-        this.qf = qf;
-        this.onlyIiif = onlyIiif;
-        if (this.qf == null) {
-            this.qf = "";
-        }
         this.requestParams = requestParams;
+
         searchResults.clear();
         recordTransferValidationCache.clear();
 
-        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
+        SearchResponse result = searchController.search(aggregatorId, query, new LinkedMultiValueMap<>(requestParams)).block();
         if (result == null) {
             // we should show failure warning
             Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
@@ -189,15 +178,16 @@ public class SearchResultsComponent extends VerticalLayout {
     void goToPage(int currentPage, int newPage) {
         int page;
         if (newPage < currentPage) {
-            String cursor = searchResults.getPageCursor(newPage);
-            if (cursor == null) {
+            Pagination pagination = searchResults.getPagination(newPage);
+            if (pagination == null/*cursor == null*/) {
                 // when there is no cursor for specific page we should start from the beginning
-                searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
+                Pagination defaultPagination = getDefaultPagination();
+                searchResults.setNextPagination(defaultPagination);
                 searchResults.setResultsCollected(0);
                 page = 0;
             } else {
                 // we should set all things as we would be one page behind the requested one
-                searchResults.setNextCursor(cursor);
+                searchResults.setNextPagination(pagination);
                 searchResults.setResultsCollected(DEFAULT_PAGE_SIZE * (newPage - 1));
                 page = newPage - 1;
             }
@@ -209,7 +199,9 @@ public class SearchResultsComponent extends VerticalLayout {
             return;
         }
         while (++page <= newPage) {
-            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
+            Map<String, String> paginationParams = searchResults.getNextPagination().getRequestParams();
+            paginationParams.forEach((key, value) -> this.requestParams.put(key, Collections.singletonList(value)));
+            SearchResponse result = searchController.search(aggregatorId, query, new LinkedMultiValueMap<>(this.requestParams)).block();
             if (result == null) {
                 // redirect to error page
                 return;
@@ -230,24 +222,42 @@ public class SearchResultsComponent extends VerticalLayout {
             searchResults.clear();
         } else {
             searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
-            if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
-                searchResults.setPageCursor(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, searchResults.getNextCursor());
-            } else {
-                searchResults.setPageCursor((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, searchResults.getNextCursor());
+            if (searchResults.getNextPagination() == null) {
+                Pagination defaultPagination = getDefaultPagination();
+                searchResults.setNextPagination(defaultPagination);
             }
-            searchResults.setNextCursor(result.getNextCursor());
+            if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
+                searchResults.setPagination(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, searchResults.getNextPagination());
+            } else {
+                searchResults.setPagination((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, searchResults.getNextPagination());
+            }
+            searchResults.setNextPagination(result.getPagination());
             searchResults.setTotalResults(result.getTotalResults());
             searchResults.setFacets(result.getFacets());
             searchResults.setResults(new ArrayList<>());
 
             if (updateResultsList) {
-                result.getItems().forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
+                @SuppressWarnings("unchecked")
+                List<Item> items = result.getItems();
+                items.forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
             }
         }
     }
 
+    private Pagination getDefaultPagination() {
+        Aggregator aggregator = Aggregator.getAggregator(aggregatorId);
+        switch (aggregator) {
+            case EUROPEANA:
+                return new EuropeanaCursorPagination();
+            case DDB:
+                return new DDBOffsetPagination();
+            default:
+                return null;
+        }
+    }
+
     /**
-     * Create a SearchResult object from Item which is retrieved from the response
+     * Create a SearchResult object from EuropeanaItem which is retrieved from the response
      *
      * @param item item found in the results
      * @return item converted to search result object
@@ -264,17 +274,15 @@ public class SearchResultsComponent extends VerticalLayout {
         }
 
         // author
-        if (item.getDcCreator() != null && !item.getDcCreator().isEmpty()) {
-            searchResult.setAuthor(item.getDcCreator().get(0));
-        } else if (item.getDcContributor() != null && !item.getDcContributor().isEmpty()) {
-            searchResult.setAuthor(item.getDcContributor().get(0));
+        if (item.getAuthor() != null && !item.getAuthor().isEmpty()) {
+            searchResult.setAuthor(item.getAuthor());
         }
 
         // issued
 
         // provider institution
-        if (item.getDataProvider() != null && !item.getDataProvider().isEmpty()) {
-            searchResult.setProvider(item.getDataProvider().get(0));
+        if (item.getDataProviderInstitution() != null && !item.getDataProviderInstitution().isEmpty()) {
+            searchResult.setProvider(item.getDataProviderInstitution());
         }
 
         // format
@@ -290,13 +298,13 @@ public class SearchResultsComponent extends VerticalLayout {
         }
 
         // image URL
-        if (item.getEdmPreview() != null && !item.getEdmPreview().isEmpty()) {
-            searchResult.setImageURL(item.getEdmPreview().get(0));
+        if (item.getThumbnailURL() != null && !item.getThumbnailURL().isEmpty()) {
+            searchResult.setImageURL(item.getThumbnailURL());
         }
 
         // source object URL
-        if (item.getGuid() != null && !item.getGuid().isEmpty()) {
-            searchResult.setSourceObjectURL(item.getGuid());
+        if (item.getSourceObjectURL() != null && !item.getSourceObjectURL().isEmpty()) {
+            searchResult.setSourceObjectURL(item.getSourceObjectURL());
         }
 
         return searchResult;

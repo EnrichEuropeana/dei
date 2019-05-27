@@ -1,44 +1,14 @@
 package pl.psnc.dei.response.search;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+public interface FacetField {
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "label",
-        "count"
-})
-public class FacetField {
+	String getLabel();
 
-    @JsonProperty("label")
-    private String label;
-    @JsonProperty("count")
-    private Integer count;
+	void setLabel(String label);
 
-    @JsonProperty("label")
-    public String getLabel() {
-        return label;
-    }
+	Integer getCount();
 
-    @JsonProperty("label")
-    public void setLabel(String label) {
-        this.label = label;
-    }
+	void setCount(Integer count);
 
-    @JsonProperty("count")
-    public Integer getCount() {
-        return count;
-    }
-
-    @JsonProperty("count")
-    public void setCount(Integer count) {
-        this.count = count;
-    }
-
-    @JsonIgnore
-    public String toString() {
-        return String.format("%s (%d)", label, count);
-    }
+	String toString();
 }

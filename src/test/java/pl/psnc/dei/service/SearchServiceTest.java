@@ -7,14 +7,10 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
-import pl.psnc.dei.response.search.Facet;
-import pl.psnc.dei.response.search.FacetField;
-import pl.psnc.dei.response.search.Item;
-import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.response.search.*;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -37,7 +33,7 @@ public class SearchServiceTest {
     @InjectMocks
     private SearchService searchService = new SearchService(WebClient.builder());
 
-    private void mockWebClientResponse(final SearchResponse resp) {
+    private void mockWebClientResponse(final EuropeanaSearchResponse resp) {
         final WebClient.RequestHeadersUriSpec uriSpecMock = Mockito.mock(WebClient.RequestHeadersUriSpec.class);
         final WebClient.RequestHeadersSpec headersSpecMock = Mockito.mock(WebClient.RequestHeadersSpec.class);
         final WebClient.ResponseSpec responseSpecMock = Mockito.mock(WebClient.ResponseSpec.class);
@@ -50,12 +46,12 @@ public class SearchServiceTest {
         when(headersSpecMock.retrieve()).thenReturn(responseSpecMock);
         when(responseSpecMock.onStatus(ArgumentMatchers.any(Predicate.class), ArgumentMatchers.any(Function.class)))
                 .thenReturn(responseSpecMock);
-        when(responseSpecMock.bodyToMono(ArgumentMatchers.<Class<SearchResponse>>notNull()))
+        when(responseSpecMock.bodyToMono(ArgumentMatchers.<Class<EuropeanaSearchResponse>>notNull()))
                 .thenReturn(Mono.just(resp));
     }
 
-    private SearchResponse getResponseOK() {
-        SearchResponse searchResponse = new SearchResponse();
+    private EuropeanaSearchResponse getResponseOK() {
+        EuropeanaSearchResponse searchResponse = new EuropeanaSearchResponse();
         searchResponse.setApikey("api2demo");
         searchResponse.setRequestNumber(999);
         searchResponse.setSuccess(true);
@@ -63,14 +59,14 @@ public class SearchServiceTest {
         searchResponse.setTotalResults(1);
         searchResponse.setNextCursor("abc");
         searchResponse.setItems(new ArrayList<>());
-        Item item = new Item();
+        EuropeanaItem item = new EuropeanaItem();
         item.setId("1");
         searchResponse.getItems().add(item);
         searchResponse.setFacets(new ArrayList<>());
-        Facet facet = new Facet();
+        EuropeanaFacet facet = new EuropeanaFacet();
         facet.setName("a");
         facet.setFields(new ArrayList<>());
-        FacetField field = new FacetField();
+        EuropeanaFacetField field = new EuropeanaFacetField();
         field.setCount(1);
         field.setLabel("label");
         facet.getFields().add(field);
@@ -92,7 +88,7 @@ public class SearchServiceTest {
 
     @Test
     public void searchWhenResultsOK() {
-        SearchResponse responseOK = getResponseOK();
+        EuropeanaSearchResponse responseOK = getResponseOK();
         mockWebClientResponse(responseOK);
         Mono<SearchResponse> response = searchService.search("abc", null, "*", true, new HashMap<>());
 

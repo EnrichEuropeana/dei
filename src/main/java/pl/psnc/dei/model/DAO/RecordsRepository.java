@@ -34,4 +34,5 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     List<Record> findAllByStateIsNotIn(List<Record.RecordState> states);
 
+    List<Record> findAllByAggregator(String aggregator);
 }

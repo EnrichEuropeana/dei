@@ -1,118 +1,28 @@
 package pl.psnc.dei.response.search;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import pl.psnc.dei.schema.search.Pagination;
 
 import java.util.List;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "apikey",
-        "success",
-        "requestNumber",
-        "itemsCount",
-        "totalResults",
-        "nextCursor",
-        "items",
-        "facets"
-})
-public class SearchResponse {
+public interface SearchResponse<T extends Facet, U extends Item> {
 
-    @JsonProperty("apikey")
-    private String apikey;
-    @JsonProperty("success")
-    private Boolean success;
-    @JsonProperty("requestNumber")
-    private Integer requestNumber;
-    @JsonProperty("itemsCount")
-    private Integer itemsCount;
-    @JsonProperty("totalResults")
-    private Integer totalResults;
-    @JsonProperty("nextCursor")
-    private String nextCursor;
-    @JsonProperty("items")
-    private List<Item> items = null;
-    @JsonProperty("facets")
-    private List<Facet> facets = null;
+	Integer getItemsCount();
 
-    @JsonProperty("apikey")
-    public String getApikey() {
-        return apikey;
-    }
+	void setItemsCount(Integer itemsCount);
 
-    @JsonProperty("apikey")
-    public void setApikey(String apikey) {
-        this.apikey = apikey;
-    }
+	Integer getTotalResults();
 
-    @JsonProperty("success")
-    public Boolean getSuccess() {
-        return success;
-    }
+	void setTotalResults(Integer totalResults);
 
-    @JsonProperty("success")
-    public void setSuccess(Boolean success) {
-        this.success = success;
-    }
+	Pagination getPagination();
 
-    @JsonProperty("requestNumber")
-    public Integer getRequestNumber() {
-        return requestNumber;
-    }
+	void setPagination(Pagination pagination);
 
-    @JsonProperty("requestNumber")
-    public void setRequestNumber(Integer requestNumber) {
-        this.requestNumber = requestNumber;
-    }
+	List<U> getItems();
 
-    @JsonProperty("itemsCount")
-    public Integer getItemsCount() {
-        return itemsCount;
-    }
+	void setItems(List<U> items);
 
-    @JsonProperty("itemsCount")
-    public void setItemsCount(Integer itemsCount) {
-        this.itemsCount = itemsCount;
-    }
+	List<T> getFacets();
 
-    @JsonProperty("totalResults")
-    public Integer getTotalResults() {
-        return totalResults;
-    }
-
-    @JsonProperty("totalResults")
-    public void setTotalResults(Integer totalResults) {
-        this.totalResults = totalResults;
-    }
-
-    @JsonProperty("nextCursor")
-    public String getNextCursor() {
-        return nextCursor;
-    }
-
-    @JsonProperty("nextCursor")
-    public void setNextCursor(String nextCursor) {
-        this.nextCursor = nextCursor;
-    }
-
-    @JsonProperty("items")
-    public List<Item> getItems() {
-        return items;
-    }
-
-    @JsonProperty("items")
-    public void setItems(List<Item> items) {
-        this.items = items;
-    }
-
-    @JsonProperty("facets")
-    public List<Facet> getFacets() {
-        return facets;
-    }
-
-    @JsonProperty("facets")
-    public void setFacets(List<Facet> facets) {
-        this.facets = facets;
-    }
+	void setFacets(List<T> facets);
 }

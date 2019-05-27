@@ -4,10 +4,16 @@ import com.vaadin.flow.component.accordion.Accordion;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import pl.psnc.dei.model.Aggregator;
+import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Facet;
+import pl.psnc.dei.schema.search.DDBOffsetPagination;
+import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 
 @StyleSheet("frontend://styles/styles.css")
 public class FacetComponent extends VerticalLayout {
@@ -29,18 +35,23 @@ public class FacetComponent extends VerticalLayout {
     // Facets that are separate request params
     private Map<String, List<String>> facetParams = new HashMap<>();
 
-    public static final Map<String, String> DEFAULT_FACETS = new HashMap<>();
+    private CurrentUserRecordSelection currentUserRecordSelection;
 
-    private static final String[] PARAM_FACETS = {"COLOURPALETTE", "LANDINGPAGE", "MEDIA", "REUSABILITY", "TEXT_FULLTEXT", "THUMBNAIL"};
+    public static final String QF_PARAM_NAME = "qf";
+
+    public static final Map<String, String> EUROPEANA_DEFAULT_FACETS = new HashMap<>();
+
+    private static final String[] EUROPEANA_PARAM_FACETS = {"COLOURPALETTE", "LANDINGPAGE", "MEDIA", "REUSABILITY", "TEXT_FULLTEXT", "THUMBNAIL"};
 
     static {
-        DEFAULT_FACETS.put("MEDIA", "true");
-        DEFAULT_FACETS.put("REUSABILITY", "open");
+        EUROPEANA_DEFAULT_FACETS.put("MEDIA", "true");
+        EUROPEANA_DEFAULT_FACETS.put("REUSABILITY", "open");
     }
 
-    public FacetComponent(SearchResultsComponent resultsComponent) {
+    public FacetComponent(SearchResultsComponent resultsComponent, CurrentUserRecordSelection currentUserRecordSelection) {
         addClassName("facet-component");
         this.searchResultsComponent = resultsComponent;
+        this.currentUserRecordSelection = currentUserRecordSelection;
         facetAccordion = new Accordion();
         facetBoxes = new ArrayList<>();
         setDefaultHorizontalComponentAlignment(Alignment.STRETCH);
@@ -79,16 +90,30 @@ public class FacetComponent extends VerticalLayout {
      * @param add indicator whether the value was selected or deselected
      */
     public void executeFacetSearch(String facet, String facetValue, boolean add) {
+        Aggregator aggregator = currentUserRecordSelection.getAggregator();
 
-        if (Arrays.asList(PARAM_FACETS).contains(facet.toUpperCase())) {
-            handleFacet(facet, facetValue, add, facetParams);
-        } else {
-            handleFacet(facet, facetValue, add, fq);
+        switch (aggregator) {
+            case EUROPEANA:
+                handleEuropeanaFacetSearch(facet, facetValue, add);
+                break;
+            case DDB:
+                //todo handle facet search for ddb
+            default:
         }
-        searchResultsComponent.executeFacetSearch(prepareQueryFilter(), prepareRequestParams());
     }
 
-    private void handleFacet(String facet, String facetValue, boolean add, Map<String, List<String>> facets) {
+    private void handleEuropeanaFacetSearch(String facet, String facetValue, boolean add) {
+        if (Arrays.asList(EUROPEANA_PARAM_FACETS).contains(facet.toUpperCase())) {
+            handleEuropeanaFacet(facet, facetValue, add, facetParams);
+        } else {
+            handleEuropeanaFacet(facet, facetValue, add, fq);
+        }
+        Map<String, String> requestParams = prepareRequestParams();
+        requestParams.put(QF_PARAM_NAME, prepareQueryFilter());
+        searchResultsComponent.executeFacetSearch(requestParams);
+    }
+
+    private void handleEuropeanaFacet(String facet, String facetValue, boolean add, Map<String, List<String>> facets) {
         if (add) {
             facets.computeIfAbsent(facet, k -> new ArrayList<>()).add(facetValue);
         } else {
@@ -136,26 +161,32 @@ public class FacetComponent extends VerticalLayout {
     }
 
     /**
-     * Select the necessary facet value checkboxes based on the filter query and request parameters
+     * Select the necessary facet value checkboxes based on the request parameters
      *
-     * @param qf query filter
-     * @param requestParams other request parameters
+     * @param requestParams request parameters
      */
-    public void updateState(String qf, Map<String, List<String>> requestParams) {
-        handleQueryFilterString(qf);
+    public void updateState(Map<String, List<String>> requestParams) {
+        handleQueryFilterString(requestParams);
         handleRequestParams(requestParams);
 
-        if ((qf == null || qf.isEmpty()) && (requestParams == null || requestParams.isEmpty())) {
+        if (requestParams.isEmpty()) {
             selectedFacetsComponent.clear();
         }
     }
 
     /**
-     * Select the necessary facet checkboxes based on the filter query string
+     * Select the necessary facet checkboxes based on the request parameters
      *
-     * @param qf query filter string
+     * @param requestParams request parameters
      */
-    private void handleQueryFilterString(String qf) {
+    private void handleQueryFilterString(Map<String, List<String>> requestParams) {
+        String qf = null;
+
+        List<String> qfParam = requestParams.get(QF_PARAM_NAME);
+        if (qfParam != null && !qfParam.isEmpty()) {
+            qf = qfParam.get(0);
+        }
+
         if (qf != null && !qf.isEmpty()) {
             fq.clear();
 
@@ -190,10 +221,14 @@ public class FacetComponent extends VerticalLayout {
     private void handleRequestParams(Map<String, List<String>> requestParams) {
         if (requestParams != null && !requestParams.isEmpty()) {
             facetParams.clear();
-            requestParams.forEach((key, value) -> value.forEach(v -> {
-                List<String> strings = Arrays.asList(v.split(","));
-                facetParams.computeIfAbsent(key.toUpperCase(), k -> new ArrayList<>()).addAll(strings);
-            }));
+
+            List<String> paramsToSkip = getParamsToSkip();
+            requestParams.entrySet().stream()
+                    .filter(e -> !paramsToSkip.contains(e.getKey()))
+                    .forEach(e -> e.getValue().forEach(v -> {
+                        List<String> strings = Arrays.asList(v.split(","));
+                        facetParams.computeIfAbsent(e.getKey().toUpperCase(), k -> new ArrayList<>()).addAll(strings);
+                    }));
 
             if (!facetParams.isEmpty()) {
                 facetParams.keySet().forEach(s -> {
@@ -204,6 +239,28 @@ public class FacetComponent extends VerticalLayout {
         } else {
             facetParams.clear();
         }
+    }
+
+    private List<String> getParamsToSkip() {
+        Aggregator aggregator = currentUserRecordSelection.getAggregator();
+        final String[] paginationParamsNames;
+
+        switch (aggregator) {
+            case EUROPEANA:
+                paginationParamsNames = EuropeanaCursorPagination.getRequestParamsNames();
+                break;
+            case DDB:
+                paginationParamsNames = DDBOffsetPagination.getRequestParamsNames();
+                break;
+            default:
+                paginationParamsNames = new String[]{};
+        }
+
+        List<String> toSkip = new ArrayList<>(Arrays.asList(paginationParamsNames));
+        toSkip.add(QF_PARAM_NAME);
+        toSkip.add(ONLY_IIIF_PARAM_NAME);
+
+        return toSkip;
     }
 
     /**

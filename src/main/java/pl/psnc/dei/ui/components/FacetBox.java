@@ -55,7 +55,9 @@ public class FacetBox extends AccordionPanel {
         setSummaryText(FACET_LABELS.get(facet.getName()));
 
         values = new HashMap<>();
-        facet.getFields().forEach(facetField -> {
+        @SuppressWarnings("unchecked")
+        List<FacetField> facetFields = facet.getFields();
+        facetFields.forEach(facetField -> {
             Checkbox checkbox = new Checkbox(facetField.toString(), checkboxBooleanComponentValueChangeEvent -> {
                 if (checkboxBooleanComponentValueChangeEvent.isFromClient()) {
                     handleFacetField(checkboxBooleanComponentValueChangeEvent.getSource());

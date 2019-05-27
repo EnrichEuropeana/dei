@@ -10,6 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
+import pl.psnc.dei.response.search.EuropeanaSearchResponse;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
@@ -77,7 +78,8 @@ extends RestRequestExecutor {
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(SearchResponse.class);
+                .bodyToMono(EuropeanaSearchResponse.class)
+                .cast(SearchResponse.class);
     }
 
     private void checkParameters(String query, String cursor) {
