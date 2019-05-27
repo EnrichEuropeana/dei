@@ -78,20 +78,15 @@ public class DDBRestService extends RestRequestExecutor {
 	private String getRdfPartFromXML(String record) {
 		DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 		factory.setNamespaceAware(true);
-		DocumentBuilder builder = null;
+		Node rdf = null;
 		try {
-			builder = factory.newDocumentBuilder();
-		} catch (ParserConfigurationException e) {
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document document = builder.parse(new InputSource(new StringReader(record)));
+			document.getDocumentElement().normalize();
+			rdf = document.getElementsByTagName("rdf:RDF").item(0);
+		} catch (SAXException | IOException | ParserConfigurationException e) {
 			logger.error("xml conversion error", e);
 		}
-		Document document = null;
-		try {
-			document = builder.parse(new InputSource(new StringReader(record)));
-		} catch (SAXException | IOException e) {
-			logger.error("xml conversion error", e);
-		}
-		document.getDocumentElement().normalize();
-		Node rdf = document.getElementsByTagName("rdf:RDF").item(0);
 		return nodeToString(rdf);
 	}
 
