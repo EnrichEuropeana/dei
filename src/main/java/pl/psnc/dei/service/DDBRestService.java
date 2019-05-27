@@ -48,8 +48,7 @@ public class DDBRestService extends RestRequestExecutor {
 		configure(webClientBuilder);
 	}
 
-	public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
-		recordId = "OAXO2AGT7YH35YYHN3YKBXJMEI77W3FF";
+	public String retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from ddb {}", recordId);
 
 		final String url = ddbApiItems + "/" + recordId + "/edm?oauth_consumer_key=" + oauth_key;
