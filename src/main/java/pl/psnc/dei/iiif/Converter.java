@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 
@@ -28,15 +29,14 @@ import java.util.stream.Collectors;
  * Then install vips as shown in there: https://github.com/jcupitt/libvips/wiki/Build-for-Ubuntu
  * And then install libvips-tools for command-line tools
  */
+@Component
 public class Converter {
 
 	private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
 	private static final CommandExecutor executor = new CommandExecutor();
 
-	private final Record record;
-
-	private final JsonObject recordJson;
+	private Record record;
 
 	@Autowired
 	private RecordsRepository recordsRepository;
@@ -50,13 +50,12 @@ public class Converter {
 	@Value("${application.server.url}")
 	private String serverUrl;
 
-	private final File srcDir;
+	private File srcDir;
 
-	private final File outDir;
+	private File outDir;
 
-	public Converter(Record record, JsonObject recordJson) {
+	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson) throws ConversionException {
 		this.record = record;
-		this.recordJson = recordJson;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 				+ record.getIdentifier();
@@ -66,9 +65,7 @@ public class Converter {
 
 		outDir = new File(conversionDirectory, "/out/" + imagePath);
 		outDir.mkdirs();
-	}
 
-	public void convertAndGenerateManifest() throws ConversionException {
 		Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(e -> e.get("edm:isShownBy") != null)
@@ -165,7 +162,7 @@ public class Converter {
 	}
 
 	private String getTiffFileName(File file) {
-		return file.getName().split(".")[0] + ".tif";
+		return file.getName().split("\\.")[0] + ".tif";
 	}
 
 	private JsonObject getManifest(List<ConversionData> storedFilesData) {
