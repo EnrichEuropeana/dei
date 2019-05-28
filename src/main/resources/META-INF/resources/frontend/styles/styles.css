@@ -139,3 +139,7 @@
 .import-grid-label {
     font-weight: bold;
 }
+
+.import-switching-buttons {
+    max-width: 100px;
+}

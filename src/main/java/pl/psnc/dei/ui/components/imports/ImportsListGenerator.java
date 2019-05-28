@@ -52,13 +52,13 @@ public class ImportsListGenerator {
         Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
         Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
         importsGrid.addColumn(new ComponentRenderer<>(importInfo -> {
-            String result = "<div>";
+            StringBuilder result = new StringBuilder("<div>");
             Iterator<ImportFailure> iterator = importInfo.getFailures().iterator();
             int counter = 0;
             while (iterator.hasNext()) {
                 counter++;
                 if (counter > MAX_FAILURES_DISPLAYED) {
-                    result += MORE_MARKER;
+                    result.append(MORE_MARKER);
                     break;
                 }
                 ImportFailure importFailure = iterator.next();
@@ -66,11 +66,11 @@ public class ImportsListGenerator {
                 if (reason.length() > MAX_FAILURE_MESSAGE_SIZE) {
                     reason = reason.substring(0, MAX_FAILURE_MESSAGE_SIZE) + MORE_MARKER;
                 }
-                result += "<p>" + reason + "</p>";
+                result.append("<p>").append(reason).append("</p>");
 
             }
-            result += "</div>";
-            return new Html(result);
+            result.append("</div>");
+            return new Html(result.toString());
         })).setHeader("Failures").setFlexGrow(10);
 
         //
@@ -99,15 +99,6 @@ public class ImportsListGenerator {
     private final FieldFilter nameFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getName(), currentValue);
     private final FieldFilter statusFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getStatus().toString(), currentValue);
     private final FieldFilter dateFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getCreationDate().toString(), currentValue);
-
-    private final FieldFilter failuresFilter = (currentImport, currentValue) -> {
-        for (ImportFailure importFailure : currentImport.getFailures()) {
-            if (StringUtils.containsIgnoreCase(importFailure.getReason(), currentValue)) {
-                return true;
-            }
-        }
-        return false;
-    };
 
     private String getProjectNameFromImport(Import imp) {
         Iterator<Record> iterator = imp.getRecords().iterator();
