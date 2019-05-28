@@ -1,6 +1,5 @@
 package pl.psnc.dei.controllers;
 
-import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,14 +27,14 @@ import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 @RestController
 public class SearchController {
 
-    private ApplicationContext applicationContext;
+    private SearchService searchService;
 
     private static final String QUERY_ALL = "*";
 
     private static final String[] EUROPEANA_FIXED_PARAMS = {"query", "qf", "cursor", "only_iiif"};
 
-    public SearchController(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    public SearchController(SearchService searchService) {
+        this.searchService = searchService;
     }
 
 
@@ -95,8 +94,6 @@ public class SearchController {
             String joinValue = String.join(",", v);
             otherParams.put(k, joinValue);
         });
-
-        SearchService searchService = applicationContext.getBean(SearchService.class);
 
         return searchService.search(query, qf, cursor, onlyIiif, otherParams);
     }
