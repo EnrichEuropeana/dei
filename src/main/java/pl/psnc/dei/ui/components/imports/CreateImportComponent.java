@@ -111,12 +111,14 @@ public class CreateImportComponent extends VerticalLayout {
 		switchingTables.setWidthFull();
 		switchingTables.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 		allRecordsGrid = generateRecordsGrid(allRecords);
+		allRecordsGrid.setEnabled(!shouldBeReadOnly());
 		Label allRecordsLabel = new Label("All records");
 		allRecordsLabel.addClassName("import-grid-label");
 		VerticalLayout allRecordsLayout = new VerticalLayout(allRecordsLabel, allRecordsGrid);
 		switchingTables.add(allRecordsLayout);
 		switchingTables.add(generateSwitchingButtons());
 		selectedRecordsGrid = generateRecordsGrid(selectedRecordsForImport);
+		selectedRecordsGrid.setEnabled(!shouldBeReadOnly());
 		Label selectedRecordsLabel = new Label("Selected records");
 		selectedRecordsLabel.addClassName("import-grid-label");
 		VerticalLayout selectedRecordsLayout = new VerticalLayout(selectedRecordsLabel, selectedRecordsGrid);
@@ -167,7 +169,7 @@ public class CreateImportComponent extends VerticalLayout {
 			allRecords.removeAll(waitingForMovingToSelected);
 			refresh();
 		});
-		addToSelected.setEnabled(shouldBeReadOnly());
+		addToSelected.setEnabled(!shouldBeReadOnly());
 		switchingButtons.add(addToSelected);
 
 		Button moveFromSelectedToAll = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_LEFT));
@@ -178,12 +180,12 @@ public class CreateImportComponent extends VerticalLayout {
 			refresh();
 		});
 		switchingButtons.add(moveFromSelectedToAll);
-		moveFromSelectedToAll.setEnabled(shouldBeReadOnly());
+		moveFromSelectedToAll.setEnabled(!shouldBeReadOnly());
 		return switchingButtons;
 	}
 
 	private boolean shouldBeReadOnly() {
-		return !(anImport != null && ImportStatus.SENT == anImport.getStatus());
+		return anImport != null && ImportStatus.SENT == anImport.getStatus();
 	}
 
 	private Component generateActionButtons() {
@@ -227,7 +229,7 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private boolean shouldShowSendButton() {
-		return anImport != null && ImportStatus.CREATED.equals(anImport.getStatus());
+		return anImport != null && (ImportStatus.CREATED.equals(anImport.getStatus()) || ImportStatus.FAILED.equals(anImport.getStatus()));
 	}
 
 	private boolean shouldShowUpdateButton() {

@@ -13,11 +13,11 @@ import java.util.List;
 @Route(value = "history", layout = MainView.class)
 public class ImportsHistory extends VerticalLayout {
 
-    public ImportsHistory(ImportsHistoryService importsHistoryService) {
-        add(prepareImportsGrid(importsHistoryService.getAllImports()));
-    }
+	public ImportsHistory(ImportsHistoryService importsHistoryService, ImportPage importPage) {
+		add(prepareImportsGrid(importsHistoryService.getAllImports(), importPage));
+	}
 
-    private Grid prepareImportsGrid(List<Import> imports) {
-        return new ImportsListGenerator(imports).generate();
-    }
+	private Grid prepareImportsGrid(List<Import> imports, ImportPage importPage) {
+		return new ImportsListGenerator(imports, importPage).generate();
+	}
 }
