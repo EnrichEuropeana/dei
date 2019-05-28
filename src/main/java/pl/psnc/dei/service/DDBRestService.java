@@ -8,6 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.w3c.dom.Document;
@@ -51,11 +52,9 @@ public class DDBRestService extends RestRequestExecutor {
 	public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from ddb {}", recordId);
 
-		final String url = ddbApiItems + "/" + recordId + "/edm?oauth_consumer_key=" + oauth_key;
-
 		String xmlRecord = webClient.get()
-				.uri(url)
-				.header("Accept", "application/xml")
+				.uri(b -> b.path(ddbApiItems).queryParam("oauth_consumer_key", oauth_key).build(recordId))
+				.accept(MediaType.APPLICATION_XML)
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
