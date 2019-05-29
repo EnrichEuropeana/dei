@@ -15,6 +15,6 @@ public class AggregatorConverter implements AttributeConverter<Aggregator, Integ
 
 	@Override
 	public Aggregator convertToEntityAttribute(Integer id) {
-		return Aggregator.getAggregator(id);
+		return Aggregator.getById(id);
 	}
 }

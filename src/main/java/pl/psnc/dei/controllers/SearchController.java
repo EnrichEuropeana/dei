@@ -39,16 +39,17 @@ public class SearchController {
 
 
     @GetMapping(value = "/api/search", produces = "application/json")
-    public Mono<SearchResponse> search(@RequestParam(value = "aggregator_id") Integer aggregatorId,
+    public Mono<SearchResponse> search(@RequestParam(value = "aggregator") Integer aggregatorId,
                                        @RequestParam(value = "query") String query,
                                        @RequestParam MultiValueMap<String, String> allParams) {
-        Aggregator aggregator = Aggregator.getAggregator(aggregatorId);
+        Aggregator aggregator = Aggregator.getById(aggregatorId);
 
         switch (aggregator) {
             case EUROPEANA:
                 return handleEuropeanaSearchRequest(query, allParams);
             case DDB:
                 //todo handle params for ddb
+            case UNKNOWN:
             default:
                 RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
                 if (requestAttributes != null) {

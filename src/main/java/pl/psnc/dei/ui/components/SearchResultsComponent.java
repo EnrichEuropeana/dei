@@ -245,7 +245,7 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     private Pagination getDefaultPagination() {
-        Aggregator aggregator = Aggregator.getAggregator(aggregatorId);
+        Aggregator aggregator = Aggregator.getById(aggregatorId);
         switch (aggregator) {
             case EUROPEANA:
                 return new EuropeanaCursorPagination();

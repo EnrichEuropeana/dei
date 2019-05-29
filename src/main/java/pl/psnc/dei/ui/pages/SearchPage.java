@@ -202,8 +202,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private void createAggregatorSelectionBox() {
         aggregator = new Select<>();
         aggregator.addClassName("aggregator-selector");
-        aggregator.setItems(Aggregator.values());
-        aggregator.setValue(Aggregator.values()[0]);
+        aggregator.setItems(Arrays.stream(Aggregator.values()).filter(a -> a != Aggregator.UNKNOWN));
+        aggregator.setValue(Aggregator.getById(0));
         currentUserRecordSelection.setAggregator(Aggregator.values()[0]);
         aggregator.setLabel("Available aggregators");
         aggregator.setEmptySelectionAllowed(false);
@@ -331,11 +331,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
                     "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
                             + " selected but not added record(s). Record selection will be lost with next search query execution.",
-                    e -> executeSearch(aggregatorId, query, /*qf, cursor,*/ requestParams));
+                    e -> executeSearch(aggregatorId, query, requestParams));
             dialog.addContent("Are you sure you want to continue?");
             dialog.open();
         } else {
-            executeSearch(aggregatorId, query, /*qf, cursor,*/ requestParams);
+            executeSearch(aggregatorId, query, requestParams);
         }
     }
 
@@ -382,14 +382,21 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         if (queryParameters != null) {
             Map<String, List<String>> parametersMap = queryParameters.getParameters();
             String aggregatorParamValue = getParameterValue(parametersMap.get(AGGREGATOR_PARAM_NAME), true);
-            int aggregatorId = aggregatorParamValue != null ? Integer.parseInt(aggregatorParamValue) : 0;
+            boolean valid = Aggregator.isValid(aggregatorParamValue);
+            if (!valid) {
+                Notification.show("Unknown/Invalid aggregator!", 4000, Notification.Position.TOP_CENTER);
+                return;
+            }
+            int aggregatorId = Integer.parseInt(aggregatorParamValue);
+            aggregator.setValue(Aggregator.getById(aggregatorId));
+            currentUserRecordSelection.setAggregator(Aggregator.getById(aggregatorId));
+
             String query = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
 
             String onlyIiifParam = getParameterValue(parametersMap.get(ONLY_IIIF_PARAM_NAME), true);
             setOnlyIiif(onlyIiifParam == null || Boolean.parseBoolean(onlyIiifParam));
             searchOnlyIiif.setValue(onlyIiif);
 
-            aggregator.setValue(Aggregator.getAggregator(aggregatorId));
             Map<String, List<String>> requestParams = new HashMap<>();
             parametersMap.entrySet().stream()
                     .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)))
