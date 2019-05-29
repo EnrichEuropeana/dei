@@ -379,12 +379,14 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public void setParameter(BeforeEvent event, @OptionalParameter String parameter) {
         Location location = event.getLocation();
         QueryParameters queryParameters = location.getQueryParameters();
-        if (queryParameters != null) {
+        if (queryParameters != null && !queryParameters.getParameters().isEmpty()) {
             Map<String, List<String>> parametersMap = queryParameters.getParameters();
             String aggregatorParamValue = getParameterValue(parametersMap.get(AGGREGATOR_PARAM_NAME), true);
             boolean valid = Aggregator.isValid(aggregatorParamValue);
             if (!valid) {
-                Notification.show("Unknown/Invalid aggregator!", 4000, Notification.Position.TOP_CENTER);
+            	if (aggregatorParamValue != null) {
+					Notification.show("Unknown/Invalid aggregator!", 4000, Notification.Position.TOP_CENTER);
+				}
                 return;
             }
             int aggregatorId = Integer.parseInt(aggregatorParamValue);

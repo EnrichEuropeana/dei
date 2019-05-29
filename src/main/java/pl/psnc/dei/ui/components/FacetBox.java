@@ -49,13 +49,12 @@ public class FacetBox extends AccordionPanel {
     // parent facet component
     private FacetComponent facetComponent;
 
-    public FacetBox(FacetComponent parent, Facet facet) {
+    public FacetBox(FacetComponent parent, Facet<FacetField> facet) {
         this.facetComponent = parent;
         this.facet = facet.getName();
         setSummaryText(FACET_LABELS.get(facet.getName()));
 
         values = new HashMap<>();
-        @SuppressWarnings("unchecked")
         List<FacetField> facetFields = facet.getFields();
         facetFields.forEach(facetField -> {
             Checkbox checkbox = new Checkbox(facetField.toString(), checkboxBooleanComponentValueChangeEvent -> {
