@@ -10,45 +10,40 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.response.search.SearchResponse;
-import pl.psnc.dei.service.SearchService;
+import pl.psnc.dei.service.EuropeanaSearchService;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletResponse;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-
-import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.CURSOR_PARAM_NAME;
-import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.FIRST_CURSOR;
-import static pl.psnc.dei.ui.components.FacetComponent.QF_PARAM_NAME;
-import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 
 @RestController
 public class SearchController {
 
-    private SearchService searchService;
+    private EuropeanaSearchService europeanaSearchService;
 
-    private static final String QUERY_ALL = "*";
-
-    private static final String[] EUROPEANA_FIXED_PARAMS = {"query", "qf", "cursor", "only_iiif"};
-
-    public SearchController(SearchService searchService) {
-        this.searchService = searchService;
+    public SearchController(EuropeanaSearchService europeanaSearchService) {
+        this.europeanaSearchService = europeanaSearchService;
     }
-
 
     @GetMapping(value = "/api/search", produces = "application/json")
     public Mono<SearchResponse> search(@RequestParam(value = "aggregator") Integer aggregatorId,
                                        @RequestParam(value = "query") String query,
                                        @RequestParam MultiValueMap<String, String> allParams) {
+
+        Map<String, String> requestParams = new HashMap<>();
+        allParams.forEach((k, v) -> {
+            String joinValue = String.join(",", v);
+            requestParams.put(k, joinValue);
+        });
+
         Aggregator aggregator = Aggregator.getById(aggregatorId);
 
         switch (aggregator) {
             case EUROPEANA:
-                return handleEuropeanaSearchRequest(query, allParams);
+                return europeanaSearchService.search(query, requestParams);
             case DDB:
-                //todo handle params for ddb
+                //todo search in ddb
             case UNKNOWN:
             default:
                 RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
@@ -58,44 +53,5 @@ public class SearchController {
                 }
                 return Mono.empty();
         }
-    }
-
-    private Mono<SearchResponse> handleEuropeanaSearchRequest(String query, MultiValueMap<String, String> allParams) {
-        String qf = null;
-        String cursor;
-        boolean onlyIiif;
-
-        if (query.isEmpty()) {
-            query = QUERY_ALL;
-        }
-
-        List<String> qfParam = allParams.get(QF_PARAM_NAME);
-        if (!(qfParam == null || qfParam.isEmpty())) {
-            qf = qfParam.get(0);
-        }
-
-        List<String> cursorParam = allParams.get(CURSOR_PARAM_NAME);
-        if (cursorParam == null || cursorParam.isEmpty() || cursorParam.get(0) ==  null || cursorParam.get(0).isEmpty()) {
-            cursor = FIRST_CURSOR;
-        } else {
-            cursor = cursorParam.get(0);
-        }
-
-        List<String> onlyIiifParam = allParams.get(ONLY_IIIF_PARAM_NAME);
-        if (onlyIiifParam == null || onlyIiifParam.isEmpty()) {
-            onlyIiif = true;
-        } else {
-            onlyIiif = Boolean.parseBoolean(onlyIiifParam.get(0));
-        }
-
-        allParams.keySet().removeAll(Arrays.asList(EUROPEANA_FIXED_PARAMS));
-
-        Map<String, String> otherParams = new HashMap<>();
-        allParams.forEach((k, v) -> {
-            String joinValue = String.join(",", v);
-            otherParams.put(k, joinValue);
-        });
-
-        return searchService.search(query, qf, cursor, onlyIiif, otherParams);
     }
 }
