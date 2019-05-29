@@ -135,4 +135,9 @@ public class EuropeanaSearchResponse implements SearchResponse<EuropeanaFacet, E
     public void setPagination(Pagination pagination) {
         this.nextCursor = ((EuropeanaCursorPagination)pagination).getCursor();
     }
+
+    @Override
+    public Pagination getDefaultPagination() {
+        return new EuropeanaCursorPagination();
+    }
 }

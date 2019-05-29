@@ -5,10 +5,8 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.springframework.util.LinkedMultiValueMap;
-import pl.psnc.dei.controllers.SearchController;
-import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.response.search.Facet;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.*;
@@ -23,20 +21,8 @@ import java.util.*;
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 12;
 
-    // aggregator id
-    private transient int aggregatorId;
-
-    // query string
-    private transient String query;
-
-    // other request parameters
-    private transient Map<String, List<String>> requestParams;
-
     // search results container
     private transient SearchResults searchResults;
-
-    // search controller to execute searches
-    private transient SearchController searchController;
 
     // results label
     private Label resultsCount;
@@ -50,6 +36,8 @@ public class SearchResultsComponent extends VerticalLayout {
     // list of results
     private VerticalLayout resultsList;
 
+    private SearchPage searchPage;
+
     private CurrentUserRecordSelection currentUserRecordSelection;
 
     private EuropeanaRestService europeanaRestService;
@@ -58,12 +46,12 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private RecordTransferValidationCache recordTransferValidationCache;
 
-    public SearchResultsComponent(SearchController searchController,
+    public SearchResultsComponent(SearchPage searchPage,
                                   CurrentUserRecordSelection currentUserRecordSelection,
                                   EuropeanaRestService europeanaRestService,
                                   UIPollingManager uiPollingManager,
                                   RecordTransferValidationCache recordTransferValidationCache) {
-        this.searchController = searchController;
+        this.searchPage = searchPage;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.europeanaRestService = europeanaRestService;
         this.uiPollingManager = uiPollingManager;
@@ -136,37 +124,16 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     /**
-     * Execute facet search after a facet was selected or deselected. The current query string is used and the pagination is
-     * set as for the first execution.
-     */
-    public void executeFacetSearch(Map<String, String> requestParams) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(aggregatorId, query, requestParams)));
-    }
-
-    /**
-     * Execute new search
+     * Handles new search results
      *
-     * @param query  query entered by the user
-     * @param requestParams request parameters e.g. media, reusability
-     * @return search results object
+     * @param searchResponse result of the search
      */
-    public SearchResults executeSearch(int aggregatorId, String query, Map<String, List<String>> requestParams) {
-        this.aggregatorId = aggregatorId;
-        this.query = query;
-        this.requestParams = requestParams;
-
+    public void handleSearchResults(SearchResponse<Facet, Item> searchResponse) {
         searchResults.clear();
-        recordTransferValidationCache.clear();
+        recordTransferValidationCache.clear(); //todo move?
 
-        SearchResponse result = searchController.search(aggregatorId, query, new LinkedMultiValueMap<>(requestParams)).block();
-        if (result == null) {
-            // we should show failure warning
-            Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
-            return null;
-        }
-        updateSearchResults(result, true);
+        updateSearchResults(searchResponse, true);
         updateComponent();
-        return searchResults;
     }
 
     /**
@@ -179,10 +146,9 @@ public class SearchResultsComponent extends VerticalLayout {
         int page;
         if (newPage < currentPage) {
             Pagination pagination = searchResults.getPagination(newPage);
-            if (pagination == null/*cursor == null*/) {
+            if (pagination == null) {
                 // when there is no cursor for specific page we should start from the beginning
-                Pagination defaultPagination = getDefaultPagination();
-                searchResults.setNextPagination(defaultPagination);
+                searchResults.setNextPagination(searchResults.getDefaultPagination());
                 searchResults.setResultsCollected(0);
                 page = 0;
             } else {
@@ -200,10 +166,10 @@ public class SearchResultsComponent extends VerticalLayout {
         }
         while (++page <= newPage) {
             Map<String, String> paginationParams = searchResults.getNextPagination().getRequestParams();
-            paginationParams.forEach((key, value) -> this.requestParams.put(key, Collections.singletonList(value)));
-            SearchResponse result = searchController.search(aggregatorId, query, new LinkedMultiValueMap<>(this.requestParams)).block();
+            SearchResponse<Facet, Item> result = searchPage.executePaginationSearch(paginationParams);
             if (result == null) {
                 // redirect to error page
+                Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
                 return;
             }
             updateSearchResults(result, page == newPage);
@@ -217,42 +183,28 @@ public class SearchResultsComponent extends VerticalLayout {
      * @param result            result from search execution
      * @param updateResultsList when true the actual items are also updated
      */
-    private void updateSearchResults(SearchResponse result, boolean updateResultsList) {
+    private void updateSearchResults(SearchResponse<Facet, Item> result, boolean updateResultsList) {
         if (result.getTotalResults() == 0) {
             searchResults.clear();
         } else {
             searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
-            if (searchResults.getNextPagination() == null) {
-                Pagination defaultPagination = getDefaultPagination();
-                searchResults.setNextPagination(defaultPagination);
-            }
+
+            Pagination pagination = searchResults.getNextPagination() == null ? result.getDefaultPagination() : searchResults.getNextPagination();
             if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
-                searchResults.setPagination(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, searchResults.getNextPagination());
+                searchResults.setPagination(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, pagination);
             } else {
-                searchResults.setPagination((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, searchResults.getNextPagination());
+                searchResults.setPagination((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, pagination);
             }
             searchResults.setNextPagination(result.getPagination());
+            searchResults.setDefaultPagination(result.getDefaultPagination());
             searchResults.setTotalResults(result.getTotalResults());
             searchResults.setFacets(result.getFacets());
             searchResults.setResults(new ArrayList<>());
 
             if (updateResultsList) {
-                @SuppressWarnings("unchecked")
                 List<Item> items = result.getItems();
                 items.forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
             }
-        }
-    }
-
-    private Pagination getDefaultPagination() {
-        Aggregator aggregator = Aggregator.getById(aggregatorId);
-        switch (aggregator) {
-            case EUROPEANA:
-                return new EuropeanaCursorPagination();
-            case DDB:
-                return new DDBOffsetPagination();
-            default:
-                return null;
         }
     }
 

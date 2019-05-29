@@ -128,13 +128,12 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
             onlyIiif = Boolean.parseBoolean(onlyIiifParam);
         }
 
-        requestParams.keySet().removeAll(Arrays.asList(EUROPEANA_FIXED_PARAMS));
-
         Map<String, String> otherParams = new HashMap<>();
         requestParams.forEach((k, v) -> {
             String joinValue = String.join(",", v);
             otherParams.put(k, joinValue);
         });
+        otherParams.keySet().removeAll(Arrays.asList(EUROPEANA_FIXED_PARAMS));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
     }

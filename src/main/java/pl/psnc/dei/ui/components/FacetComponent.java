@@ -9,6 +9,7 @@ import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.response.search.Facet;
 import pl.psnc.dei.schema.search.DDBOffsetPagination;
 import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
+import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -26,8 +27,8 @@ public class FacetComponent extends VerticalLayout {
     // Component for showing the selected facets
     private SelectedFacetsComponent selectedFacetsComponent;
 
-    // Search results component
-    private SearchResultsComponent searchResultsComponent;
+    // Search page
+    private SearchPage searchPage;
 
     // Filter query from facets
     private Map<String, List<String>> fq = new HashMap<>();
@@ -48,9 +49,9 @@ public class FacetComponent extends VerticalLayout {
         EUROPEANA_DEFAULT_FACETS.put("REUSABILITY", "open");
     }
 
-    public FacetComponent(SearchResultsComponent resultsComponent, CurrentUserRecordSelection currentUserRecordSelection) {
+    public FacetComponent(SearchPage searchPage, CurrentUserRecordSelection currentUserRecordSelection) {
         addClassName("facet-component");
-        this.searchResultsComponent = resultsComponent;
+        this.searchPage = searchPage;
         this.currentUserRecordSelection = currentUserRecordSelection;
         facetAccordion = new Accordion();
         facetBoxes = new ArrayList<>();
@@ -89,7 +90,7 @@ public class FacetComponent extends VerticalLayout {
      * @param facetValue facet value
      * @param add indicator whether the value was selected or deselected
      */
-    public void executeFacetSearch(String facet, String facetValue, boolean add) {
+    public void executeFacetSearch(String facet, String facetValue, boolean add) { //todo refactor
         Aggregator aggregator = currentUserRecordSelection.getAggregator();
 
         switch (aggregator) {
@@ -102,7 +103,7 @@ public class FacetComponent extends VerticalLayout {
         }
     }
 
-    private void handleEuropeanaFacetSearch(String facet, String facetValue, boolean add) {
+    private void handleEuropeanaFacetSearch(String facet, String facetValue, boolean add) { //todo refactor
         if (Arrays.asList(EUROPEANA_PARAM_FACETS).contains(facet.toUpperCase())) {
             handleEuropeanaFacet(facet, facetValue, add, facetParams);
         } else {
@@ -110,7 +111,7 @@ public class FacetComponent extends VerticalLayout {
         }
         Map<String, String> requestParams = prepareRequestParams();
         requestParams.put(QF_PARAM_NAME, prepareQueryFilter());
-        searchResultsComponent.executeFacetSearch(requestParams);
+        searchPage.executeFacetSearch(requestParams);
     }
 
     private void handleEuropeanaFacet(String facet, String facetValue, boolean add, Map<String, List<String>> facets) {
@@ -165,7 +166,7 @@ public class FacetComponent extends VerticalLayout {
      *
      * @param requestParams request parameters
      */
-    public void updateState(Map<String, List<String>> requestParams) {
+    public void updateState(Map<String, String> requestParams) {
         handleQueryFilterString(requestParams);
         handleRequestParams(requestParams);
 
@@ -179,13 +180,8 @@ public class FacetComponent extends VerticalLayout {
      *
      * @param requestParams request parameters
      */
-    private void handleQueryFilterString(Map<String, List<String>> requestParams) {
-        String qf = null;
-
-        List<String> qfParam = requestParams.get(QF_PARAM_NAME);
-        if (qfParam != null && !qfParam.isEmpty()) {
-            qf = qfParam.get(0);
-        }
+    private void handleQueryFilterString(Map<String, String> requestParams) {
+        String qf = requestParams.get(QF_PARAM_NAME);
 
         if (qf != null && !qf.isEmpty()) {
             fq.clear();
@@ -218,17 +214,17 @@ public class FacetComponent extends VerticalLayout {
      *
      * @param requestParams request parameters collection
      */
-    private void handleRequestParams(Map<String, List<String>> requestParams) {
+    private void handleRequestParams(Map<String, String> requestParams) {
         if (requestParams != null && !requestParams.isEmpty()) {
             facetParams.clear();
 
             List<String> paramsToSkip = getParamsToSkip();
             requestParams.entrySet().stream()
                     .filter(e -> !paramsToSkip.contains(e.getKey()))
-                    .forEach(e -> e.getValue().forEach(v -> {
-                        List<String> strings = Arrays.asList(v.split(","));
+                    .forEach(e -> {
+                        List<String> strings = Arrays.asList(e.getValue().split(","));
                         facetParams.computeIfAbsent(e.getKey().toUpperCase(), k -> new ArrayList<>()).addAll(strings);
-                    }));
+                    });
 
             if (!facetParams.isEmpty()) {
                 facetParams.keySet().forEach(s -> {

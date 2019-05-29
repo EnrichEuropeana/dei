@@ -16,6 +16,8 @@ public class SearchResults {
 
     private Pagination nextPagination;
 
+    private Pagination defaultPagination;
+
     private List<SearchResult> results = new ArrayList<>();
 
     public SearchResults() {
@@ -84,8 +86,12 @@ public class SearchResults {
         return null;
     }
 
-    public void clearPagination() {
-        paginations.clear();
+    public Pagination getDefaultPagination() {
+        return defaultPagination;
+    }
+
+    public void setDefaultPagination(Pagination defaultPagination) {
+        this.defaultPagination = defaultPagination;
     }
 
     public void clear() {
@@ -93,7 +99,12 @@ public class SearchResults {
         setResultsCollected(0);
         results.clear();
         facets.clear();
-        setNextPagination(null);
         setTotalResults(0);
+    }
+
+    private void clearPagination() {
+        paginations.clear();
+        setNextPagination(null);
+        setDefaultPagination(null);
     }
 }

@@ -18,6 +18,8 @@ public interface SearchResponse<T extends Facet, U extends Item> {
 
 	void setPagination(Pagination pagination);
 
+	Pagination getDefaultPagination();
+
 	List<U> getItems();
 
 	void setItems(List<U> items);

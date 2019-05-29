@@ -2,6 +2,8 @@ package pl.psnc.dei.service;
 
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
+import pl.psnc.dei.response.search.Facet;
+import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
 
 import java.util.Map;
@@ -15,7 +17,7 @@ public class SearchService {
 		this.europeanaSearchService = europeanaSearchService;
 	}
 
-	public SearchResponse search(int aggregatorId, String query, Map<String, String> requestParams) {
+	public SearchResponse<Facet, Item> search(int aggregatorId, String query, Map<String, String> requestParams) {
 		Aggregator aggregator = Aggregator.getById(aggregatorId);
 
 		switch (aggregator) {
