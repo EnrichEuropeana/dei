@@ -2,10 +2,10 @@ package pl.psnc.dei.service;
 
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.Import;
 
+import javax.transaction.Transactional;
 import java.util.List;
 
 @Service

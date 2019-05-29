@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
+import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +41,7 @@ import java.util.Optional;
  * Created by pwozniak on 3/20/19
  */
 @Service
+@Transactional
 public class TranscriptionPlatformService {
 
 	private static final int READ_TIMEOUT_IN_SECONDS = 5;

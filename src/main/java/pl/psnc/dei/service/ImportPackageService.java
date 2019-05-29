@@ -18,12 +18,17 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
-import java.util.*;
+import javax.transaction.Transactional;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Set;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
 
 @Service
+@Transactional
 public class ImportPackageService extends RestRequestExecutor {
 
     private final static Logger log = LoggerFactory.getLogger(ImportPackageService.class);
