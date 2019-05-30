@@ -50,7 +50,7 @@ public abstract class FacetComponent extends VerticalLayout {
         facetBoxes.clear();
         if (facets != null) {
             facets.forEach(facet -> {
-                FacetBox facetBox = new FacetBox(this, facet);
+                FacetBox facetBox = FacetBoxFactory.createFacetBox(this, facet);
                 facetBoxes.add(facetBox);
                 facetAccordion.add(facetBox);
             });

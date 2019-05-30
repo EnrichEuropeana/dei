@@ -140,7 +140,7 @@ public class EuropeanaFacetComponent extends FacetComponent {
 		}
 	}
 
-	private List<String> getParamsToSkip() {
+	private List<String> getParamsToSkip() { //todo
 		String[] paginationParamsNames = EuropeanaCursorPagination.getRequestParamsNames();
 
 		List<String> toSkip = new ArrayList<>(Arrays.asList(paginationParamsNames));
