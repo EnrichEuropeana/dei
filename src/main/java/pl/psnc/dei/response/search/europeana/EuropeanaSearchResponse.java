@@ -1,8 +1,9 @@
-package pl.psnc.dei.response.search;
+package pl.psnc.dei.response.search.europeana;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
 import pl.psnc.dei.schema.search.Pagination;
 
@@ -34,9 +35,9 @@ public class EuropeanaSearchResponse implements SearchResponse<EuropeanaFacet, E
     @JsonProperty("nextCursor")
     private String nextCursor;
     @JsonProperty("items")
-    private List<EuropeanaItem> items = null;
+    private List<EuropeanaItem> items;
     @JsonProperty("facets")
-    private List<EuropeanaFacet> facets = null;
+    private List<EuropeanaFacet> facets;
 
     @JsonProperty("apikey")
     public String getApikey() {

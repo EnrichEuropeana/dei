@@ -1,4 +1,4 @@
-package pl.psnc.dei.response.search;
+package pl.psnc.dei.response.search.europeana;
 
 import java.util.HashMap;
 import java.util.List;
@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import pl.psnc.dei.response.search.Item;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -62,15 +63,15 @@ public class EuropeanaItem implements Item {
     @JsonProperty("id")
     private String id;
     @JsonProperty("ugc")
-    private List<Boolean> ugc = null;
+    private List<Boolean> ugc;
     @JsonProperty("completeness")
     private Integer completeness;
     @JsonProperty("country")
-    private List<String> country = null;
+    private List<String> country;
     @JsonProperty("europeanaCollectionName")
-    private List<String> europeanaCollectionName = null;
+    private List<String> europeanaCollectionName;
     @JsonProperty("edmConceptPrefLabelLangAware")
-    private Map<String,List<String>> edmConceptPrefLabelLangAware = null;
+    private Map<String,List<String>> edmConceptPrefLabelLangAware;
     @JsonProperty("edmPlaceAltLabelLangAware")
     private Map<String,List<String>> edmPlaceAltLabelLangAware;
     @JsonProperty("dcDescriptionLangAware")
@@ -80,23 +81,23 @@ public class EuropeanaItem implements Item {
     @JsonProperty("dcTypeLangAware")
     private Map<String,List<String>> dcTypeLangAware;
     @JsonProperty("edmIsShownBy")
-    private List<String> edmIsShownBy = null;
+    private List<String> edmIsShownBy;
     @JsonProperty("dcDescription")
-    private List<String> dcDescription = null;
+    private List<String> dcDescription;
     @JsonProperty("edmConcept")
-    private List<String> edmConcept = null;
+    private List<String> edmConcept;
     @JsonProperty("edmConceptLabel")
-    private List<Map<String,String>> edmConceptLabel = null;
+    private List<Map<String,String>> edmConceptLabel;
     @JsonProperty("title")
-    private List<String> title = null;
+    private List<String> title;
     @JsonProperty("rights")
-    private List<String> rights = null;
+    private List<String> rights;
     @JsonProperty("edmIsShownAt")
-    private List<String> edmIsShownAt = null;
+    private List<String> edmIsShownAt;
     @JsonProperty("dctermsSpatial")
-    private List<String> dctermsSpatial = null;
+    private List<String> dctermsSpatial;
     @JsonProperty("dataProvider")
-    private List<String> dataProvider = null;
+    private List<String> dataProvider;
     @JsonProperty("dcTitleLangAware")
     private Map<String,List<String>> dcTitleLangAware;
     @JsonProperty("dcCreatorLangAware")
@@ -106,35 +107,35 @@ public class EuropeanaItem implements Item {
     @JsonProperty("europeanaCompleteness")
     private Integer europeanaCompleteness;
     @JsonProperty("edmPlace")
-    private List<String> edmPlace = null;
+    private List<String> edmPlace;
     @JsonProperty("edmPlaceLabel")
-    private List<Map<String,String>> edmPlaceLabel = null;
+    private List<Map<String,String>> edmPlaceLabel;
     @JsonProperty("edmPlaceLatitude")
-    private List<String> edmPlaceLatitude = null;
+    private List<String> edmPlaceLatitude;
     @JsonProperty("edmPlaceLongitude")
-    private List<String> edmPlaceLongitude = null;
+    private List<String> edmPlaceLongitude;
     @JsonProperty("dcCreator")
-    private List<String> dcCreator = null;
+    private List<String> dcCreator;
     @JsonProperty("dcContributor")
-    private List<String> dcContributor = null;
+    private List<String> dcContributor;
     @JsonProperty("edmPreview")
-    private List<String> edmPreview = null;
+    private List<String> edmPreview;
     @JsonProperty("edmPlaceLabelLangAware")
     private Map<String,List<String>> edmPlaceLabelLangAware;
     @JsonProperty("previewNoDistribute")
     private Boolean previewNoDistribute;
     @JsonProperty("provider")
-    private List<String> provider = null;
+    private List<String> provider;
     @JsonProperty("timestamp")
     private Long timestamp;
     @JsonProperty("score")
     private Double score;
     @JsonProperty("language")
-    private List<String> language = null;
+    private List<String> language;
     @JsonProperty("type")
     private String type;
     @JsonProperty("edmDatasetName")
-    private List<String> edmDatasetName = null;
+    private List<String> edmDatasetName;
     @JsonProperty("guid")
     private String guid;
     @JsonProperty("link")

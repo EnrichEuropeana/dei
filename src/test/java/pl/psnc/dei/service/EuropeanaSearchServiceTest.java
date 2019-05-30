@@ -11,6 +11,10 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 import pl.psnc.dei.response.search.*;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacetField;
+import pl.psnc.dei.response.search.europeana.EuropeanaItem;
+import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;

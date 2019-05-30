@@ -10,7 +10,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
-import pl.psnc.dei.response.search.EuropeanaSearchResponse;
+import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 

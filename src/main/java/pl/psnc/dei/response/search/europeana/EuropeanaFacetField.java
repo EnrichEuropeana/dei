@@ -1,9 +1,10 @@
-package pl.psnc.dei.response.search;
+package pl.psnc.dei.response.search.europeana;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import pl.psnc.dei.response.search.FacetField;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
