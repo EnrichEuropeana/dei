@@ -8,11 +8,13 @@ import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 
+import javax.transaction.Transactional;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 @Service
+@Transactional
 public class RecordsProjectsAssignmentService {
 
 	@Autowired

@@ -47,7 +47,7 @@ public class ImportPage extends HorizontalLayout {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new ImportsHistory(importsHistoryService);
+		displayingPlace = new ImportsHistory(importsHistoryService, this);
 		add(displayingPlace);
 	}
 

@@ -1,6 +1,7 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.Cascade;
 import pl.psnc.dei.converter.RecordStateConverter;
 
 import javax.persistence.*;
@@ -27,6 +28,7 @@ public class Record {
 
 	@JsonIgnore
     @ManyToOne
+	@Cascade(value = {org.hibernate.annotations.CascadeType.SAVE_UPDATE, org.hibernate.annotations.CascadeType.MERGE})
     private Project project;
 
     @JsonIgnore
