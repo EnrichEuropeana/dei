@@ -16,6 +16,8 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -32,6 +34,8 @@ import java.util.List;
 import java.util.Set;
 
 public class CreateImportComponent extends VerticalLayout {
+
+	private static final Logger logger = LoggerFactory.getLogger(CreateImportComponent.class);
 
 	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
 	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getProject().toString(), currentValue);
@@ -72,7 +76,6 @@ public class CreateImportComponent extends VerticalLayout {
 			Project project = selectedRecordsForImport.iterator().next().getProject();
 			this.allRecords = recordsRepository.findAllByProjectAndAnImportNull(project);
 		} else {
-			this.projectsRepository = projectsRepository;
 			this.selectedRecordsForImport = new HashSet<>();
 			this.allRecords = new HashSet<>();
 			this.anImport = null;
@@ -87,8 +90,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 		projectSelect.setEnabled(anImport == null);
 		projectSelect.addValueChangeListener(event -> {
-			Project project = (Project) event.getValue();
-			this.project = project;
+			project = event.getValue();
 			allRecords = recordsRepository.findAllByProjectAndAnImportNull(project);
 			selectedRecordsForImport = new HashSet<>();
 			importName.setValue(ImportNameCreatorUtil.generateImportName(project.getName()));
@@ -111,12 +113,14 @@ public class CreateImportComponent extends VerticalLayout {
 		switchingTables.setWidthFull();
 		switchingTables.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 		allRecordsGrid = generateRecordsGrid(allRecords);
+		allRecordsGrid.setEnabled(shouldBeEditable());
 		Label allRecordsLabel = new Label("All records");
 		allRecordsLabel.addClassName("import-grid-label");
 		VerticalLayout allRecordsLayout = new VerticalLayout(allRecordsLabel, allRecordsGrid);
 		switchingTables.add(allRecordsLayout);
 		switchingTables.add(generateSwitchingButtons());
 		selectedRecordsGrid = generateRecordsGrid(selectedRecordsForImport);
+		selectedRecordsGrid.setEnabled(shouldBeEditable());
 		Label selectedRecordsLabel = new Label("Selected records");
 		selectedRecordsLabel.addClassName("import-grid-label");
 		VerticalLayout selectedRecordsLayout = new VerticalLayout(selectedRecordsLabel, selectedRecordsGrid);
@@ -159,7 +163,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private Component generateSwitchingButtons() {
 		VerticalLayout switchingButtons = new VerticalLayout();
-		switchingButtons.setMaxWidth("100px");
+		switchingButtons.addClassName("import-switching-buttons");
 		Button addToSelected = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_RIGHT));
 		addToSelected.addClickListener(e -> {
 			List<Record> waitingForMovingToSelected = new ArrayList<>(allRecordsGrid.getSelectionModel().getSelectedItems());
@@ -167,7 +171,7 @@ public class CreateImportComponent extends VerticalLayout {
 			allRecords.removeAll(waitingForMovingToSelected);
 			refresh();
 		});
-		addToSelected.setEnabled(shouldBeReadOnly());
+		addToSelected.setEnabled(shouldBeEditable());
 		switchingButtons.add(addToSelected);
 
 		Button moveFromSelectedToAll = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_LEFT));
@@ -178,11 +182,11 @@ public class CreateImportComponent extends VerticalLayout {
 			refresh();
 		});
 		switchingButtons.add(moveFromSelectedToAll);
-		moveFromSelectedToAll.setEnabled(shouldBeReadOnly());
+		moveFromSelectedToAll.setEnabled(shouldBeEditable());
 		return switchingButtons;
 	}
 
-	private boolean shouldBeReadOnly() {
+	private boolean shouldBeEditable() {
 		return !(anImport != null && ImportStatus.SENT == anImport.getStatus());
 	}
 
@@ -218,7 +222,7 @@ public class CreateImportComponent extends VerticalLayout {
 				importPackageService.sendExistingImport(anImport.getName());
 			} catch (NotFoundException ex) {
 				Notification.show("Something goes wrong");
-				ex.printStackTrace();
+				logger.error("Import not found!", ex);
 			}
 		});
 		actionButtons.add(sendButton);
@@ -227,7 +231,7 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private boolean shouldShowSendButton() {
-		return anImport != null && ImportStatus.CREATED.equals(anImport.getStatus());
+		return anImport != null && (ImportStatus.CREATED.equals(anImport.getStatus()) || ImportStatus.FAILED.equals(anImport.getStatus()));
 	}
 
 	private boolean shouldShowUpdateButton() {
