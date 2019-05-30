@@ -26,6 +26,7 @@ import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.ui.pages.ImportPage;
 import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import java.util.ArrayList;
@@ -38,7 +39,7 @@ public class CreateImportComponent extends VerticalLayout {
 	private static final Logger logger = LoggerFactory.getLogger(CreateImportComponent.class);
 
 	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
-	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getProject().toString(), currentValue);
+	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private RecordsRepository recordsRepository;
 	private ImportPackageService importPackageService;
@@ -56,18 +57,21 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private Input importName;
 	private Project project;
+	private ImportPage importPage;
 
-	public CreateImportComponent(ImportPackageService importPackageService, RecordsRepository recordsRepository, ProjectsRepository projectsRepository) {
+	public CreateImportComponent(ImportPackageService importPackageService, RecordsRepository recordsRepository, ProjectsRepository projectsRepository, ImportPage importPage) {
 		this.importPackageService = importPackageService;
 		this.recordsRepository = recordsRepository;
 		this.allRecords = new HashSet<>();
 		this.projectsRepository = projectsRepository;
 		this.selectedRecordsForImport = new HashSet<>();
+		this.importPage = importPage;
 		createComponent();
 	}
 
-	public CreateImportComponent(ImportPackageService importPackageService, Import anImport, RecordsRepository recordsRepository, ProjectsRepository projectsRepository) {
+	public CreateImportComponent(ImportPackageService importPackageService, Import anImport, RecordsRepository recordsRepository, ProjectsRepository projectsRepository, ImportPage importPage) {
 		this.anImport = anImport;
+		this.importPage = importPage;
 		this.importPackageService = importPackageService;
 		this.recordsRepository = recordsRepository;
 		this.projectsRepository = projectsRepository;
@@ -97,7 +101,8 @@ public class CreateImportComponent extends VerticalLayout {
 			refresh();
 		});
 		HorizontalLayout projectSelectionLayout = new HorizontalLayout();
-		projectSelectionLayout.add(new Label("Select project"));
+		Label selectProjectLabel = new Label("Select project");
+		projectSelectionLayout.add(selectProjectLabel);
 		projectSelectionLayout.add(projectSelect);
 		return projectSelectionLayout;
 	}
@@ -130,12 +135,17 @@ public class CreateImportComponent extends VerticalLayout {
 		add(actionButtons);
 	}
 
+	private String getDatasetValue(Record record){
+		return record.getDataset() != null? record.getDataset().getName() : "";
+	}
+
 	private void createComponent() {
 		setWidthFull();
 		if (anImport == null) {
 			add(createProjectSelection());
 			HorizontalLayout importNameLayout = new HorizontalLayout();
 			importName = new Input();
+			importName.addClassName("wide-import-name-input");
 			importNameLayout.add(new Label("Import name"));
 			importNameLayout.add(importName);
 			add(importNameLayout);
@@ -197,10 +207,12 @@ public class CreateImportComponent extends VerticalLayout {
 		createButton.setEnabled(shouldShowCreateButton());
 		createButton.addClickListener(e -> {
 			if (selectedRecordsForImport.isEmpty()) {
-				Notification.show("Import cannot be empty");
+				Notification.show("Import cannot be empty", 3000, Notification.Position.TOP_CENTER);
 				return;
 			}
 			importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
+			Notification.show("Import was created", 3000, Notification.Position.TOP_CENTER);
+			importPage.showCreateListImportView();
 		});
 		actionButtons.add(createButton);
 
@@ -208,10 +220,12 @@ public class CreateImportComponent extends VerticalLayout {
 		updateButton.setEnabled(shouldShowUpdateButton());
 		updateButton.addClickListener(e -> {
 			if (selectedRecordsForImport.isEmpty()) {
-				Notification.show("Import cannot be empty");
+				Notification.show("Import cannot be empty", 3000, Notification.Position.TOP_CENTER);
 				return;
 			}
 			importPackageService.updateImport(anImport, selectedRecordsForImport);
+			Notification.show("Import was updated", 3000, Notification.Position.TOP_CENTER);
+			importPage.showCreateListImportView();
 		});
 		actionButtons.add(updateButton);
 
@@ -220,8 +234,10 @@ public class CreateImportComponent extends VerticalLayout {
 		sendButton.addClickListener(e -> {
 			try {
 				importPackageService.sendExistingImport(anImport.getName());
+				Notification.show("Import was send", 3000, Notification.Position.TOP_CENTER);
+				importPage.showCreateListImportView();
 			} catch (NotFoundException ex) {
-				Notification.show("Something goes wrong");
+				Notification.show("Something goes wrong", 3000, Notification.Position.TOP_CENTER);
 				logger.error("Import not found!", ex);
 			}
 		});

@@ -140,6 +140,10 @@
     font-weight: bold;
 }
 
+.wide-import-name-input {
+    width: 300px;
+}
+
 .import-switching-buttons {
     max-width: 100px;
 }

@@ -10,6 +10,7 @@ import pl.psnc.dei.model.Import;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.service.ImportsHistoryService;
 import pl.psnc.dei.ui.MainView;
+import pl.psnc.dei.ui.components.imports.CandidatesListsComponent;
 import pl.psnc.dei.ui.components.imports.CreateImportComponent;
 import pl.psnc.dei.ui.components.imports.ImportNavigationMenu;
 import pl.psnc.dei.ui.components.imports.ImportsListComponent;
@@ -39,10 +40,10 @@ public class ImportPage extends HorizontalLayout {
 		this.importsRepository = importsRepository;
 		setWidthFull();
 		setHeightFull();
-		createListImports();
+		showCreateListImportView();
 	}
 
-	public void createHistoryImports() {
+	public void showHistoryImportsView() {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
@@ -50,7 +51,7 @@ public class ImportPage extends HorizontalLayout {
 		add(displayingPlace);
 	}
 
-	public void createListImports() {
+	public void showCreateListImportView() {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
@@ -58,27 +59,35 @@ public class ImportPage extends HorizontalLayout {
 		add(displayingPlace);
 	}
 
-	public void createImportPage() {
+	public void showCreateImportView() {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new CreateImportComponent(importPackageService, recordsRepository, projectsRepository);
+		displayingPlace = new CreateImportComponent(importPackageService, recordsRepository, projectsRepository, this);
 		add(displayingPlace);
 	}
 
-	public void editImport(Import anImport) {
+	public void showEditImportView(Import anImport) {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository);
+		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository, this);
 		add(displayingPlace);
 	}
 
-	public void sendImport(Import anImport) {
+	public void showSendImportView(Import anImport) {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository);
+		displayingPlace = new CreateImportComponent(importPackageService, anImport, recordsRepository, projectsRepository, this);
+		add(displayingPlace);
+	}
+
+	public void showCandidatesView() {
+		if (displayingPlace != null) {
+			remove(displayingPlace);
+		}
+		displayingPlace = new CandidatesListsComponent(projectsRepository, importPackageService);
 		add(displayingPlace);
 	}
 }
