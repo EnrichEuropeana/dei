@@ -45,7 +45,7 @@ public class ImportsListGenerator {
 
 		importsGrid.addItemDoubleClickListener(e -> {
 			Import imp = e.getItem();
-			importPage.editImport(imp);
+			importPage.showEditImportView(imp);
 		});
 
 		//
