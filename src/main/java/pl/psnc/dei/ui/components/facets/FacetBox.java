@@ -1,4 +1,4 @@
-package pl.psnc.dei.ui.components;
+package pl.psnc.dei.ui.components.facets;
 
 import com.vaadin.flow.component.accordion.AccordionPanel;
 import com.vaadin.flow.component.checkbox.Checkbox;

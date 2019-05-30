@@ -24,19 +24,15 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.response.search.Facet;
 import pl.psnc.dei.response.search.Item;
 import pl.psnc.dei.response.search.SearchResponse;
-import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
-import pl.psnc.dei.schema.search.Pagination;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.ConfirmationDialog;
-import pl.psnc.dei.ui.components.FacetComponent;
+import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
+import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
 
 import java.util.*;
 import java.util.stream.Collectors;
-
-import static pl.psnc.dei.ui.components.FacetComponent.EUROPEANA_DEFAULT_FACETS;
-
 
 @Route(value = "search", layout = MainView.class)
 @Secured(Role.OPERATOR)
@@ -148,7 +144,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * Creates facets component. By default it is hidden.
      */
     private void createFacetComponent() {
-        facets = new FacetComponent(this, currentUserRecordSelection);
+        facets = FacetComponentFactory.getFacetComponent(aggregator.getValue().getId(), this);
         facets.setPadding(false);
         showFacets(false);
     }
@@ -232,6 +228,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         currentUserRecordSelection.clearSelectedRecords();
         currentUserRecordSelection.setAggregator(aggregator);
         resultsComponent.clear();
+        facets = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
         facets.addFacets(null);
         showFacets(false);
         search.setPlaceholder("Search in " + aggregator.getFullName());
@@ -324,12 +321,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     }
 
     private void navigateToSearch(UI ui) {
-        HashMap<String, String> otherParams = new HashMap<>();
-        if (aggregator.getValue() == Aggregator.EUROPEANA) {
-            Pagination defaultPagination = new EuropeanaCursorPagination();
-            otherParams.putAll(defaultPagination.getRequestParams());
-            otherParams.putAll(EUROPEANA_DEFAULT_FACETS);
-        }
+        HashMap<String, String> otherParams = new HashMap<>(facets.getDefaultFacets());
         ui.navigate("search", prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams));
     }
 

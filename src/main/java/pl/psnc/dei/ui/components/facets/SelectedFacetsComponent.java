@@ -1,4 +1,4 @@
-package pl.psnc.dei.ui.components;
+package pl.psnc.dei.ui.components.facets;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.icon.Icon;

@@ -22,7 +22,7 @@ import java.util.Map;
 
 import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.CURSOR_PARAM_NAME;
 import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.FIRST_CURSOR;
-import static pl.psnc.dei.ui.components.FacetComponent.QF_PARAM_NAME;
+import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.QF_PARAM_NAME;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 
 @Service
