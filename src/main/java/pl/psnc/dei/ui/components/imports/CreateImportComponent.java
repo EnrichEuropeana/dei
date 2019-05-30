@@ -187,7 +187,7 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private boolean shouldBeEditable() {
-		return anImport != null && ImportStatus.SENT == anImport.getStatus();
+		return !(anImport != null && ImportStatus.SENT == anImport.getStatus());
 	}
 
 	private Component generateActionButtons() {
