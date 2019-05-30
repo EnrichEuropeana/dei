@@ -1,25 +1,13 @@
 package pl.psnc.dei.ui.components.facets;
 
-import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 public class EuropeanaFacetComponent extends FacetComponent {
-
-	public static final String QF_PARAM_NAME = "qf";
-
-	private static final Map<String, String> EUROPEANA_DEFAULT_FACETS = new HashMap<>();
-
-	private static final String[] EUROPEANA_PARAM_FACETS = {"COLOURPALETTE", "LANDINGPAGE", "MEDIA", "REUSABILITY", "TEXT_FULLTEXT", "THUMBNAIL"};
-
-	static {
-		EUROPEANA_DEFAULT_FACETS.put("MEDIA", "true");
-		EUROPEANA_DEFAULT_FACETS.put("REUSABILITY", "open");
-	}
 
 	// Filter query from facets
 	private Map<String, List<String>> fq = new HashMap<>();
@@ -121,9 +109,8 @@ public class EuropeanaFacetComponent extends FacetComponent {
 		if (requestParams != null && !requestParams.isEmpty()) {
 			facetParams.clear();
 
-			List<String> paramsToSkip = getParamsToSkip();
 			requestParams.entrySet().stream()
-					.filter(e -> !paramsToSkip.contains(e.getKey()))
+					.filter(e -> FACET_LABELS.keySet().contains(e.getKey().toUpperCase()))
 					.forEach(e -> {
 						List<String> strings = Arrays.asList(e.getValue().split(","));
 						facetParams.computeIfAbsent(e.getKey().toUpperCase(), k -> new ArrayList<>()).addAll(strings);
@@ -138,16 +125,6 @@ public class EuropeanaFacetComponent extends FacetComponent {
 		} else {
 			facetParams.clear();
 		}
-	}
-
-	private List<String> getParamsToSkip() { //todo
-		String[] paginationParamsNames = EuropeanaCursorPagination.getRequestParamsNames();
-
-		List<String> toSkip = new ArrayList<>(Arrays.asList(paginationParamsNames));
-		toSkip.add(QF_PARAM_NAME);
-		toSkip.add(ONLY_IIIF_PARAM_NAME);
-
-		return toSkip;
 	}
 
 	/**
@@ -168,7 +145,7 @@ public class EuropeanaFacetComponent extends FacetComponent {
 
 	@Override
 	public void executeFacetSearch(String facet, String facetValue, boolean add) {
-		if (Arrays.asList(EUROPEANA_PARAM_FACETS).contains(facet.toUpperCase())) {
+		if (Arrays.asList(PARAM_FACETS).contains(facet.toUpperCase())) {
 			handleEuropeanaFacet(facet, facetValue, add, facetParams);
 		} else {
 			handleEuropeanaFacet(facet, facetValue, add, fq);

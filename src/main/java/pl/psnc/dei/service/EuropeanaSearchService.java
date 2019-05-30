@@ -20,15 +20,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.CURSOR_PARAM_NAME;
-import static pl.psnc.dei.schema.search.EuropeanaCursorPagination.FIRST_CURSOR;
-import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.QF_PARAM_NAME;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 @Service
 public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
 
-    private static final String[] EUROPEANA_FIXED_PARAMS = {"query", "qf", "cursor", "only_iiif"};
+    private static final String UTF_8_ENCODING = "UTF-8";
 
     private static final Logger log = LoggerFactory.getLogger(EuropeanaSearchService.class);
 
@@ -68,19 +66,19 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
-                    uriBuilder.queryParam("wskey", apiKey);
+                    uriBuilder.queryParam(API_KEY_PARAM_NAME, apiKey);
                     searchApiPredefinedParameters.forEach(uriBuilder::query);
-                    uriBuilder.queryParam("query", UriUtils.encode(query, "UTF-8"));
+                    uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(query, UTF_8_ENCODING));
                     if (queryFilter != null) {
-                        uriBuilder.queryParam("qf", UriUtils.encode(queryFilter, "UTF-8"));
+                        uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(queryFilter, UTF_8_ENCODING));
                     }
                     if (onlyIiif) {
-                        uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"));
+                        uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(searchApiIiifQuery, UTF_8_ENCODING));
                     }
                     if (!otherParams.isEmpty()) {
-                        otherParams.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, "UTF-8")));
+                        otherParams.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, UTF_8_ENCODING)));
                     }
-                    return uriBuilder.queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
+                    return uriBuilder.queryParam(CURSOR_PARAM_NAME, UriUtils.encode(cursor, UTF_8_ENCODING))
                             .build();
                 })
                 .retrieve()
@@ -133,7 +131,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
             String joinValue = String.join(",", v);
             otherParams.put(k, joinValue);
         });
-        otherParams.keySet().removeAll(Arrays.asList(EUROPEANA_FIXED_PARAMS));
+        otherParams.keySet().removeAll(Arrays.asList(FIXED_API_PARAMS));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
     }

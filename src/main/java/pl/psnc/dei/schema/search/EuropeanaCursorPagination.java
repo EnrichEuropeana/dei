@@ -3,11 +3,10 @@ package pl.psnc.dei.schema.search;
 import java.util.HashMap;
 import java.util.Map;
 
+import static pl.psnc.dei.util.EuropeanaConstants.CURSOR_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.FIRST_CURSOR;
+
 public class EuropeanaCursorPagination implements Pagination {
-
-	public static final String FIRST_CURSOR = "*";
-
-	public  static final String CURSOR_PARAM_NAME = "cursor";
 
 	private String cursor;
 
