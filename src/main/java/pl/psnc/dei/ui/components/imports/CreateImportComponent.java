@@ -171,7 +171,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private Component generateSwitchingButtons() {
 		VerticalLayout switchingButtons = new VerticalLayout();
-		switchingButtons.addClassName("import-switching-elements");
+		switchingButtons.addClassName("import-switching-buttons");
 		Button addToSelected = new Button(new Icon(VaadinIcon.ARROW_CIRCLE_RIGHT));
 		addToSelected.addClickListener(e -> {
 			List<Record> waitingForMovingToSelected = new ArrayList<>(allRecordsGrid.getSelectionModel().getSelectedItems());
