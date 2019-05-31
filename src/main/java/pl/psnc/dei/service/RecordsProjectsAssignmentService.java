@@ -116,7 +116,7 @@ public class RecordsProjectsAssignmentService {
 	 * @param dataset dataset to which the returned records are assigned
 	 * @return list of records assigned to the given dataset
 	 */
-	public List<Record> getAssignedRecords(Dataset dataset) {
+	public Set<Record> getAssignedRecords(Dataset dataset) {
 		return recordsRepository.findAllByDataset(dataset);
 	}
 
@@ -126,7 +126,7 @@ public class RecordsProjectsAssignmentService {
 	 * @param project project to which the returned records are assigned
 	 * @return list of records assigned to the given project
 	 */
-	public List<Record> getAssignedRecords(Project project) {
+	public Set<Record> getAssignedRecords(Project project) {
 		return recordsRepository.findAllByProject(project);
 	}
 }
