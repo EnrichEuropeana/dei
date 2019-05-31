@@ -12,8 +12,6 @@ public class SearchResults {
 
     private List<Facet> facets = new ArrayList<>();
 
-    private List<Pagination> paginations = new ArrayList<>();
-
     private Pagination nextPagination;
 
     private Pagination defaultPagination;
@@ -71,21 +69,6 @@ public class SearchResults {
         }
     }
 
-    public void setPagination(int page, Pagination pagination) {
-        if (page <= paginations.size()) {
-            paginations.set(page - 1, pagination);
-        } else if (page == paginations.size() + 1) {
-            paginations.add(pagination);
-        }
-    }
-
-    public Pagination getPagination(int page) {
-        if (page <= paginations.size()) {
-            return paginations.get(page - 1);
-        }
-        return null;
-    }
-
     public Pagination getDefaultPagination() {
         return defaultPagination;
     }
@@ -103,7 +86,6 @@ public class SearchResults {
     }
 
     private void clearPagination() {
-        paginations.clear();
         setNextPagination(null);
         setDefaultPagination(null);
     }

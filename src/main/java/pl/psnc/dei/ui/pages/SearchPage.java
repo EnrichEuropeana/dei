@@ -21,14 +21,12 @@ import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
-import pl.psnc.dei.response.search.Facet;
-import pl.psnc.dei.response.search.Item;
-import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.ConfirmationDialog;
-import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
+import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
 
 import java.util.*;
@@ -83,8 +81,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private Map<String, String> requestParams;
 
-    public SearchPage(
-            SearchService searchService,
+    public SearchPage(SearchService searchService,
             TranscriptionPlatformService transcriptionPlatformService,
             EuropeanaRestService europeanaRestService,
             CurrentUserRecordSelection currentUserRecordSelection,
@@ -359,7 +356,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             }
             this.query = query;
             this.requestParams = requestParams;
-            SearchResponse<Facet, Item> searchResults = searchService.search(aggregatorId, query, requestParams);
+            SearchResults searchResults = searchService.search(aggregatorId, query, requestParams);
 
             if (searchResults != null) {
                 resultsComponent.handleSearchResults(searchResults);
@@ -390,7 +387,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param paginationParams pagination request parameters
      * @return SearchResponse object if search operation finish successfully, null otherwise.
      */
-    public SearchResponse<Facet, Item> executePaginationSearch(Map<String, String> paginationParams) {
+    public SearchResults goToPage(Map<String, String> paginationParams) { //todo cache? here or in search service
         if (requestParams != null) {
             requestParams.putAll(paginationParams);
             return searchService.search(aggregator.getValue().getId(), query, requestParams);

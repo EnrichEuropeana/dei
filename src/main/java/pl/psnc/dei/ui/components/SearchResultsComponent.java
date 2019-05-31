@@ -6,9 +6,6 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.response.search.Facet;
-import pl.psnc.dei.response.search.Item;
-import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.schema.search.*;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordTransferValidationCache;
@@ -20,6 +17,7 @@ import java.util.*;
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 12;
+    private static final int FIRST_PAGE = 1;
 
     // search results container
     private transient SearchResults searchResults;
@@ -45,6 +43,8 @@ public class SearchResultsComponent extends VerticalLayout {
     private UIPollingManager uiPollingManager;
 
     private RecordTransferValidationCache recordTransferValidationCache;
+
+    private List<Pagination> paginationCache = new ArrayList<>();
 
     public SearchResultsComponent(SearchPage searchPage,
                                   CurrentUserRecordSelection currentUserRecordSelection,
@@ -82,7 +82,7 @@ public class SearchResultsComponent extends VerticalLayout {
         navigationBar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 
         // add results count
-        resultsCount = new Label(prepareResultsText());
+        resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
         // page navigation
@@ -95,7 +95,7 @@ public class SearchResultsComponent extends VerticalLayout {
     /**
      * Shows / hides this component according to number of results.
      */
-    private void updateComponent() {
+    private void updateComponent(int currentPage) {
         setVisible(searchResults != null
                 && searchResults.getResults() != null
                 && !searchResults.getResults().isEmpty());
@@ -108,10 +108,10 @@ public class SearchResultsComponent extends VerticalLayout {
             if (resultsList == null) {
                 createResultList();
             }
-            resultsCount.setText(prepareResultsText());
+            resultsCount.setText(prepareResultsText(currentPage));
             resultsList.removeAll();
             searchResults.getResults().forEach(searchResult ->
-					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService,
+					resultsList.add(new SearchResultEntryComponent(searchPage, currentUserRecordSelection, europeanaRestService,
                             uiPollingManager, recordTransferValidationCache, searchResult)));
         }
     }
@@ -126,15 +126,19 @@ public class SearchResultsComponent extends VerticalLayout {
     /**
      * Handles new search results
      *
-     * @param searchResponse result of the search
+     * @param searchResults result of the search
      */
-    public void handleSearchResults(SearchResponse<Facet, Item> searchResponse) {
-        searchResults.clear();
+    public void handleSearchResults(SearchResults searchResults) {
+        this.searchResults = searchResults;
         recordTransferValidationCache.clear(); //todo move?
+        paginationCache.clear();
 
-        updateSearchResults(searchResponse, true);
-        updateComponent();
+        paginationCache.add(searchResults.getDefaultPagination());
+        paginationCache.add(searchResults.getNextPagination());
+
+        updateComponent(FIRST_PAGE);
     }
+
 
     /**
      * Change page from current to a new one in either direction
@@ -144,122 +148,40 @@ public class SearchResultsComponent extends VerticalLayout {
      */
     void goToPage(int currentPage, int newPage) {
         int page;
-        if (newPage < currentPage) {
-            Pagination pagination = searchResults.getPagination(newPage);
-            if (pagination == null) {
-                // when there is no cursor for specific page we should start from the beginning
-                searchResults.setNextPagination(searchResults.getDefaultPagination());
-                searchResults.setResultsCollected(0);
-                page = 0;
+        Pagination pagination = paginationCache.size() >= newPage ? paginationCache.get(newPage - 1) : null;
+
+        SearchResults result = null;
+        if (pagination == null) {
+            if (newPage > currentPage) {
+                pagination = paginationCache.get(paginationCache.size() - 1);
+                page = currentPage;
+                while (++page <= newPage) {
+                    Map<String, String> paginationParams = pagination.getRequestParams();
+                    result = searchPage.goToPage(paginationParams);
+                    if (result == null) {
+                        // redirect to error page
+                        Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
+                        return;
+                    }
+                    pagination = result.getNextPagination();
+                    paginationCache.add(result.getNextPagination());
+                }
             } else {
-                // we should set all things as we would be one page behind the requested one
-                searchResults.setNextPagination(pagination);
-                searchResults.setResultsCollected(DEFAULT_PAGE_SIZE * (newPage - 1));
-                page = newPage - 1;
+                // do nothing when the current page is requested
+                return;
             }
-        } else if (newPage > currentPage) {
-            // we will start from the current page and retrieve missing pages one by one
-            page = currentPage;
         } else {
-            // do nothing when the current page is requested
-            return;
-        }
-        while (++page <= newPage) {
-            Map<String, String> paginationParams = searchResults.getNextPagination().getRequestParams();
-            SearchResponse<Facet, Item> result = searchPage.executePaginationSearch(paginationParams);
+            Map<String, String> paginationParams = pagination.getRequestParams();
+            result = searchPage.goToPage(paginationParams);
             if (result == null) {
                 // redirect to error page
                 Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
                 return;
             }
-            updateSearchResults(result, page == newPage);
-        }
-        updateComponent();
-    }
-
-    /**
-     * Updates SearchResults container based on the SearchResponse. When updateResultsList is true also the actual result items are updated.
-     *
-     * @param result            result from search execution
-     * @param updateResultsList when true the actual items are also updated
-     */
-    private void updateSearchResults(SearchResponse<Facet, Item> result, boolean updateResultsList) {
-        if (result.getTotalResults() == 0) {
-            searchResults.clear();
-        } else {
-            searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
-
-            Pagination pagination = searchResults.getNextPagination() == null ? result.getDefaultPagination() : searchResults.getNextPagination();
-            if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
-                searchResults.setPagination(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, pagination);
-            } else {
-                searchResults.setPagination((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, pagination);
-            }
-            searchResults.setNextPagination(result.getPagination());
-            searchResults.setDefaultPagination(result.getDefaultPagination());
-            searchResults.setTotalResults(result.getTotalResults());
-            searchResults.setFacets(result.getFacets());
-            searchResults.setResults(new ArrayList<>());
-
-            if (updateResultsList) {
-                List<Item> items = result.getItems();
-                items.forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
-            }
-        }
-    }
-
-    /**
-     * Create a SearchResult object from EuropeanaItem which is retrieved from the response
-     *
-     * @param item item found in the results
-     * @return item converted to search result object
-     */
-    private SearchResult itemToSearchResult(Item item) {
-        SearchResult searchResult = new SearchResult();
-
-        //id
-        searchResult.setId(item.getId());
-
-        // title
-        if (item.getTitle() != null && !item.getTitle().isEmpty()) {
-            searchResult.setTitle(item.getTitle().get(0));
         }
 
-        // author
-        if (item.getAuthor() != null && !item.getAuthor().isEmpty()) {
-            searchResult.setAuthor(item.getAuthor());
-        }
-
-        // issued
-
-        // provider institution
-        if (item.getDataProviderInstitution() != null && !item.getDataProviderInstitution().isEmpty()) {
-            searchResult.setProvider(item.getDataProviderInstitution());
-        }
-
-        // format
-
-        // language
-        if (item.getLanguage() != null && !item.getLanguage().isEmpty()) {
-            searchResult.setLanguage(item.getLanguage().get(0));
-        }
-
-        // license
-        if (item.getRights() != null && !item.getRights().isEmpty()) {
-            searchResult.setLicense(item.getRights().get(0));
-        }
-
-        // image URL
-        if (item.getThumbnailURL() != null && !item.getThumbnailURL().isEmpty()) {
-            searchResult.setImageURL(item.getThumbnailURL());
-        }
-
-        // source object URL
-        if (item.getSourceObjectURL() != null && !item.getSourceObjectURL().isEmpty()) {
-            searchResult.setSourceObjectURL(item.getSourceObjectURL());
-        }
-
-        return searchResult;
+        this.searchResults = result;
+        updateComponent(newPage);
     }
 
     /**
@@ -267,36 +189,17 @@ public class SearchResultsComponent extends VerticalLayout {
      *
      * @return info string
      */
-    private String prepareResultsText() {
-        return prepareFromResultsText()
-                + " - "
-                + searchResults.getResultsCollected()
-                + " of "
-                + searchResults.getTotalResults();
-    }
+    private String prepareResultsText(int currentPage) {
+        int from = 1 + (currentPage - 1) * DEFAULT_PAGE_SIZE;
+        int to = from + searchResults.getResultsCollected() - 1;
+        int of = searchResults.getTotalResults();
 
-    /**
-     * Text with first shown result
-     *
-     * @return first shown result index
-     */
-    private String prepareFromResultsText() {
-        int fromResults = searchResults.getResultsCollected();
-        if (fromResults >= DEFAULT_PAGE_SIZE) {
-            if (fromResults >= searchResults.getTotalResults()) {
-                fromResults -= searchResults.getResults().size();
-            } else {
-                fromResults -= DEFAULT_PAGE_SIZE;
-            }
-        } else {
-            fromResults = 0;
-        }
-        return String.valueOf(fromResults + 1);
+        return from + " - " + to + " of " + of;
     }
 
     public void clear() {
         searchResults.clear();
-        updateComponent();
+        updateComponent(FIRST_PAGE);
     }
 
     public void selectAll() {
