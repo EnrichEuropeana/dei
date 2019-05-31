@@ -94,7 +94,6 @@ public class ImportPackageService extends RestRequestExecutor {
 	 * @return list of records which are candidates
 	 */
 	public Set<Record> getCandidates(Aggregator aggregator, Project project) {
-//		Project project = projectsRepository.findByProjectIdAndAggregator(projectId, aggregator);
 		if(aggregator == null && project == null) {
 			return recordsRepository.findAllByAnImportNull();
 		}
