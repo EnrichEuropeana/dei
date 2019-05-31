@@ -147,3 +147,7 @@
 .import-switching-buttons {
     max-width: 100px;
 }
+
+.underlined-item {
+    text-decoration: underline;
+}

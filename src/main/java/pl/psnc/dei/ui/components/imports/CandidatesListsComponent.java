@@ -91,11 +91,11 @@ public class CandidatesListsComponent extends VerticalLayout {
 
 	private Component createSelectionBar() {
 		HorizontalLayout bar = new HorizontalLayout();
-		Select<Project> projectSelect = new Select<>();
+		Select<Project> projectSelection = new Select<>();
 		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projectSelect.setDataProvider(listDataProvider);
-		projectSelect.setLabel("Select project");
-		projectSelect.addValueChangeListener(event -> {
+		projectSelection.setDataProvider(listDataProvider);
+		projectSelection.setLabel("Select project");
+		projectSelection.addValueChangeListener(event -> {
 			project = event.getValue();
 		});
 
@@ -110,9 +110,10 @@ public class CandidatesListsComponent extends VerticalLayout {
 		Button filterCandidates = new Button("Filter candidates");
 		filterCandidates.addClickListener(e->{refresh();});
 
-		bar.add(projectSelect);
+		bar.add(projectSelection);
 		bar.add(aggregatorSelect);
 		bar.add(filterCandidates);
+		bar.setAlignItems(Alignment.END);
 		return bar;
 	}
 
