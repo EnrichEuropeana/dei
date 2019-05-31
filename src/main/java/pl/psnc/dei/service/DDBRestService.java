@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
@@ -19,6 +20,7 @@ import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.PostConstruct;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -39,8 +41,11 @@ public class DDBRestService extends RestRequestExecutor {
 
 	private final Logger logger = LoggerFactory.getLogger(DDBRestService.class);
 
-	@Value("${ddb.api.items}")
-	private String ddbApiItems;
+	@Value("${ddb.api.itemsEndpoint}")
+	private String ddbApiItemsEndpoint;
+
+	@Value("${ddb.api.url}")
+	private String ddbApi;
 
 	@Value("${ddb.api.key}")
 	private String oauth_key;
@@ -49,11 +54,17 @@ public class DDBRestService extends RestRequestExecutor {
 		configure(webClientBuilder);
 	}
 
-	public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+	@PostConstruct
+	private void init() {
+		if (StringUtils.isNotBlank(ddbApi))
+			setRootUri(ddbApi);
+	}
+
+	public JsonObject retrieveRecordFromDDBAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from ddb {}", recordId);
 
 		String xmlRecord = webClient.get()
-				.uri(b -> b.path(ddbApiItems).queryParam("oauth_consumer_key", oauth_key).build(recordId))
+				.uri(b -> b.path(ddbApiItemsEndpoint).queryParam("oauth_consumer_key", oauth_key).build(recordId))
 				.accept(MediaType.APPLICATION_XML)
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
