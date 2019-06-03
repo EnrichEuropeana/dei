@@ -10,7 +10,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.response.search.SearchResponse;
-import pl.psnc.dei.service.EuropeanaSearchService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import reactor.core.publisher.Mono;
 
 import javax.servlet.http.HttpServletResponse;

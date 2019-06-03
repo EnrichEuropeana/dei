@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;

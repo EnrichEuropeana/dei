@@ -9,7 +9,7 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.queue.task.UpdateTask;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.util.RecordIdValidator;
+import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
 @RestController
 @RequestMapping("/api/transcription")
@@ -29,7 +29,7 @@ public class TranscriptionController {
 	@PostMapping
 	public ResponseEntity transcriptionReady(@RequestParam(value = "recordId") String recordId) {
 
-		if (!RecordIdValidator.validate(recordId)) {
+		if (!EuropeanaRecordIdValidator.validate(recordId)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
@@ -47,7 +47,7 @@ public class TranscriptionController {
 			@RequestParam("recordId") String recordId,
 			@RequestParam("transcriptionId") String transcriptionId) {
 
-		if (!RecordIdValidator.validate(recordId)) {
+		if (!EuropeanaRecordIdValidator.validate(recordId)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 

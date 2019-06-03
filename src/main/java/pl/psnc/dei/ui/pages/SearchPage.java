@@ -24,6 +24,8 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.search.SearchService;
+import pl.psnc.dei.service.searchresultprocessor.SearchResultProcessorService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.ConfirmationDialog;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
@@ -60,7 +62,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
-	private SearchResponseFillerService searchResponseFillerService;
+	private SearchResultProcessorService searchResultProcessorService;
 
     // label used when no results were found
     private Label noResults;
@@ -83,12 +85,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                       TranscriptionPlatformService transcriptionPlatformService,
                       CurrentUserRecordSelection currentUserRecordSelection,
                       RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-                      SearchResponseFillerService searchResponseFillerService) {
+                      SearchResultProcessorService searchResultProcessorService) {
         this.searchService = searchService;
         this.transcriptionPlatformService = transcriptionPlatformService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
-        this.searchResponseFillerService = searchResponseFillerService;
+        this.searchResultProcessorService = searchResultProcessorService;
 
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
@@ -364,12 +366,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         }
     }
 
+    /**
+     * Fills missing values from search request, validates if record can be transferred to TP, pushes values' updates
+     * to clients
+     *
+     * @param searchResults searchResults object that should be filled and verified
+     */
     public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
         int aggregatorId = aggregator.getValue().getId();
         List<SearchResult> results = searchResults.getResults();
         UI ui = UI.getCurrent();
 
-        results.forEach(result -> CompletableFuture.supplyAsync(() -> searchResponseFillerService.fillMissingDataAndValidate(aggregatorId, result))
+        results.forEach(result -> CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result))
                 .thenAccept(r -> resultsComponent.updateSearchResult(ui, r)));
     }
 
@@ -387,7 +395,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param paginationParams pagination request parameters
      * @return SearchResponse object if search operation finish successfully, null otherwise.
      */
-    public SearchResults goToPage(Map<String, String> paginationParams) { //todo cache? here or in search service
+    public SearchResults goToPage(Map<String, String> paginationParams) {
         if (requestParams != null) {
             requestParams.putAll(paginationParams);
             return searchService.search(aggregator.getValue().getId(), query, requestParams);
@@ -460,7 +468,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     @Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
-		searchResponseFillerService.clearCache();
+		searchResultProcessorService.clearCache();
 	}
 
 	@Override
