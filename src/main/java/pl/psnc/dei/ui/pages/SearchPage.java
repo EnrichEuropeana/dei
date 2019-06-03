@@ -21,6 +21,7 @@ import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
+import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.ui.MainView;
@@ -30,6 +31,7 @@ import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Route(value = "search", layout = MainView.class)
@@ -54,15 +56,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private TranscriptionPlatformService transcriptionPlatformService;
 
-    private EuropeanaRestService europeanaRestService;
-
     private CurrentUserRecordSelection currentUserRecordSelection;
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
-    private UIPollingManager uiPollingManager;
-
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private SearchResponseFillerService searchResponseFillerService;
 
     // label used when no results were found
     private Label noResults;
@@ -82,19 +80,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private Map<String, String> requestParams;
 
     public SearchPage(SearchService searchService,
-            TranscriptionPlatformService transcriptionPlatformService,
-            EuropeanaRestService europeanaRestService,
-            CurrentUserRecordSelection currentUserRecordSelection,
-            RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-            UIPollingManager uiPollingManager,
-			RecordTransferValidationCache recordTransferValidationCache) {
+                      TranscriptionPlatformService transcriptionPlatformService,
+                      CurrentUserRecordSelection currentUserRecordSelection,
+                      RecordsProjectsAssignmentService recordsProjectsAssignmentService,
+                      SearchResponseFillerService searchResponseFillerService) {
         this.searchService = searchService;
         this.transcriptionPlatformService = transcriptionPlatformService;
-        this.europeanaRestService = europeanaRestService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
-        this.uiPollingManager = uiPollingManager;
-        this.recordTransferValidationCache = recordTransferValidationCache;
+        this.searchResponseFillerService = searchResponseFillerService;
+
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
@@ -173,8 +168,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(searchOnlyIiif);
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection,
-                europeanaRestService, uiPollingManager, recordTransferValidationCache);
+        resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 createSelectionProperties(),
@@ -279,11 +273,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 					Notification.show(currentUserRecordSelection.getSelectedRecordIds().size() + " record(s) added!",
 							3000, Notification.Position.TOP_CENTER);
 					UI ui = UI.getCurrent();
-					uiPollingManager.registerPollRequest(ui, addElementsButton, 100);
-					ui.access(() -> {
-                    	resultsComponent.deselectAll();
-                    	uiPollingManager.unregisterPollRequest(ui, addElementsButton);
-                    });
+					ui.access(() -> resultsComponent.deselectAll());
 					currentUserRecordSelection.clearSelectedRecords();
                 });
 
@@ -360,6 +350,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
             if (searchResults != null) {
                 resultsComponent.handleSearchResults(searchResults);
+                fillMissingValuesAndVerifyResult(searchResults);
                 facets.addFacets(searchResults.getFacets());
                 facets.updateState(requestParams);
                 showFacets(true);
@@ -371,6 +362,15 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                 Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
             }
         }
+    }
+
+    public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
+        int aggregatorId = aggregator.getValue().getId();
+        List<SearchResult> results = searchResults.getResults();
+        UI ui = UI.getCurrent();
+
+        results.forEach(result -> CompletableFuture.supplyAsync(() -> searchResponseFillerService.fillMissingDataAndValidate(aggregatorId, result))
+                .thenAccept(r -> resultsComponent.updateSearchResult(ui, r)));
     }
 
     /**
@@ -460,8 +460,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     @Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
-		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
-		recordTransferValidationCache.clear();
+		searchResponseFillerService.clearCache();
 	}
 
 	@Override

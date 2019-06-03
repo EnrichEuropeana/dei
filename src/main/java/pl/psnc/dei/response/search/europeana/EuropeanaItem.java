@@ -622,6 +622,16 @@ public class EuropeanaItem implements Item {
         this.dataProvider.add(dataProvider);
     }
 
+    @Override
+    public String getFormat() {
+        return null;//no matching fields
+    }
+
+    @Override
+    public void setFormat(String format) {
+        //no matching fields
+    }
+
     @JsonProperty("rights")
     @Override
     public List<String> getRights() {

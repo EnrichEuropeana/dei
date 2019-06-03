@@ -1,18 +1,20 @@
 package pl.psnc.dei.ui.components;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.schema.search.*;
-import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.RecordTransferValidationCache;
-import pl.psnc.dei.service.UIPollingManager;
+import pl.psnc.dei.schema.search.Pagination;
+import pl.psnc.dei.schema.search.SearchResult;
+import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.ui.pages.SearchPage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
@@ -38,24 +40,12 @@ public class SearchResultsComponent extends VerticalLayout {
 
     private CurrentUserRecordSelection currentUserRecordSelection;
 
-    private EuropeanaRestService europeanaRestService;
-
-    private UIPollingManager uiPollingManager;
-
-    private RecordTransferValidationCache recordTransferValidationCache;
-
     private List<Pagination> paginationCache = new ArrayList<>();
 
     public SearchResultsComponent(SearchPage searchPage,
-                                  CurrentUserRecordSelection currentUserRecordSelection,
-                                  EuropeanaRestService europeanaRestService,
-                                  UIPollingManager uiPollingManager,
-                                  RecordTransferValidationCache recordTransferValidationCache) {
+                                  CurrentUserRecordSelection currentUserRecordSelection) {
         this.searchPage = searchPage;
         this.currentUserRecordSelection = currentUserRecordSelection;
-        this.europeanaRestService = europeanaRestService;
-        this.uiPollingManager = uiPollingManager;
-        this.recordTransferValidationCache = recordTransferValidationCache;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -111,8 +101,7 @@ public class SearchResultsComponent extends VerticalLayout {
             resultsCount.setText(prepareResultsText(currentPage));
             resultsList.removeAll();
             searchResults.getResults().forEach(searchResult ->
-					resultsList.add(new SearchResultEntryComponent(searchPage, currentUserRecordSelection, europeanaRestService,
-                            uiPollingManager, recordTransferValidationCache, searchResult)));
+					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, searchResult)));
         }
     }
 
@@ -130,9 +119,8 @@ public class SearchResultsComponent extends VerticalLayout {
      */
     public void handleSearchResults(SearchResults searchResults) {
         this.searchResults = searchResults;
-        recordTransferValidationCache.clear(); //todo move?
-        paginationCache.clear();
 
+        paginationCache.clear();
         paginationCache.add(searchResults.getDefaultPagination());
         paginationCache.add(searchResults.getNextPagination());
 
@@ -181,6 +169,7 @@ public class SearchResultsComponent extends VerticalLayout {
         }
 
         this.searchResults = result;
+        searchPage.fillMissingValuesAndVerifyResult(result);
         updateComponent(newPage);
     }
 
@@ -223,5 +212,21 @@ public class SearchResultsComponent extends VerticalLayout {
 				.map(c -> (SearchResultEntryComponent)c)
                 .filter(SearchResultEntryComponent::isRecordEnabled)
 				.forEach(SearchResultEntryComponent::invertRecordSelection);
+    }
+
+    public void updateSearchResult(UI ui, SearchResult searchResult) {
+        String recordId = searchResult.getId();
+        resultsList.getChildren()
+                .filter(c -> c instanceof SearchResultEntryComponent)
+                .map(c -> (SearchResultEntryComponent)c)
+                .filter(c -> c.getRecordId().equals(recordId))
+                .findFirst()
+                .ifPresent(/*c -> this.getUI().ifPresent(*/c -> {
+                    ui.access(() -> {
+                        c.updateMetadata(searchResult);
+                        ui.push(); //todo for some reason vaadin is not pushing any changes to client. try polling again?
+                    });
+                    //ui.push();
+                }/*)*/);
     }
 }

@@ -92,7 +92,9 @@ public class SearchService {
 		}
 
 		// format
-		//todo
+		if (item.getFormat() != null && !item.getFormat().isEmpty()) {
+			searchResult.setFormat(item.getFormat());
+		}
 
 		// language
 		if (item.getLanguage() != null && !item.getLanguage().isEmpty()) {

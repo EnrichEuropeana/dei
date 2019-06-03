@@ -20,6 +20,10 @@ public interface Item {
 
 	void setDataProviderInstitution(String dataProvider);
 
+	String getFormat();
+
+	void setFormat(String format);
+
 	List<String> getLanguage();
 
 	void setLanguage(List<String> language);

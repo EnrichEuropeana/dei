@@ -34,9 +34,10 @@ public class RecordTransferValidationUtil {
 				.findFirst();
 		if (mimeTypeEntry.isPresent()) {
 			JsonObject object = mimeTypeEntry.get();
-			return object.get(KEY_MIME_TYPE) != null ?
-					object.get(KEY_MIME_TYPE).getAsString().value() :
-					object.get("ebucore:" + KEY_MIME_TYPE).getAsString().value();
+			return (object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) != null ?
+					object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) :
+					(object.get("ebucore:" + KEY_MIME_TYPE) != null ? object.get("ebucore:" + KEY_MIME_TYPE) :
+							object.get(KEY_MIME_TYPE))).getAsString().value();
 		}
 		return null;
 	}
