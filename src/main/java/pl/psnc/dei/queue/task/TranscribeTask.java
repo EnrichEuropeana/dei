@@ -38,7 +38,7 @@ public class TranscribeTask extends Task {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
 				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
-//				if (RecordTransferValidationUtil.checkIfIiif(recordJson)) { TODO uncomment after merge with EN-64
+//				if (EuropeanaRecordTransferValidationUtil.checkIfIiif(recordJson)) { TODO uncomment after merge with EN-64
 					state = T_SEND_RESULT;
 //				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {

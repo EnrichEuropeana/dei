@@ -169,8 +169,8 @@ public class SearchResultsComponent extends VerticalLayout {
         }
 
         this.searchResults = result;
-        searchPage.fillMissingValuesAndVerifyResult(result);
         updateComponent(newPage);
+        searchPage.fillMissingValuesAndVerifyResult(result);
     }
 
     /**
@@ -221,12 +221,6 @@ public class SearchResultsComponent extends VerticalLayout {
                 .map(c -> (SearchResultEntryComponent)c)
                 .filter(c -> c.getRecordId().equals(recordId))
                 .findFirst()
-                .ifPresent(/*c -> this.getUI().ifPresent(*/c -> {
-                    ui.access(() -> {
-                        c.updateMetadata(searchResult);
-                        ui.push(); //todo for some reason vaadin is not pushing any changes to client. try polling again?
-                    });
-                    //ui.push();
-                }/*)*/);
+                .ifPresent(c -> ui.access(() -> c.updateMetadata(searchResult)));
     }
 }

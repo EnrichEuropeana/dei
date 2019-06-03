@@ -9,7 +9,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.TransferPossibility;
 
 /**
  * Single result component
@@ -148,7 +148,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 * Create metadata component which is part of the result component
 	 */
 	private VerticalLayout createMetadataComponent() {
-		RecordTransferValidationUtil.TransferPossibility transferPossibility = searchResult.getTransferPossibility();
+		TransferPossibility transferPossibility = searchResult.getTransferPossibility();
 
 		VerticalLayout metadataLayout = new VerticalLayout();
 		createTitleMetadataLine(metadataLayout, searchResult.getTitle(), searchResult.getSourceObjectURL());

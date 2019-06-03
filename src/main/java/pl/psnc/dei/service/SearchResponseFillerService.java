@@ -4,7 +4,8 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.EuropeanaRecordTransferValidationUtil;
+import pl.psnc.dei.util.TransferPossibility;
 
 @Service
 public class SearchResponseFillerService {
@@ -26,20 +27,22 @@ public class SearchResponseFillerService {
 			case EUROPEANA:
 				String recordId = searchResult.getId();
 				String mimeType;
-				RecordTransferValidationUtil.TransferPossibility transferPossibility;
+				TransferPossibility transferPossibility;
 				RecordTransferValidationCache.ValidationResult validationResult = recordTransferValidationCache.getValidationResult(recordId);
 				if (validationResult == null) {
 					JsonObject recordObject = europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(recordId);
-					mimeType = RecordTransferValidationUtil.getMimeType(recordObject);
-					transferPossibility = RecordTransferValidationUtil.checkIfTransferPossible(recordObject, mimeType);
+					mimeType = EuropeanaRecordTransferValidationUtil.getMimeType(recordObject);
+					transferPossibility = EuropeanaRecordTransferValidationUtil.checkIfTransferPossible(recordObject, mimeType);
 					recordTransferValidationCache.addValidationResult(recordId, mimeType, transferPossibility);
-					return searchResult;
 				} else {
 					mimeType = validationResult.getMimeType();
 					transferPossibility = validationResult.getTransferPossibility();
 				}
 				searchResult.setTransferPossibility(transferPossibility);
 				searchResult.setFormat(mimeType);
+				return searchResult;
+			case DDB:
+				//todo implement
 
 			default:
 				return searchResult;

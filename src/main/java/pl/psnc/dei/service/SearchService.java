@@ -53,8 +53,10 @@ public class SearchService {
 		searchResults.setDefaultPagination(response.getDefaultPagination());
 		searchResults.setNextPagination(response.getPagination());
 		searchResults.setFacets(response.getFacets());
-		searchResults.setTotalResults(response.getTotalResults());
-		searchResults.setResultsCollected(response.getItemsCount());
+		Integer totalResults = response.getTotalResults();
+		searchResults.setTotalResults(totalResults != null ? totalResults : 0);
+		Integer itemsCount = response.getItemsCount();
+		searchResults.setResultsCollected(itemsCount != null ? itemsCount : 0);
 
 		List<Item> items = response.getItems();
 		items.forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
@@ -115,8 +117,6 @@ public class SearchService {
 		if (item.getSourceObjectURL() != null && !item.getSourceObjectURL().isEmpty()) {
 			searchResult.setSourceObjectURL(item.getSourceObjectURL());
 		}
-
-		//todo verification?
 
 		return searchResult;
 	}
