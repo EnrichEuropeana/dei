@@ -30,16 +30,16 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
     private static final Logger log = LoggerFactory.getLogger(EuropeanaSearchService.class);
 
-    @Value("${api.key}")
+    @Value("${europeana.api.key}")
     private String apiKey;
 
-    @Value("${search.api.url}")
+    @Value("${europeana.search.api.url}")
     private String searchApiUrl;
 
-    @Value("#{'${search.api.predefined.parameters}'.split(',')}")
+    @Value("#{'${europeana.search.api.predefined.parameters}'.split(',')}")
     private List<String> searchApiPredefinedParameters;
 
-    @Value("${search.api.iiif.query}")
+    @Value("${europeana.search.api.iiif.query}")
     private String searchApiIiifQuery;
 
     public EuropeanaSearchService(WebClient.Builder webClientBuilder) {
