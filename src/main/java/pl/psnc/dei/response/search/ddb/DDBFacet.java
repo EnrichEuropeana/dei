@@ -1,5 +1,6 @@
 package pl.psnc.dei.response.search.ddb;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.psnc.dei.response.search.Facet;
 
 import java.util.ArrayList;
@@ -7,7 +8,9 @@ import java.util.List;
 
 public class DDBFacet implements Facet<DDBFacetField> {
 
+	@JsonProperty("field")
 	private String name;
+	@JsonProperty("facetValues")
 	private List<DDBFacetField> fields;
 
 	@Override

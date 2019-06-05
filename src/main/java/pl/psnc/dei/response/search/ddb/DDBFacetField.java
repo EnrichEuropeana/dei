@@ -1,10 +1,13 @@
 package pl.psnc.dei.response.search.ddb;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.psnc.dei.response.search.FacetField;
 
 public class DDBFacetField implements FacetField {
 
+	@JsonProperty("value")
 	private String label;
+	@JsonProperty("count")
 	private int count;
 
 	@Override
@@ -29,6 +32,6 @@ public class DDBFacetField implements FacetField {
 
 	@Override
 	public String toString(){
-		return "";
+		return getLabel() + " " + getCount();
 	}
 }

@@ -3,6 +3,7 @@ package pl.psnc.dei.response.search.ddb;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.schema.search.DDBOffsetPagination;
 import pl.psnc.dei.schema.search.Pagination;
 
 import java.util.List;
@@ -48,7 +49,7 @@ public class DDBSearchResponse implements SearchResponse<DDBFacet, DDBItem> {
 
 	@Override
 	public Pagination getDefaultPagination() {
-		return null;
+		return new DDBOffsetPagination();
 	}
 
 	@Override

@@ -12,7 +12,7 @@ public class FacetComponentFactory {
 			case EUROPEANA:
 				return new EuropeanaFacetComponent(searchPage);
 			case DDB:
-				//todo implement DDB facet component
+				return new DDBFacetComponent(searchPage);
 			default:
 				throw new IllegalArgumentException("Invalid / Unknown aggregator");
 		}

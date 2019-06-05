@@ -123,25 +123,27 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 * Create thumbnail image
 	 */
 	private void createImage() {
-		VerticalLayout thumbnailContainer = new VerticalLayout();
-		thumbnailContainer.addClassName("metadata-image-container");
-		thumbnailContainer.setAlignItems(Alignment.CENTER);
+		if(searchResult.getImageURL() != null) {
+			VerticalLayout thumbnailContainer = new VerticalLayout();
+			thumbnailContainer.addClassName("metadata-image-container");
+			thumbnailContainer.setAlignItems(Alignment.CENTER);
 
-		Image thumbnail = new Image();
-		thumbnail.setAlt(searchResult.getTitle());
-		thumbnail.setSrc(searchResult.getImageURL());
-		thumbnail.addClassName("metadata-image");
+			Image thumbnail = new Image();
+			thumbnail.setAlt(searchResult.getTitle());
+			thumbnail.setSrc(searchResult.getImageURL());
+			thumbnail.addClassName("metadata-image");
 
-		String sourceObjectURL = searchResult.getSourceObjectURL();
-		if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
-			Anchor link = new Anchor(sourceObjectURL, thumbnail);
-			link.setTarget("_blank");
-			thumbnailContainer.add(link);
-		} else {
-			thumbnailContainer.add(thumbnail);
+			String sourceObjectURL = searchResult.getSourceObjectURL();
+			if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
+				Anchor link = new Anchor(sourceObjectURL, thumbnail);
+				link.setTarget("_blank");
+				thumbnailContainer.add(link);
+			} else {
+				thumbnailContainer.add(thumbnail);
+			}
+
+			add(thumbnailContainer);
 		}
-
-		add(thumbnailContainer);
 	}
 
 	/**

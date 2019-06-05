@@ -14,15 +14,16 @@ import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.response.search.ddb.DDBSearchResponse;
+import pl.psnc.dei.schema.search.DDBOffsetPagination;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-@RestController
 @Service
 public class DDBSearchService extends RestRequestExecutor implements AggregatorSearchService {
 
@@ -34,6 +35,7 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 	private final String ROWS = "rows";
 	private final String OFFSET = "offset";
 	private final int DEFAULT_NUMBER_OF_ROWS = 10;
+	private List<String> FACET_NAMES = Arrays.asList("affiliate_fct", "type_fct", "time_fct", "place_fct", "keywords_fct", "language_fct");
 
 	@Value("${ddb.api.key}")
 	private String apiKey;
@@ -56,52 +58,63 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 
 	@Override
 	public Mono<SearchResponse> search(String query, Map<String, String> requestParams) {
-		return null;
-	}
-
-	@GetMapping("/test")
-	public DDBSearchResponse search() {
-		String query = "poland";
-		Map<String, String> requestParams = new HashMap<>();
-
-
-		DDBSearchResponse result = webClient.get()
+		SearchResponse result = webClient.get()
 				.uri(buildUri(query, requestParams))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
 				.bodyToMono(DDBSearchResponse.class)
+				.cast(SearchResponse.class)
 				.block();
-		return result;
+
+
+		int rows = getRowsFromParams(requestParams);
+		int offset = getOffsetFromParams(requestParams);
+		result.setPagination(new DDBOffsetPagination(rows, offset + rows));
+
+		return Mono.just(result);
+	}
+
+	private int getOffsetFromParams(Map<String, String> requestParams) {
+		int offset;
+		String offsetParam = requestParams.get("offset");
+		if (offsetParam == null || offsetParam.isEmpty()) {
+			offset = 0;
+		} else {
+			offset = Integer.parseInt(offsetParam);
+		}
+		return offset;
+	}
+
+	private int getRowsFromParams(Map<String, String> requestParams) {
+		int rows;
+		String numberOfRows = requestParams.get("rows");
+		if (numberOfRows == null || numberOfRows.isEmpty()) {
+			rows = DEFAULT_NUMBER_OF_ROWS;
+		} else {
+			rows = Integer.parseInt(numberOfRows);
+		}
+		return rows;
 	}
 
 	private Function<UriBuilder, URI> buildUri(String query, Map<String, String> requestParams) {
 		return uriBuilder -> {
-			int page;
-			int rows;
-
-			String numberOfRows = requestParams.get("rows");
-			if (numberOfRows == null || numberOfRows.isEmpty()) {
-				rows = DEFAULT_NUMBER_OF_ROWS;
-			} else {
-				rows = Integer.parseInt(numberOfRows);
-			}
-
-			String pageNumber = requestParams.get("page_number");
-			if (pageNumber == null || pageNumber.isEmpty()) {
-				page = 0;
-			} else {
-				page = Integer.parseInt(pageNumber);
-			}
-
 			uriBuilder.path(searchApiUrl).queryParam(DDB_API_KEY_NAME, apiKey);
 			if (!query.isEmpty()) {
 				uriBuilder.queryParam(QUERY, UriUtils.encode(query, UTF_8_ENCODING));
 			}
 
-			uriBuilder.queryParam(ROWS, rows);
-			uriBuilder.queryParam(OFFSET, page * rows);
+			fillFacets(uriBuilder);
+			uriBuilder.queryParam(ROWS, getRowsFromParams(requestParams));
+			uriBuilder.queryParam(OFFSET,  getOffsetFromParams(requestParams));
+			System.out.println(uriBuilder.build().toString());
 			return uriBuilder.build();
 		};
+	}
+
+	private void fillFacets(UriBuilder uriBuilder) {
+		for(String facet: FACET_NAMES) {
+			uriBuilder.queryParam("facet", facet);
+		}
 	}
 }
