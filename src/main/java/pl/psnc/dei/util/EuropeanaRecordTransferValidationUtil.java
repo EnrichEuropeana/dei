@@ -6,12 +6,13 @@ import org.apache.jena.atlas.json.JsonValue;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class RecordTransferValidationUtil {
+public class EuropeanaRecordTransferValidationUtil {
 
 	private static final String KEY_GRAPH = "@graph";
 	private static final String KEY_TYPE = "@type";
 	private static final String KEY_MIME_TYPE = "hasMimeType";
 	private static final String KEY_CONFORMS_TO = "conformsTo";
+	private static final String KEY_DCTERMS_CONFORMS_TO = "dcterms:conformsTo";
 	private static final String KEY_IS_SHOWN_BY = "isShownBy";
 
 	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
@@ -34,9 +35,10 @@ public class RecordTransferValidationUtil {
 				.findFirst();
 		if (mimeTypeEntry.isPresent()) {
 			JsonObject object = mimeTypeEntry.get();
-			return object.get(KEY_MIME_TYPE) != null ?
-					object.get(KEY_MIME_TYPE).getAsString().value() :
-					object.get("ebucore:" + KEY_MIME_TYPE).getAsString().value();
+			return (object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) != null ?
+					object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) :
+					(object.get("ebucore:" + KEY_MIME_TYPE) != null ? object.get("ebucore:" + KEY_MIME_TYPE) :
+							object.get(KEY_MIME_TYPE))).getAsString().value();
 		}
 		return null;
 	}
@@ -72,36 +74,11 @@ public class RecordTransferValidationUtil {
 						&& o.get(KEY_CONFORMS_TO).getAsString().value().equals("http://iiif.io/api/image"))
 						|| (o.get(KEY_TYPE).getAsString().value().equals(TYPE_AGGREGATION)
 						&& o.get(KEY_IS_SHOWN_BY) != null
-						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu")))
+						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu"))
+						|| (o.get(KEY_TYPE).getAsString().value().equals("http://rdfs.org/sioc/services#Service")
+						&& o.get(KEY_DCTERMS_CONFORMS_TO) != null
+						&& o.get(KEY_DCTERMS_CONFORMS_TO).getAsObject().get("@id").getAsString().value().equals("http://iiif.io/api/image")))
 				.findFirst();
 		return iiifEntry.isPresent();
-	}
-
-	/**
-	 * Possible results of check if record can be transferred to TP:
-	 * POSSIBLE - record already available via IIIF, can be transferred without conversion
-	 * REQUIRES_CONVERSION - record available in supported format, requires conversion to IIIF before transfer to TP
-	 * NOT_POSSIBLE - record not available in supported format, cannot be transferred to TP
-	 */
-	public enum TransferPossibility {
-		POSSIBLE("Can be transferred to Transcription Platform", true),
-		REQUIRES_CONVERSION("Can be converted and transferred to Transcription Platform", true),
-		NOT_POSSIBLE("Cannot be transferred to Transcription Platform", false);
-
-		String message;
-		boolean transferPossible;
-
-		TransferPossibility(String message, boolean transferPossible) {
-			this.message = message;
-			this.transferPossible = transferPossible;
-		}
-
-		public String getMessage() {
-			return message;
-		}
-
-		public boolean isTransferPossible() {
-			return transferPossible;
-		}
 	}
 }

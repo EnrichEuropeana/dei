@@ -1,4 +1,4 @@
-package pl.psnc.dei.ui.components;
+package pl.psnc.dei.ui.components.facets;
 
 import com.vaadin.flow.component.accordion.AccordionPanel;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -11,37 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
-public class FacetBox extends AccordionPanel {
-    // Labels for facet fields
-    public static final Map<String, String> FACET_LABELS;
+public abstract class FacetBox extends AccordionPanel {
 
     private transient Map<Checkbox, FacetField> values;
-
-    static {
-        FACET_LABELS = new HashMap<>();
-        FACET_LABELS.put("YEAR", "Year");
-        FACET_LABELS.put("RIGHTS", "Rights");
-        FACET_LABELS.put("DATA_PROVIDER", "Data provider");
-        FACET_LABELS.put("PROVIDER", "Provider");
-        FACET_LABELS.put("COLOURPALETTE", "Colour palette");
-        FACET_LABELS.put("COUNTRY", "Country");
-        FACET_LABELS.put("LANGUAGE", "Language");
-        FACET_LABELS.put("MIME_TYPE", "Mime type");
-        FACET_LABELS.put("TYPE", "Type");
-        FACET_LABELS.put("IMAGE_SIZE", "Image size");
-        FACET_LABELS.put("SOUND_DURATION", "Sound duration");
-        FACET_LABELS.put("REUSABILITY", "Reusability");
-        FACET_LABELS.put("VIDEO_DURATION", "Video duration");
-        FACET_LABELS.put("TEXT_FULLTEXT", "Has fulltext");
-        FACET_LABELS.put("LANDINGPAGE", "Landing page");
-        FACET_LABELS.put("MEDIA", "Media");
-        FACET_LABELS.put("THUMBNAIL", "Thumbnail");
-        FACET_LABELS.put("UGC", "UGC");
-        FACET_LABELS.put("IMAGE_ASPECTRATIO", "Image aspect ratio");
-        FACET_LABELS.put("IMAGE_COLOUR", "Image colour");
-        FACET_LABELS.put("VIDEO_HD", "Video HD");
-        FACET_LABELS.put("SOUND_HQ", "Sound HQ");
-    }
 
     // Used facet field
     private String facet;
@@ -49,13 +21,14 @@ public class FacetBox extends AccordionPanel {
     // parent facet component
     private FacetComponent facetComponent;
 
-    public FacetBox(FacetComponent parent, Facet facet) {
+    public FacetBox(FacetComponent parent, Facet<FacetField> facet) {
         this.facetComponent = parent;
         this.facet = facet.getName();
-        setSummaryText(FACET_LABELS.get(facet.getName()));
+        setSummaryText(getFacetLabelText());
 
         values = new HashMap<>();
-        facet.getFields().forEach(facetField -> {
+        List<FacetField> facetFields = facet.getFields();
+        facetFields.forEach(facetField -> {
             Checkbox checkbox = new Checkbox(facetField.toString(), checkboxBooleanComponentValueChangeEvent -> {
                 if (checkboxBooleanComponentValueChangeEvent.isFromClient()) {
                     handleFacetField(checkboxBooleanComponentValueChangeEvent.getSource());
@@ -95,4 +68,6 @@ public class FacetBox extends AccordionPanel {
             });
         }
     }
+
+    protected abstract String getFacetLabelText();
 }

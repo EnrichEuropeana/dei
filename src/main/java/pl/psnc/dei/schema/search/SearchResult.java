@@ -1,5 +1,7 @@
 package pl.psnc.dei.schema.search;
 
+import pl.psnc.dei.util.TransferPossibility;
+
 public class SearchResult {
 
     private String id;
@@ -19,6 +21,8 @@ public class SearchResult {
     private String language;
 
     private String license;
+
+    private TransferPossibility transferPossibility;
 
     /**
      * URL to object on aggregator portal
@@ -104,5 +108,13 @@ public class SearchResult {
 
     public void setSourceObjectURL(String sourceObjectURL) {
         this.sourceObjectURL = sourceObjectURL;
+    }
+
+    public TransferPossibility getTransferPossibility() {
+        return transferPossibility;
+    }
+
+    public void setTransferPossibility(TransferPossibility transferPossibility) {
+        this.transferPossibility = transferPossibility;
     }
 }

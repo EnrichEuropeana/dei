@@ -2,11 +2,8 @@ package pl.psnc.dei.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
 
 import java.util.List;
 import java.util.Objects;
@@ -22,6 +19,7 @@ public class RecordsProjectsAssignmentService {
 	private CurrentUserRecordSelection currentUserRecordSelection;
 
 	public void saveSelectedRecords() {
+		Aggregator aggregator = currentUserRecordSelection.getAggregator();
 		Project project = currentUserRecordSelection.getSelectedProject();
 		Dataset dataset = currentUserRecordSelection.getSelectedDataSet();
 		Set<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
@@ -32,6 +30,7 @@ public class RecordsProjectsAssignmentService {
 					if (record == null) {
 						Record newRecord = new Record();
 						newRecord.setIdentifier(recordId);
+						newRecord.setAggregator(aggregator);
 						newRecord.setProject(project);
 						newRecord.setDataset(dataset);
 						recordsRepository.save(newRecord);

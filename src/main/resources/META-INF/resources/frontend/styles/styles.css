@@ -78,6 +78,7 @@
     height: fit-content;
     max-width: 100px;
     max-height: 100px;
+    padding-top: 0;
     padding-bottom: 0;
 }
 
@@ -88,9 +89,13 @@
 }
 
 .query-form {
-    margin-top: 0;
     max-width: 1000px;
     max-height: 40px;
+}
+
+.aggregator-selector {
+    margin-top: 0;
+    width: 300px;
 }
 
 .search-field {

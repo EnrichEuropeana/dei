@@ -1,7 +1,7 @@
 package pl.psnc.dei.service;
 
 import org.springframework.stereotype.Service;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.TransferPossibility;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,7 +15,7 @@ public class RecordTransferValidationCache {
 		return cache.get(recordId);
 	}
 
-	public void addValidationResult(String recordId, String mimeType, RecordTransferValidationUtil.TransferPossibility transferPossibility) {
+	public void addValidationResult(String recordId, String mimeType, TransferPossibility transferPossibility) {
 		cache.put(recordId, new ValidationResult(mimeType, transferPossibility));
 	}
 
@@ -26,9 +26,9 @@ public class RecordTransferValidationCache {
 	public class ValidationResult {
 
 		private String mimeType;
-		private RecordTransferValidationUtil.TransferPossibility transferPossibility;
+		private TransferPossibility transferPossibility;
 
-		ValidationResult(String mimeType, RecordTransferValidationUtil.TransferPossibility transferPossibility) {
+		ValidationResult(String mimeType, TransferPossibility transferPossibility) {
 			this.mimeType = mimeType;
 			this.transferPossibility = transferPossibility;
 		}
@@ -37,7 +37,7 @@ public class RecordTransferValidationCache {
 			return mimeType;
 		}
 
-		public RecordTransferValidationUtil.TransferPossibility getTransferPossibility() {
+		public TransferPossibility getTransferPossibility() {
 			return transferPossibility;
 		}
 	}

@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -10,18 +10,25 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.request.RestRequestExecutor;
+import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
-public class SearchService
-extends RestRequestExecutor {
+import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.*;
 
-    private static final Logger log = LoggerFactory.getLogger(SearchService.class);
+@Service
+public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
+
+    private static final String UTF_8_ENCODING = "UTF-8";
+
+    private static final Logger log = LoggerFactory.getLogger(EuropeanaSearchService.class);
 
     @Value("${api.key}")
     private String apiKey;
@@ -35,7 +42,7 @@ extends RestRequestExecutor {
     @Value("${search.api.iiif.query}")
     private String searchApiIiifQuery;
 
-    public SearchService(WebClient.Builder webClientBuilder) {
+    public EuropeanaSearchService(WebClient.Builder webClientBuilder) {
         configure(webClientBuilder);
     }
 
@@ -59,25 +66,26 @@ extends RestRequestExecutor {
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
-                    uriBuilder.queryParam("wskey", apiKey);
+                    uriBuilder.queryParam(API_KEY_PARAM_NAME, apiKey);
                     searchApiPredefinedParameters.forEach(uriBuilder::query);
-                    uriBuilder.queryParam("query", UriUtils.encode(query, "UTF-8"));
+                    uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(query, UTF_8_ENCODING));
                     if (queryFilter != null) {
-                        uriBuilder.queryParam("qf", UriUtils.encode(queryFilter, "UTF-8"));
+                        uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(queryFilter, UTF_8_ENCODING));
                     }
                     if (onlyIiif) {
-                        uriBuilder.queryParam("qf", UriUtils.encode(searchApiIiifQuery, "UTF-8"));
+                        uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(searchApiIiifQuery, UTF_8_ENCODING));
                     }
                     if (!otherParams.isEmpty()) {
-                        otherParams.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, "UTF-8")));
+                        otherParams.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, UTF_8_ENCODING)));
                     }
-                    return uriBuilder.queryParam("cursor", UriUtils.encode(cursor, "UTF-8"))
+                    return uriBuilder.queryParam(CURSOR_PARAM_NAME, UriUtils.encode(cursor, UTF_8_ENCODING))
                             .build();
                 })
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .bodyToMono(SearchResponse.class);
+                .bodyToMono(EuropeanaSearchResponse.class)
+                .cast(SearchResponse.class);
     }
 
     private void checkParameters(String query, String cursor) {
@@ -87,5 +95,44 @@ extends RestRequestExecutor {
         if (StringUtils.isEmpty(cursor)) {
             throw new IllegalStateException("Cursor cannot be empty, it has to be either * or a value from previous request");
         }
+    }
+
+    @Override
+    public Mono<SearchResponse> search(String query, Map<String, String> requestParams) {
+        String qf = null;
+        String cursor;
+        boolean onlyIiif;
+
+        if (query.isEmpty()) {
+            query = QUERY_ALL;
+        }
+
+        String qfParam = requestParams.get(QF_PARAM_NAME);
+        if (!(qfParam == null || qfParam.isEmpty())) {
+            qf = qfParam;
+        }
+
+        String cursorParam = requestParams.get(CURSOR_PARAM_NAME);
+        if (cursorParam == null || cursorParam.isEmpty()) {
+            cursor = FIRST_CURSOR;
+        } else {
+            cursor = cursorParam;
+        }
+
+        String onlyIiifParam = requestParams.get(ONLY_IIIF_PARAM_NAME);
+        if (onlyIiifParam == null || onlyIiifParam.isEmpty()) {
+            onlyIiif = true;
+        } else {
+            onlyIiif = Boolean.parseBoolean(onlyIiifParam);
+        }
+
+        Map<String, String> otherParams = new HashMap<>();
+        requestParams.forEach((k, v) -> {
+            String joinValue = String.join(",", v);
+            otherParams.put(k, joinValue);
+        });
+        otherParams.keySet().removeAll(Arrays.asList(FIXED_API_PARAMS));
+
+        return search(query, qf, cursor, onlyIiif, otherParams);
     }
 }
