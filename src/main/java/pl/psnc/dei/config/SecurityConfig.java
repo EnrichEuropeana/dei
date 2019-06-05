@@ -88,6 +88,9 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
                 .requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
                 .antMatchers("/accessdenied*", "/logout*", "/sso/login*").permitAll()
                 .and()
-                .authorizeRequests().anyRequest().hasAuthority("operator");
+                .authorizeRequests().anyRequest().hasAuthority("operator")
+                .and()
+                .requiresChannel()
+                    .requestMatchers(r -> r.getHeader("X-Forwarded-Proto") != null).requiresSecure();
     }
 }
