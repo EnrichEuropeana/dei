@@ -169,4 +169,10 @@ public class EuropeanaFacetComponent extends FacetComponent {
 	public Map<String, String> getDefaultFacets() {
 		return EUROPEANA_DEFAULT_FACETS;
 	}
+
+	@Override
+	public void clearValuesForFacet(String facet) {
+		facetParams.remove(facet);
+		fq.remove(facet);
+	}
 }

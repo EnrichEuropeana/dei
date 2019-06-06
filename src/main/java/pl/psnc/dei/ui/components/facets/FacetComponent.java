@@ -80,4 +80,11 @@ public abstract class FacetComponent extends VerticalLayout {
      * @return Collection of default facets for search
      */
     public abstract Map<String, String> getDefaultFacets();
+
+    /**
+     * Clear all values for a given facet name
+     *
+     * @param facet facet name
+     */
+    public abstract void clearValuesForFacet(String facet);
 }
