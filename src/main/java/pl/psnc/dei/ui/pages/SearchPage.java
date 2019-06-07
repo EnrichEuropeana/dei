@@ -23,7 +23,8 @@ import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.SearchService;
 import pl.psnc.dei.service.searchresultprocessor.SearchResultProcessorService;
 import pl.psnc.dei.ui.MainView;
@@ -43,6 +44,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private static final String AGGREGATOR_PARAM_NAME = "aggregator";
     private static final String QUERY_PARAM_NAME = "query";
     public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
+    public static final String ROWS_PARAM_NAME = "rows";
 
     private Select<Aggregator> aggregator;
 
@@ -434,6 +436,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             searchOnlyIiif.setValue(onlyIiif);
 
             Map<String, String> requestParams = new HashMap<>();
+            requestParams.put(ROWS_PARAM_NAME, String.valueOf(SearchResultsComponent.DEFAULT_PAGE_SIZE));
             parametersMap.entrySet().stream()
                     .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)))
                     .forEach(e -> requestParams.put(e.getKey(), e.getValue().get(0)));

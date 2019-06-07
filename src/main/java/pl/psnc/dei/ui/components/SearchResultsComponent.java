@@ -6,7 +6,9 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
 import pl.psnc.dei.schema.search.Pagination;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
@@ -18,14 +20,18 @@ import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
-    public static final int DEFAULT_PAGE_SIZE = 12;
+    public static final int DEFAULT_PAGE_SIZE = 10;
     private static final int FIRST_PAGE = 1;
+
+    private int rowsPerPage = 10;
 
     // search results container
     private transient SearchResults searchResults;
 
     // results label
     private Label resultsCount;
+
+    private Select<Integer> rowsCount;
 
     // navigation bar with results count and page navigation
     private HorizontalLayout navigationBar;
@@ -75,8 +81,14 @@ public class SearchResultsComponent extends VerticalLayout {
         resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
+        createRowsCountSelect();
+        HorizontalLayout rowsCountLayout = new HorizontalLayout();
+        rowsCountLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        rowsCountLayout.add(new Label("Rows per page"), rowsCount);
+        navigationBar.add(rowsCountLayout);
+
         // page navigation
-        pageNavigationComponent = new PageNavigationComponent(this, DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent = new PageNavigationComponent(this, rowsPerPage, searchResults.getTotalResults());
         navigationBar.add(pageNavigationComponent);
 
         add(navigationBar);
@@ -109,7 +121,7 @@ public class SearchResultsComponent extends VerticalLayout {
      * Resets the page navigation component when number of total results has changed
      */
     private void updateNavigationBar() {
-        pageNavigationComponent.resetPages(DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent.resetPages(rowsPerPage, searchResults.getTotalResults());
     }
 
     /**
@@ -120,6 +132,7 @@ public class SearchResultsComponent extends VerticalLayout {
     public void handleSearchResults(SearchResults searchResults) {
         this.searchResults = searchResults;
 
+        rowsPerPage = searchResults.getResultsCollected();
         paginationCache.clear();
         paginationCache.add(searchResults.getDefaultPagination());
         paginationCache.add(searchResults.getNextPagination());
@@ -179,7 +192,7 @@ public class SearchResultsComponent extends VerticalLayout {
      * @return info string
      */
     private String prepareResultsText(int currentPage) {
-        int from = 1 + (currentPage - 1) * DEFAULT_PAGE_SIZE;
+        int from = 1 + (currentPage - 1) * rowsPerPage;
         int to = from + searchResults.getResultsCollected() - 1;
         int of = searchResults.getTotalResults();
 
@@ -222,5 +235,22 @@ public class SearchResultsComponent extends VerticalLayout {
                 .filter(c -> c.getRecordId().equals(recordId))
                 .findFirst()
                 .ifPresent(c -> ui.access(() -> c.updateMetadata(searchResult)));
+    }
+
+    private void createRowsCountSelect() {
+        rowsCount = new Select<>(10, 20, 50, 100);
+        rowsCount.setValue(DEFAULT_PAGE_SIZE);
+        rowsCount.addValueChangeListener(e -> {
+        	rowsPerPage = e.getValue();
+        	if(!paginationCache.isEmpty() && paginationCache.get(0) instanceof EuropeanaCursorPagination) {
+				paginationCache.clear();
+				Pagination firstPage = new EuropeanaCursorPagination("*", String.valueOf(rowsPerPage));
+				paginationCache.add(firstPage);
+				paginationCache.add(searchPage.goToPage(firstPage.getRequestParams()).getNextPagination());
+			} else {
+//        	    TODO DDB case
+            }
+        	goToPage(0, 1);
+        });
     }
 }

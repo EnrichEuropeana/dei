@@ -3,19 +3,23 @@ package pl.psnc.dei.schema.search;
 import java.util.HashMap;
 import java.util.Map;
 
-import static pl.psnc.dei.util.EuropeanaConstants.CURSOR_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.FIRST_CURSOR;
+import static pl.psnc.dei.ui.pages.SearchPage.ROWS_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 public class EuropeanaCursorPagination implements Pagination {
 
 	private String cursor;
 
-	public EuropeanaCursorPagination() {
+	private String rows;
+
+	public EuropeanaCursorPagination(String rows) {
 		this.cursor = FIRST_CURSOR;
+		this.rows = rows;
 	}
 
-	public EuropeanaCursorPagination(String cursor) {
+	public EuropeanaCursorPagination(String cursor, String rows) {
 		this.cursor = cursor;
+		this.rows = rows;
 	}
 
 	public String getCursor() {
@@ -26,6 +30,7 @@ public class EuropeanaCursorPagination implements Pagination {
 	public Map<String, String> getRequestParams() {
 		Map<String, String> params = new HashMap<>();
 		params.put(CURSOR_PARAM_NAME, this.cursor);
+		params.put(ROWS_PARAM_NAME, this.rows);
 		return params;
 	}
 
