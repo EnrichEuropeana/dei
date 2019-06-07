@@ -48,14 +48,16 @@ public class EuropeanaRecordTransferValidationUtilTest {
 		String mimeType3 = EuropeanaRecordTransferValidationUtil.getMimeType(europeanaRestResponseNoIiifWrongMimeType);
 		String mimeType4 = EuropeanaRecordTransferValidationUtil.getMimeType(europeanaRestResponseNoIiifNoMimeType);
 
-		TransferPossibility transferPossibility1 = EuropeanaRecordTransferValidationUtil.checkIfTransferPossible(europeanaRestResponseIiif, mimeType1);
-		TransferPossibility transferPossibility2 = EuropeanaRecordTransferValidationUtil.checkIfTransferPossible(europeanaRestResponseNoIiif, mimeType2);
-		TransferPossibility transferPossibility3 = EuropeanaRecordTransferValidationUtil.checkIfTransferPossible(europeanaRestResponseNoIiifWrongMimeType, mimeType3);
-		TransferPossibility transferPossibility4 = EuropeanaRecordTransferValidationUtil.checkIfTransferPossible(europeanaRestResponseNoIiifNoMimeType, mimeType4);
+		IiifAvailability iiifAvailability1 = EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(europeanaRestResponseIiif, mimeType1);
+		IiifAvailability iiifAvailability2 = EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(europeanaRestResponseNoIiif, mimeType2);
+		IiifAvailability iiifAvailability3 = EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(europeanaRestResponseNoIiifWrongMimeType, mimeType3);
+		IiifAvailability iiifAvailability4 = EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(europeanaRestResponseNoIiifNoMimeType, mimeType4);
+		IiifAvailability iiifAvailability5 = EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(null, null);
 
-		Assert.assertEquals(TransferPossibility.POSSIBLE, transferPossibility1);
-		Assert.assertEquals(TransferPossibility.REQUIRES_CONVERSION, transferPossibility2);
-		Assert.assertEquals(TransferPossibility.NOT_POSSIBLE, transferPossibility3);
-		Assert.assertEquals(TransferPossibility.NOT_POSSIBLE, transferPossibility4);
+		Assert.assertEquals(IiifAvailability.AVAILABLE, iiifAvailability1);
+		Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, iiifAvailability2);
+		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability3);
+		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability4);
+		Assert.assertEquals(IiifAvailability.DATA_UNAVAILABLE, iiifAvailability5);
 	}
 }

@@ -1,6 +1,6 @@
 package pl.psnc.dei.schema.search;
 
-import pl.psnc.dei.util.TransferPossibility;
+import pl.psnc.dei.util.IiifAvailability;
 
 public class SearchResult {
 
@@ -22,7 +22,7 @@ public class SearchResult {
 
     private String license;
 
-    private TransferPossibility transferPossibility;
+    private IiifAvailability iiifAvailability;
 
     /**
      * URL to object on aggregator portal
@@ -110,11 +110,11 @@ public class SearchResult {
         this.sourceObjectURL = sourceObjectURL;
     }
 
-    public TransferPossibility getTransferPossibility() {
-        return transferPossibility;
+    public IiifAvailability getIiifAvailability() {
+        return iiifAvailability;
     }
 
-    public void setTransferPossibility(TransferPossibility transferPossibility) {
-        this.transferPossibility = transferPossibility;
+    public void setIiifAvailability(IiifAvailability iiifAvailability) {
+        this.iiifAvailability = iiifAvailability;
     }
 }

@@ -48,16 +48,19 @@ public class EuropeanaRecordTransferValidationUtil {
 	 *
 	 * @param record   record json-ld object
 	 * @param mimeType record's mimeType
-	 * @return {@link TransferPossibility}
+	 * @return {@link IiifAvailability}
 	 */
-	public static TransferPossibility checkIfTransferPossible(JsonObject record, String mimeType) {
+	public static IiifAvailability checkIfIiifAvailable(JsonObject record, String mimeType) {
+		if (record == null) {
+			return IiifAvailability.DATA_UNAVAILABLE;
+		}
 		if (checkIfIiif(record)) {
-			return TransferPossibility.POSSIBLE;
+			return IiifAvailability.AVAILABLE;
 		}
 		if (Arrays.asList(ALLOWED_TYPES).contains(mimeType)) {
-			return TransferPossibility.REQUIRES_CONVERSION;
+			return IiifAvailability.CONVERSION_POSSIBLE;
 		}
-		return TransferPossibility.NOT_POSSIBLE;
+		return IiifAvailability.CONVERSION_IMPOSSIBLE;
 	}
 
 	/**
