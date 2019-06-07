@@ -11,12 +11,14 @@ import pl.psnc.dei.util.ddb.DDBFormatResolver;
 public class SearchResponseFillerService {
 
 	private EuropeanaRestService europeanaRestService;
+	private DDBRestService ddbRestService;
 	private DDBFormatResolver ddbFormatResolver;
 	private RecordTransferValidationCache recordTransferValidationCache;
 
 	public SearchResponseFillerService(EuropeanaRestService europeanaRestService,
-									   DDBFormatResolver ddbFormatResolver, RecordTransferValidationCache recordTransferValidationCache) {
+									   DDBRestService ddbRestService, DDBFormatResolver ddbFormatResolver, RecordTransferValidationCache recordTransferValidationCache) {
 		this.europeanaRestService = europeanaRestService;
+		this.ddbRestService = ddbRestService;
 		this.ddbFormatResolver = ddbFormatResolver;
 		this.recordTransferValidationCache = recordTransferValidationCache;
 	}
@@ -45,9 +47,11 @@ public class SearchResponseFillerService {
 				return searchResult;
 			case DDB:
 				String format = ddbFormatResolver.getRecordFormat(searchResult.getId());
-				recordTransferValidationCache.addValidationResult(recordId, format, RecordTransferValidationUtil.TransferPossibility.REQUIRES_CONVERSION);
+				JsonObject recordObject = ddbRestService.retrieveRecordFromDDBAndConvertToJsonLd(recordId);
+				transferPossibility = RecordTransferValidationUtil.checkIfTransferPossible(recordObject, format);
+				recordTransferValidationCache.addValidationResult(recordId, format, transferPossibility);
 				searchResult.setFormat(format);
-				searchResult.setTransferPossibility(RecordTransferValidationUtil.TransferPossibility.REQUIRES_CONVERSION);
+				searchResult.setTransferPossibility(transferPossibility);
 				return searchResult;
 
 			default:

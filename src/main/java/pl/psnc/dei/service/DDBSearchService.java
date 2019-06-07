@@ -41,7 +41,7 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 	@Value("${ddb.search.api.url}")
 	private String searchApiUrl;
 
-	@Value("${ddb.api.uri}")
+	@Value("${ddb.api.url}")
 	private String ddbApiUri;
 
 	public DDBSearchService(WebClient.Builder webClientBuilder) {

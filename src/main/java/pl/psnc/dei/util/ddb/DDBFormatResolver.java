@@ -25,7 +25,7 @@ public class DDBFormatResolver extends RestRequestExecutor {
 	@Value("${ddb.format.api.url}")
 	private String formatApiUri;
 
-	@Value("${ddb.api.uri}")
+	@Value("${ddb.api.url}")
 	private String ddbApiUri;
 
 	@Value("${ddb.api.key}")

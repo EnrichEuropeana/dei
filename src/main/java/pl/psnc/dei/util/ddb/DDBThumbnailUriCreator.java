@@ -21,7 +21,7 @@ public class DDBThumbnailUriCreator {
 
 		String apiKey = properties.getProperty("ddb.api.key");
 		String binaryApiUri = properties.getProperty("ddb.binary.api.url");
-		String apiUri = properties.getProperty("ddb.api.uri");
+		String apiUri = properties.getProperty("ddb.api.url");
 
 		return apiUri + binaryApiUri + thumbnail + "?oauth_consumer_key=" + apiKey;
 	}
