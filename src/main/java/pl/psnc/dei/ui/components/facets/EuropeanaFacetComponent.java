@@ -3,11 +3,12 @@ package pl.psnc.dei.ui.components.facets;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 public class EuropeanaFacetComponent extends FacetComponent {
+
+	public static final String FACET_SEPARATOR = "~#~";
 
 	// Filter query from facets
 	private Map<String, List<String>> fq = new HashMap<>();
@@ -40,17 +41,15 @@ public class EuropeanaFacetComponent extends FacetComponent {
 	 */
 	private String prepareQueryFilter() {
 		List<String> queryValues = new ArrayList<>();
-
 		fq.forEach((s, strings) -> {
-			String queryValue = strings.size() == 1
-					? s + ":" + "\"" + strings.get(0) + "\""
-					: strings.stream().map(v -> "(" + s + ":" + "\"" + v + "\"" + ")").collect(Collectors.joining(" OR "));
-			queryValues.add(queryValue);
+			for(String facetValue : strings)
+				queryValues.add(s + ":" + prepareValue(facetValue));
 		});
-		if (queryValues.size() == 1) {
-			return queryValues.get(0);
-		}
-		return queryValues.stream().map(s -> "(" + s + ")").collect(Collectors.joining(" AND "));
+		return String.join(FACET_SEPARATOR, queryValues);
+	}
+
+	private String prepareValue(String facetValue) {
+		return (facetValue.contains(" ") || facetValue.contains(":") ? "\"" + facetValue + "\"" : facetValue);
 	}
 
 	/**
@@ -77,17 +76,12 @@ public class EuropeanaFacetComponent extends FacetComponent {
 		if (qf != null && !qf.isEmpty()) {
 			fq.clear();
 
-			List<String> filterQueries = Arrays.asList(qf.split(" AND "));
-			filterQueries.stream().map(String::trim).map(s -> removeTrailing(s, "(")).
-					map(s -> removeTrailing(s, ")")).forEach(s -> {
-				List<String> filterValues = Arrays.asList(s.split(" OR "));
-				filterValues.stream().map(String::trim).map(f -> removeTrailing(f, "(")).
-						map(f -> removeTrailing(f, ")")).forEach(f -> {
-					int pos = f.indexOf(':');
-					if (pos != -1) {
-						fq.computeIfAbsent(f.substring(0, pos), v -> new ArrayList<>()).add(removeTrailing(f.substring(pos + 1), "\""));
-					}
-				});
+			List<String> filterQueries = Arrays.asList(qf.split(FACET_SEPARATOR));
+			filterQueries.stream().map(String::trim).forEach(f -> {
+				int pos = f.indexOf(':');
+				if (pos != -1) {
+					fq.computeIfAbsent(f.substring(0, pos), v -> new ArrayList<>()).add(removeTrailing(f.substring(pos + 1), "\""));
+				}
 			});
 			if (!fq.isEmpty()) {
 				fq.keySet().forEach(s -> {
