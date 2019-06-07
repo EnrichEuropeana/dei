@@ -2,7 +2,9 @@ package pl.psnc.dei.response.search.ddb;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.psnc.dei.response.search.Item;
+import pl.psnc.dei.util.ddb.DDBThumbnailUriCreator;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -58,7 +60,7 @@ public class DDBItem implements Item {
 
 	@Override
 	public List<String> getTitle() {
-		return title;
+		return Arrays.asList(label + " " + subtitle);
 	}
 
 	@Override
@@ -118,7 +120,8 @@ public class DDBItem implements Item {
 
 	@Override
 	public String getThumbnailURL() {
-		return thumbnailUrl;
+		System.err.println(DDBThumbnailUriCreator.prepareThumbnailUri(thumbnail));
+		return DDBThumbnailUriCreator.prepareThumbnailUri(thumbnail);
 	}
 
 	@Override
@@ -135,4 +138,5 @@ public class DDBItem implements Item {
 	public void setSourceObjectURL(String guid) {
 		this.sourceUrlObject = guid;
 	}
+
 }

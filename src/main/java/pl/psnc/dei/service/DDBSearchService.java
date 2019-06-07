@@ -5,8 +5,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
 import org.springframework.web.util.UriUtils;
@@ -107,7 +105,6 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 			fillFacets(uriBuilder);
 			uriBuilder.queryParam(ROWS, getRowsFromParams(requestParams));
 			uriBuilder.queryParam(OFFSET,  getOffsetFromParams(requestParams));
-			System.out.println(uriBuilder.build().toString());
 			return uriBuilder.build();
 		};
 	}
