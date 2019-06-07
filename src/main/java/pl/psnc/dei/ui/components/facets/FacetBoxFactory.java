@@ -24,19 +24,8 @@ public class FacetBoxFactory {
 
 	private static boolean isBooleanFacet(Facet<FacetField> facet) {
 		List<FacetField> fields = facet.getFields();
-		if (fields.size() == 2) {
-			boolean truePresent = false;
-			boolean falsePresent = false;
-
-			for (FacetField field : fields) {
-				if(field.getLabel().equalsIgnoreCase("true")) {
-					truePresent = true;
-				} else if(field.getLabel().equalsIgnoreCase("false")) {
-					falsePresent = true;
-				}
-			}
-			return truePresent && falsePresent;
-		}
-		return false;
+		return fields.size() == 2
+				&& fields.stream().anyMatch(e -> e.getLabel().equalsIgnoreCase("true"))
+				&& fields.stream().anyMatch(e -> e.getLabel().equalsIgnoreCase("false"));
 	}
 }
