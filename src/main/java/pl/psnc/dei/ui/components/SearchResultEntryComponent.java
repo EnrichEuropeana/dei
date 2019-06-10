@@ -60,8 +60,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		this.searchResult = searchResult;
 		VerticalLayout updatedMetadata = createMetadataComponent();
 		if (searchResult.getIiifAvailability() != null) {
-			boolean transferPossible = searchResult.getIiifAvailability().isTransferPossible();
-			setRecordEnabled(transferPossible);
+			setRecordEnabled(searchResult.getIiifAvailability().isTransferPossible());
 		}
 
 		replace(metadata, updatedMetadata);

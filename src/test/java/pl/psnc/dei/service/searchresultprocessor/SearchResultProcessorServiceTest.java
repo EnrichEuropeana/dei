@@ -26,7 +26,7 @@ public class SearchResultProcessorServiceTest {
 	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, recordTransferValidationCache);
 
 	private void setup() {
-		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), false)).thenAnswer(a -> {
+		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false))).thenAnswer(a -> {
 			SearchResult argument = a.getArgument(0);
 			argument.setFormat("image/jpeg");
 			argument.setIiifAvailability(IiifAvailability.AVAILABLE);
@@ -47,7 +47,7 @@ public class SearchResultProcessorServiceTest {
 		SearchResult searchResult = getSearchResult();
 		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.EUROPEANA.getId(), searchResult, false);
 
-		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any(), false);
+		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any(), eq(false));
 		Assert.assertEquals(filledSearchResult, searchResult);
 	}
 
