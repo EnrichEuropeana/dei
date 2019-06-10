@@ -52,6 +52,7 @@ public class ImportNavigationMenu extends VerticalLayout {
 	private Component createElement(Button button, Consumer<Button> function){
 		button.setClassName("button-as-text");
 		button.addClickListener(e -> {function.accept(button);});
+		button.addClassName("underlined-item");
 		elements.add(button);
 		return button;
 	}

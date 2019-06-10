@@ -125,7 +125,6 @@
     background:none!important;
      color:inherit;
      border:none;
-     padding:0!important;
      font: inherit;
      border:0;
      cursor: pointer;
@@ -149,5 +148,6 @@
 }
 
 .underlined-item {
-    text-decoration: underline;
+    font-weight: bold;
+    padding-left: 15px!important;
 }

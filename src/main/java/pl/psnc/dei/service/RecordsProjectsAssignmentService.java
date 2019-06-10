@@ -2,11 +2,8 @@ package pl.psnc.dei.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
 
 import javax.transaction.Transactional;
 import java.util.List;
@@ -36,6 +33,7 @@ public class RecordsProjectsAssignmentService {
 						newRecord.setIdentifier(recordId);
 						newRecord.setProject(project);
 						newRecord.setDataset(dataset);
+						newRecord.setAggregator(Aggregator.EUROPEANA);
 						recordsRepository.save(newRecord);
 					} else {
 						//record is assigned to project but not to dataset yet

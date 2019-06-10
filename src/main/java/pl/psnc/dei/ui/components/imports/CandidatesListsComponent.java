@@ -10,6 +10,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.data.selection.SelectionListener;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.apache.commons.lang3.StringUtils;
 import pl.psnc.dei.model.Aggregator;
@@ -19,6 +20,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -27,8 +29,11 @@ public class CandidatesListsComponent extends VerticalLayout {
 	private final CreateImportComponent.FieldFilter recordIdField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
 	private final CreateImportComponent.FieldFilter recordDatasetField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
-	private ProjectsRepository projectsRepository;
-	private ImportPackageService importPackageService;
+	private final ProjectsRepository projectsRepository;
+	private final ImportPackageService importPackageService;
+
+	private Select<Aggregator> aggregators;
+	private Select<Project> projects;
 
 	private Set<Record> records;
 
@@ -41,10 +46,15 @@ public class CandidatesListsComponent extends VerticalLayout {
 		this.projectsRepository = projectsRepository;
 		this.importPackageService = importPackageService;
 		add(createSelectionBar());
+		refresh();
 	}
 
 	private void refresh() {
-		records = importPackageService.getCandidates(aggregator, project);
+		if (aggregator == null | project == null) {
+			records = new HashSet<>();
+		} else {
+			records = importPackageService.getCandidates(aggregator, project);
+		}
 		if (recordsList != null) {
 			remove(recordsList);
 		}
@@ -59,6 +69,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 
 	private Button generateDeleteButton() {
 		Button button = new Button("Remove selected records");
+		button.setEnabled(false);
 		button.addClickListener(e -> {
 			importPackageService.removeRecordsFromCandidates(recordsList.getSelectedItems());
 			Notification.show("Records removed", 3000, Notification.Position.TOP_CENTER);
@@ -73,6 +84,13 @@ public class CandidatesListsComponent extends VerticalLayout {
 		ListDataProvider<Record> dataProvider = new ListDataProvider<>(records);
 		recordsGrid.setDataProvider(dataProvider);
 		recordsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
+		recordsGrid.addSelectionListener((SelectionListener<Grid<Record>, Record>) selectionEvent -> {
+			if(selectionEvent.getSource().getSelectedItems().size() == 0){
+				deleteButton.setEnabled(false);
+			}else{
+				deleteButton.setEnabled(true);
+			}
+		});
 
 		Grid.Column<Record> recordIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("Id").setSortable(true).setFlexGrow(10);
 		Grid.Column<Record> datasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("Dataset").setSortable(true).setFlexGrow(10);
@@ -91,30 +109,37 @@ public class CandidatesListsComponent extends VerticalLayout {
 
 	private Component createSelectionBar() {
 		HorizontalLayout bar = new HorizontalLayout();
-		Select<Project> projectSelection = new Select<>();
-		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projectSelection.setDataProvider(listDataProvider);
-		projectSelection.setLabel("Select project");
-		projectSelection.addValueChangeListener(event -> {
-			project = event.getValue();
-		});
 
-		Select<Aggregator> aggregatorSelect = new Select<>();
-		ListDataProvider<Aggregator> aggregatorsDataProvider = new ListDataProvider<>(Arrays.stream(Aggregator.values()).filter(e -> !e.equals(Aggregator.UNKNOWN)).collect(Collectors.toList()));
-		aggregatorSelect.setDataProvider(aggregatorsDataProvider);
-		aggregatorSelect.setLabel("Select aggregator");
-		aggregatorSelect.addValueChangeListener(event -> {
-			aggregator = event.getValue();
-		});
-
-		Button filterCandidates = new Button("Filter candidates");
-		filterCandidates.addClickListener(e->{refresh();});
-
-		bar.add(projectSelection);
-		bar.add(aggregatorSelect);
-		bar.add(filterCandidates);
+		bar.add(aggregatorSelector());
+		bar.add(projectSelector());
 		bar.setAlignItems(Alignment.END);
 		return bar;
+	}
+
+	private Select<Aggregator> aggregatorSelector(){
+		aggregators = new Select<>();
+		ListDataProvider<Aggregator> aggregatorsDataProvider = new ListDataProvider<>(Arrays.stream(Aggregator.values()).filter(e -> !e.equals(Aggregator.UNKNOWN)).collect(Collectors.toList()));
+		aggregators.setDataProvider(aggregatorsDataProvider);
+		aggregators.setLabel("Select aggregator");
+		aggregators.addValueChangeListener(event -> {
+			aggregator = event.getValue();
+			projects.setReadOnly(false);
+			refresh();
+		});
+		return aggregators;
+	}
+
+	private Select<Project> projectSelector(){
+		projects = new Select<>();
+		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
+		projects.setDataProvider(listDataProvider);
+		projects.setLabel("Select project");
+		projects.setReadOnly(true);
+		projects.addValueChangeListener(event -> {
+			project = event.getValue();
+			refresh();
+		});
+		return projects;
 	}
 
 	private void addFilter(ListDataProvider<Record> dataProvider, HeaderRow filterRow, Grid.Column<Record> columnName, CreateImportComponent.FieldFilter fieldFilter) {
