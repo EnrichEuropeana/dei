@@ -3,7 +3,6 @@ package pl.psnc.dei.schema.search;
 import java.util.HashMap;
 import java.util.Map;
 
-import static pl.psnc.dei.ui.pages.SearchPage.ROWS_PARAM_NAME;
 import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 public class EuropeanaCursorPagination implements Pagination {

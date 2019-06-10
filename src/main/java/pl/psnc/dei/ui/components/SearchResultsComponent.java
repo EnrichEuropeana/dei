@@ -8,7 +8,6 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.schema.search.EuropeanaCursorPagination;
 import pl.psnc.dei.schema.search.Pagination;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
@@ -21,7 +20,15 @@ import java.util.Map;
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 10;
+    private static final List<Integer> ROWS_PER_PAGE_ALLOWED_VALUES = new ArrayList<>();
     private static final int FIRST_PAGE = 1;
+
+    static {
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(DEFAULT_PAGE_SIZE);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(20);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(50);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(100);
+    }
 
     private int rowsPerPage = 10;
 
@@ -81,10 +88,13 @@ public class SearchResultsComponent extends VerticalLayout {
         resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
-        createRowsCountSelect();
+        if (rowsCount == null) {
+            createRowsCountSelect(DEFAULT_PAGE_SIZE);
+        }
         HorizontalLayout rowsCountLayout = new HorizontalLayout();
+        rowsCountLayout.addClassName("rows-per-page");
         rowsCountLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
-        rowsCountLayout.add(new Label("Rows per page"), rowsCount);
+        rowsCountLayout.add(new Label("Rows per page:"), rowsCount);
         navigationBar.add(rowsCountLayout);
 
         // page navigation
@@ -92,6 +102,22 @@ public class SearchResultsComponent extends VerticalLayout {
         navigationBar.add(pageNavigationComponent);
 
         add(navigationBar);
+    }
+
+    /**
+     * Create component to choose number of result per page on result page.
+     *
+     * @param rowsPerPageToSet number of rows that should be set as active
+     */
+    private void createRowsCountSelect(int rowsPerPageToSet) {
+        rowsCount = new Select<>();
+        rowsCount.addClassName("rows-per-page-combobox");
+        rowsCount.setItems(ROWS_PER_PAGE_ALLOWED_VALUES);
+        rowsCount.setValue(rowsPerPageToSet);
+        rowsCount.addValueChangeListener(e -> {
+            rowsPerPage = e.getValue();
+            searchPage.executeRowsPerPageChange(paginationCache.get(0).getRequestParams());
+        });
     }
 
     /**
@@ -237,20 +263,23 @@ public class SearchResultsComponent extends VerticalLayout {
                 .ifPresent(c -> ui.access(() -> c.updateMetadata(searchResult)));
     }
 
-    private void createRowsCountSelect() {
-        rowsCount = new Select<>(10, 20, 50, 100);
-        rowsCount.setValue(DEFAULT_PAGE_SIZE);
-        rowsCount.addValueChangeListener(e -> {
-        	rowsPerPage = e.getValue();
-        	if(!paginationCache.isEmpty() && paginationCache.get(0) instanceof EuropeanaCursorPagination) {
-				paginationCache.clear();
-				Pagination firstPage = new EuropeanaCursorPagination("*", String.valueOf(rowsPerPage));
-				paginationCache.add(firstPage);
-				paginationCache.add(searchPage.goToPage(firstPage.getRequestParams()).getNextPagination());
-			} else {
-//        	    TODO DDB case
-            }
-        	goToPage(0, 1);
-        });
+    public int getRowsPerPage() {
+        return rowsPerPage;
+    }
+
+    /**
+     * Sets active number of rows on result page. If given value is not allowed, default value is used instead.
+     *
+     * @param rowsPerPage numbers of rows that should be set
+     * @return actual number of rows that was set
+     */
+    public int setRowsPerPage(int rowsPerPage) {
+        this.rowsPerPage = SearchResultsComponent.ROWS_PER_PAGE_ALLOWED_VALUES.contains(rowsPerPage) ? rowsPerPage : DEFAULT_PAGE_SIZE;
+        if (rowsCount == null) {
+            createRowsCountSelect(this.rowsPerPage);
+        } else {
+            rowsCount.setValue(this.rowsPerPage);
+        }
+        return this.rowsPerPage;
     }
 }

@@ -98,7 +98,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
     }
 
     @Override
-    public Mono<SearchResponse> search(String query, Map<String, String> requestParams) {
+    public Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage) {
         String qf = null;
         String cursor;
         boolean onlyIiif;
@@ -132,6 +132,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
             otherParams.put(k, joinValue);
         });
         otherParams.keySet().removeAll(Arrays.asList(FIXED_API_PARAMS));
+
+        otherParams.put(ROWS_PARAM_NAME, String.valueOf(rowsPerPage));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
     }

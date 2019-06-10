@@ -122,8 +122,13 @@
     width: 1000px;
 }
 
-.page-navigation-bar {
+.rows-per-page {
     margin-left: auto;
+    padding-right: 10px;
+}
+
+.rows-per-page-combobox {
+    width: 80px;
 }
 
 .button-as-text{

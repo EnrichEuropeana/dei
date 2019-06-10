@@ -24,7 +24,7 @@ public class SearchService {
 		this.europeanaSearchService = europeanaSearchService;
 	}
 
-	public SearchResults search(int aggregatorId, String query, Map<String, String> requestParams) {
+	public SearchResults search(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
 		Aggregator aggregator = Aggregator.getById(aggregatorId);
 
 		SearchResponse<Facet, Item> response;
@@ -32,7 +32,7 @@ public class SearchService {
 		try {
 			switch (aggregator) {
 				case EUROPEANA:
-					response = europeanaSearchService.search(query, requestParams).block();
+					response = europeanaSearchService.search(query, requestParams, rowsPerPage).block();
 					break;
 				case DDB:
 					//todo implement DDB search
