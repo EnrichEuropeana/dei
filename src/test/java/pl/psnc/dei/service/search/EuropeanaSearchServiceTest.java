@@ -15,6 +15,7 @@ import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaItem;
 import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
+import pl.psnc.dei.util.EuropeanaConstants;
 import reactor.core.publisher.Mono;
 
 import java.net.URI;
@@ -84,6 +85,19 @@ public class EuropeanaSearchServiceTest {
         europeanaSearchService.search("", null, "*", true, new HashMap<>());
     }
 
+    @Test
+    public void searchWhenQueryEmptyWithParamMap() {
+        EuropeanaSearchResponse responseOK = getResponseOK();
+        mockWebClientResponse(responseOK);
+        HashMap<String, String> requestParams = new HashMap<>();
+        requestParams.put(EuropeanaConstants.CURSOR_PARAM_NAME, "*");
+        requestParams.put("only_iiif", "true");
+        Mono<SearchResponse> response = europeanaSearchService.search("", requestParams);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.block(), responseOK);
+    }
+
     @Test(expected = IllegalStateException.class)
     public void searchWhenCursorEmpty() {
         mockWebClientResponse(getResponseOK());
@@ -91,10 +105,36 @@ public class EuropeanaSearchServiceTest {
     }
 
     @Test
+    public void searchWhenCursorEmptyWithParamMap() {
+        EuropeanaSearchResponse responseOK = getResponseOK();
+        mockWebClientResponse(responseOK);
+        HashMap<String, String> requestParams = new HashMap<>();
+        requestParams.put("only_iiif", "true");
+
+        Mono<SearchResponse> response = europeanaSearchService.search("abc", requestParams);
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.block(), responseOK);
+    }
+
+    @Test
     public void searchWhenResultsOK() {
         EuropeanaSearchResponse responseOK = getResponseOK();
         mockWebClientResponse(responseOK);
         Mono<SearchResponse> response = europeanaSearchService.search("abc", null, "*", true, new HashMap<>());
+
+        Assert.assertNotNull(response);
+        Assert.assertEquals(response.block(), responseOK);
+    }
+
+    @Test
+    public void searchWhenResultsOKWithParamMap() {
+        EuropeanaSearchResponse responseOK = getResponseOK();
+        mockWebClientResponse(responseOK);
+        HashMap<String, String> requestParams = new HashMap<>();
+        requestParams.put(EuropeanaConstants.CURSOR_PARAM_NAME, "*");
+        requestParams.put("only_iiif", "true");
+        Mono<SearchResponse> response = europeanaSearchService.search("abc", requestParams);
 
         Assert.assertNotNull(response);
         Assert.assertEquals(response.block(), responseOK);

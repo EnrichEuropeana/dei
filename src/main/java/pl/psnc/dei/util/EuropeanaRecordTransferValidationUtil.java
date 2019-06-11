@@ -3,7 +3,8 @@ package pl.psnc.dei.util;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 
 public class EuropeanaRecordTransferValidationUtil {
@@ -19,7 +20,14 @@ public class EuropeanaRecordTransferValidationUtil {
 	private static final String TYPE_SERVICE = "svcs:Service";
 	private static final String TYPE_AGGREGATION = "ore:Aggregation";
 
-	private static final String[] ALLOWED_TYPES = {"image/jpeg", "image/tiff", "image/png", "application/pdf"};
+	private static final List<String> ALLOWED_TYPES = new ArrayList<>();
+
+	static {
+		ALLOWED_TYPES.add("image/jpeg");
+		ALLOWED_TYPES.add("image/tiff");
+		ALLOWED_TYPES.add("image/png");
+		ALLOWED_TYPES.add("application/pdf");
+	}
 
 	/**
 	 * Get mimeType for given record
@@ -48,16 +56,19 @@ public class EuropeanaRecordTransferValidationUtil {
 	 *
 	 * @param record   record json-ld object
 	 * @param mimeType record's mimeType
-	 * @return {@link TransferPossibility}
+	 * @return {@link IiifAvailability}
 	 */
-	public static TransferPossibility checkIfTransferPossible(JsonObject record, String mimeType) {
+	public static IiifAvailability checkIfIiifAvailable(JsonObject record, String mimeType) {
+		if (record == null) {
+			return IiifAvailability.DATA_UNAVAILABLE;
+		}
 		if (checkIfIiif(record)) {
-			return TransferPossibility.POSSIBLE;
+			return IiifAvailability.AVAILABLE;
 		}
-		if (Arrays.asList(ALLOWED_TYPES).contains(mimeType)) {
-			return TransferPossibility.REQUIRES_CONVERSION;
+		if (ALLOWED_TYPES.contains(mimeType)) {
+			return IiifAvailability.CONVERSION_POSSIBLE;
 		}
-		return TransferPossibility.NOT_POSSIBLE;
+		return IiifAvailability.CONVERSION_IMPOSSIBLE;
 	}
 
 	/**

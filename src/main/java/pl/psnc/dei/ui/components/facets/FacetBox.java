@@ -13,13 +13,13 @@ import java.util.Map;
 @StyleSheet("frontend://styles/styles.css")
 public abstract class FacetBox extends AccordionPanel {
 
-    private transient Map<Checkbox, FacetField> values;
+    protected transient Map<Checkbox, FacetField> values;
 
     // Used facet field
-    private String facet;
+    protected String facet;
 
     // parent facet component
-    private FacetComponent facetComponent;
+    protected FacetComponent facetComponent;
 
     public FacetBox(FacetComponent parent, Facet<FacetField> facet) {
         this.facetComponent = parent;
@@ -43,7 +43,7 @@ public abstract class FacetBox extends AccordionPanel {
      * Execute facet search after clicking certain checkbox
      * @param fieldCheckbox clicked checkbox
      */
-    private void handleFacetField(Checkbox fieldCheckbox) {
+    protected void handleFacetField(Checkbox fieldCheckbox) {
         facetComponent.executeFacetSearch(facet, values.get(fieldCheckbox).getLabel(), fieldCheckbox.getValue());
     }
 

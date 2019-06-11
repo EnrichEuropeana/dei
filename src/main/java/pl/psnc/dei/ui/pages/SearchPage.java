@@ -34,6 +34,7 @@ import pl.psnc.dei.ui.components.ConfirmationDialog;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
+import pl.psnc.dei.util.IiifAvailability;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -204,6 +205,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchOnlyIiif.setValue(true);
     }
 
+    private void showOnlyIiifBox(boolean show) {
+        searchOnlyIiif.setVisible(show);
+        searchOnlyIiif.setValue(show);
+    }
+
     private void createAggregatorSelectionBox() {
         aggregator = new Select<>();
         aggregator.addClassName("aggregator-selector");
@@ -230,10 +236,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         currentUserRecordSelection.clearSelectedRecords();
         currentUserRecordSelection.setAggregator(aggregator);
         resultsComponent.clear();
-        facets = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
-        facets.addFacets(null);
-        showFacets(false);
+        FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
+        facetComponent.addFacets(null);
+        getUI().ifPresent(ui -> ui.access(() -> {
+            replace(facets, facetComponent);
+            facets = facetComponent;
+            showFacets(false);
+        }));
         search.setPlaceholder("Search in " + aggregator.getFullName());
+        //for now only in Europeana we can search via iiif availability
+        showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
     }
 
     private Component createProjectSelectionBox() {
@@ -389,8 +401,14 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         List<SearchResult> results = searchResults.getResults();
         UI ui = UI.getCurrent();
 
-        results.forEach(result -> CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result))
-                .thenAccept(r -> resultsComponent.updateSearchResult(ui, r)));
+        results.forEach(result -> {
+            if (onlyIiif) {
+                result.setIiifAvailability(IiifAvailability.AVAILABLE);
+                resultsComponent.updateSearchResult(ui, result);
+            }
+            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
+                    .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
+        });
     }
 
     /**
