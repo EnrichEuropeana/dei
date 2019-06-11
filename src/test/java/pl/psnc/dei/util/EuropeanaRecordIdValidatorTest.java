@@ -6,7 +6,7 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
 @RunWith(SpringJUnit4ClassRunner.class)
-public class RecordIdValidatorTest {
+public class EuropeanaRecordIdValidatorTest {
 
 	@Test
 	public void shouldValidateRecordId() {
@@ -18,13 +18,13 @@ public class RecordIdValidatorTest {
 		String testRecordId6 = "/123/1234_Jean-Marie_Le'Blanc";
 		String testRecordId7 = "/123/1234_Ὀδυσσεύς";
 
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId1));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId2));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId3));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId4));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId5));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId6));
-		Assert.assertTrue(RecordIdValidator.validate(testRecordId7));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId1));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId2));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId3));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId4));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId5));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId6));
+		Assert.assertTrue(EuropeanaRecordIdValidator.validate(testRecordId7));
 	}
 
 	@Test
@@ -35,10 +35,10 @@ public class RecordIdValidatorTest {
 		String testRecordId4 = "/12345_123/12345_my_record";
 		String testRecordId5 = "12345/12345_my_record";
 
-		Assert.assertFalse(RecordIdValidator.validate(testRecordId1));
-		Assert.assertFalse(RecordIdValidator.validate(testRecordId2));
-		Assert.assertFalse(RecordIdValidator.validate(testRecordId3));
-		Assert.assertFalse(RecordIdValidator.validate(testRecordId4));
-		Assert.assertFalse(RecordIdValidator.validate(testRecordId5));
+		Assert.assertFalse(EuropeanaRecordIdValidator.validate(testRecordId1));
+		Assert.assertFalse(EuropeanaRecordIdValidator.validate(testRecordId2));
+		Assert.assertFalse(EuropeanaRecordIdValidator.validate(testRecordId3));
+		Assert.assertFalse(EuropeanaRecordIdValidator.validate(testRecordId4));
+		Assert.assertFalse(EuropeanaRecordIdValidator.validate(testRecordId5));
 	}
 }

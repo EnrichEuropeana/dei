@@ -19,10 +19,20 @@ public class CurrentUserRecordSelection {
 
     private static final Logger log = LoggerFactory.getLogger(CurrentUserRecordSelection.class);
 
+    private Aggregator aggregator;
     private Project selectedProject;
     private Dataset selectedDataSet;
     private Set<String> selectedRecordIds = new HashSet<>();
     private List<String> selectedRecordIdsForImport = new ArrayList<>();
+
+    public Aggregator getAggregator() {
+        return aggregator;
+    }
+
+    public void setAggregator(Aggregator aggregator) {
+        log.info("Changing user selected aggregator to: {}", aggregator.getFullName());
+        this.aggregator = aggregator;
+    }
 
     public Project getSelectedProject() {
         return selectedProject;
@@ -33,12 +43,12 @@ public class CurrentUserRecordSelection {
     }
 
     public void setSelectedDataSet(Dataset selectedDataSet) {
-        log.info("Changing user selected dataset to: " + selectedDataSet);
+        log.info("Changing user selected dataset to: {}", selectedDataSet);
         this.selectedDataSet = selectedDataSet;
     }
 
     public void setSelectedProject(Project selectedProject) {
-        log.info("Changing user selected project to: " + selectedProject);
+        log.info("Changing user selected project to: {}", selectedProject);
         this.selectedProject = selectedProject;
         setSelectedDataSet(null);
     }

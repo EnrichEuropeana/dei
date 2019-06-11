@@ -18,8 +18,8 @@ public class Record {
     private long id;
 
 	/**
-	 * Record identifier (from Europeana)
-	 * Looks like: "[DATASET_ID]/[LOCAL_ID]"
+	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)
+	 * Europeana id looks like: "/[DATASET_ID]/[LOCAL_ID]"
 	 */
 	private String identifier;
 
@@ -49,7 +49,7 @@ public class Record {
 
 	@JsonIgnore
 	@Convert(converter = AggregatorConverter.class)
-	private Aggregator aggregator;
+    private Aggregator aggregator;
 
     public Record() {
     }

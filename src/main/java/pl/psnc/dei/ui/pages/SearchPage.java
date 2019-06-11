@@ -15,33 +15,43 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
-import pl.psnc.dei.controllers.SearchController;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
+import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.search.SearchService;
+import pl.psnc.dei.service.searchresultprocessor.SearchResultProcessorService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.ConfirmationDialog;
-import pl.psnc.dei.ui.components.FacetComponent;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
+import pl.psnc.dei.ui.components.facets.FacetComponent;
+import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
+import pl.psnc.dei.util.IiifAvailability;
 
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
-
-import static pl.psnc.dei.ui.components.FacetComponent.DEFAULT_FACETS;
-
 
 @Route(value = "search", layout = MainView.class)
 @Secured(Role.OPERATOR)
 public class SearchPage extends HorizontalLayout implements HasUrlParameter<String>, BeforeLeaveObserver, AfterNavigationObserver {
 
-    public static final String QUERY_PARAM_NAME = "query";
-    public static final String QF_PARAM_NAME = "qf";
-    public static final String CURSOR_PARAM_NAME = "cursor";
+    private static final String AGGREGATOR_PARAM_NAME = "aggregator";
+    private static final String QUERY_PARAM_NAME = "query";
     public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
+    private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
+
+    private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
+
+    private Select<Aggregator> aggregator;
 
     private TextField search;
 
@@ -51,17 +61,15 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private SearchResultsComponent resultsComponent;
 
-    private TranscriptionPlatformService transcriptionPlatformService;
+    private SearchService searchService;
 
-    private EuropeanaRestService europeanaRestService;
+    private TranscriptionPlatformService transcriptionPlatformService;
 
     private CurrentUserRecordSelection currentUserRecordSelection;
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
-    private UIPollingManager uiPollingManager;
-
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private SearchResultProcessorService searchResultProcessorService;
 
     // label used when no results were found
     private Label noResults;
@@ -76,24 +84,25 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private static boolean onlyIiif = true;
 
-    public SearchPage(
-            SearchController searchController,
-            TranscriptionPlatformService transcriptionPlatformService,
-            EuropeanaRestService europeanaRestService,
-            CurrentUserRecordSelection currentUserRecordSelection,
-            RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-            UIPollingManager uiPollingManager,
-			RecordTransferValidationCache recordTransferValidationCache) {
+    private String query;
+
+    private Map<String, String> requestParams;
+
+    public SearchPage(SearchService searchService,
+                      TranscriptionPlatformService transcriptionPlatformService,
+                      CurrentUserRecordSelection currentUserRecordSelection,
+                      RecordsProjectsAssignmentService recordsProjectsAssignmentService,
+                      SearchResultProcessorService searchResultProcessorService) {
+        this.searchService = searchService;
         this.transcriptionPlatformService = transcriptionPlatformService;
-        this.europeanaRestService = europeanaRestService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
-        this.uiPollingManager = uiPollingManager;
-        this.recordTransferValidationCache = recordTransferValidationCache;
+        this.searchResultProcessorService = searchResultProcessorService;
+
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
 
-        Component searchResultsList = createSearchResultsList(searchController);
+        Component searchResultsList = createSearchResultsList();
         createFacetComponent();
         add(facets, searchResultsList);
         expand(searchResultsList);
@@ -102,18 +111,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     /**
      * Prepare QueryParameters
      *
+     * @param aggregatorId aggregator identifier
      * @param query  query string
-     * @param qf     query filter
-     * @param cursor cursor
-     * @param otherParams other request parameters e.g. media, requsability
+     * @param otherParams request parameters e.g. media, reusability
+     * @param rowsPerPage number of result on result page
      * @return QueryParameters used by the search page
      */
-    public static QueryParameters prepareQueryParameters(String query, String qf, String cursor, Map<String, String> otherParams) {
+    public static QueryParameters prepareQueryParameters(int aggregatorId, String query, Map<String, String> otherParams, int rowsPerPage) {
         Map<String, List<String>> parameters = new HashMap<>();
+        addParameter(AGGREGATOR_PARAM_NAME, String.valueOf(aggregatorId), parameters);
         addParameter(QUERY_PARAM_NAME, query, parameters);
-        addParameter(QF_PARAM_NAME, qf, parameters);
-        addParameter(CURSOR_PARAM_NAME, cursor, parameters);
         addParameter(ONLY_IIIF_PARAM_NAME, String.valueOf(onlyIiif), parameters);
+        addParameter(ROWS_PER_PAGE_PARAM_NAME, String.valueOf(rowsPerPage), parameters);
         otherParams.forEach((s, s2) -> addParameter(s.toLowerCase(), s2, parameters));
         return new QueryParameters(parameters);
     }
@@ -139,7 +148,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * Creates facets component. By default it is hidden.
      */
     private void createFacetComponent() {
-        facets = new FacetComponent(resultsComponent);
+        facets = FacetComponentFactory.getFacetComponent(aggregator.getValue().getId(), this);
         facets.setPadding(false);
         showFacets(false);
     }
@@ -160,18 +169,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     /**
      * Creates search results list component which consists of the query form and the search results component
      *
-     * @param searchController search controller used to execute searches
      * @return created component
      */
-    private Component createSearchResultsList(SearchController searchController) {
+    private Component createSearchResultsList() {
         VerticalLayout searchResultsList = new VerticalLayout();
+        createAggregatorSelectionBox();
+        searchResultsList.add(aggregator);
         searchResultsList.add(createQueryForm());
         createSearchOnlyIiifBox();
         searchResultsList.add(searchOnlyIiif);
         createNoResultsLabel();
         searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(searchController, currentUserRecordSelection,
-                europeanaRestService, uiPollingManager, recordTransferValidationCache);
+        resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
         searchResultsList.add(
                 createProjectSelectionBox(),
                 createSelectionProperties(),
@@ -196,6 +205,49 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchOnlyIiif.setValue(true);
     }
 
+    private void showOnlyIiifBox(boolean show) {
+        searchOnlyIiif.setVisible(show);
+        searchOnlyIiif.setValue(show);
+    }
+
+    private void createAggregatorSelectionBox() {
+        aggregator = new Select<>();
+        aggregator.addClassName("aggregator-selector");
+        aggregator.setItems(Arrays.stream(Aggregator.values()).filter(a -> a != Aggregator.UNKNOWN));
+        aggregator.setValue(Aggregator.getById(0));
+        currentUserRecordSelection.setAggregator(Aggregator.values()[0]);
+        aggregator.setLabel("Available aggregators");
+        aggregator.setEmptySelectionAllowed(false);
+        aggregator.addValueChangeListener(event -> {
+            if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
+                ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+                        "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+                                + " selected but not added record(s). Record selection will be lost when aggregator is changed.",
+                        e -> handleAggregatorChange(event.getValue()));
+                dialog.addContent("Are you sure you want to continue?");
+                dialog.open();
+            } else {
+                handleAggregatorChange(event.getValue());
+            }
+        });
+    }
+
+    private void handleAggregatorChange(Aggregator aggregator) {
+        currentUserRecordSelection.clearSelectedRecords();
+        currentUserRecordSelection.setAggregator(aggregator);
+        resultsComponent.clear();
+        FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
+        facetComponent.addFacets(null);
+        getUI().ifPresent(ui -> ui.access(() -> {
+            replace(facets, facetComponent);
+            facets = facetComponent;
+            showFacets(false);
+        }));
+        search.setPlaceholder("Search in " + aggregator.getFullName());
+        //for now only in Europeana we can search via iiif availability
+        showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
+    }
+
     private Component createProjectSelectionBox() {
         //
         Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
@@ -207,7 +259,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         projects.setLabel("Available projects");
         projects.setEmptySelectionAllowed(false);
         projects.addValueChangeListener(event -> {
-            Project project = (Project) event.getValue();
+            Project project = event.getValue();
             datasets.setItems(project.getDatasets());
             currentUserRecordSelection.setSelectedProject(project);
         });
@@ -217,7 +269,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         datasets.setLabel("Available datasets");
         datasets.setEmptySelectionAllowed(true);
         datasets.addValueChangeListener(event -> {
-            Dataset selectedDataset = (Dataset) event.getValue();
+            Dataset selectedDataset = event.getValue();
             currentUserRecordSelection.setSelectedDataSet(selectedDataset);
         });
 
@@ -244,11 +296,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 					Notification.show(currentUserRecordSelection.getSelectedRecordIds().size() + " record(s) added!",
 							3000, Notification.Position.TOP_CENTER);
 					UI ui = UI.getCurrent();
-					uiPollingManager.registerPollRequest(ui, addElementsButton, 100);
-					ui.access(() -> {
-                    	resultsComponent.deselectAll();
-                    	uiPollingManager.unregisterPollRequest(ui, addElementsButton);
-                    });
+					ui.access(() -> resultsComponent.deselectAll());
 					currentUserRecordSelection.clearSelectedRecords();
                 });
 
@@ -269,17 +317,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
         search = new TextField();
         search.addClassName("search-field");
-        search.setPlaceholder("Search in Europeana");
+        search.setPlaceholder("Search in " + aggregator.getValue().getFullName());
         search.setAutofocus(true);
-        search.addKeyUpListener(Key.ENTER,
-                keyUpEvent -> search.getUI().ifPresent(ui -> ui.navigate("search",
-                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR, DEFAULT_FACETS))));
-
+        search.addKeyUpListener(Key.ENTER, keyUpEvent -> search.getUI().ifPresent(this::navigateToSearch));
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
-        searchButton.addClickListener(
-                e -> e.getSource().getUI().ifPresent(ui -> ui.navigate("search",
-                        prepareQueryParameters(search.getValue(), null, SearchResults.FIRST_CURSOR, DEFAULT_FACETS))));
+        searchButton.addClickListener(e -> e.getSource().getUI().ifPresent(this::navigateToSearch));
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
@@ -287,49 +330,121 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         return queryForm;
     }
 
-    private void search(String query, String qf, String cursor, Map<String, List<String>> requestParams) {
+    private void navigateToSearch(UI ui) {
+        HashMap<String, String> otherParams = new HashMap<>(facets.getDefaultFacets());
+        ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams, resultsComponent.getRowsPerPage()));
+    }
+
+    private void search(int aggregatorId, String query,  Map<String, String> requestParams, int rowsPerPage) {
         if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
             ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
                     "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
                             + " selected but not added record(s). Record selection will be lost with next search query execution.",
-                    e -> executeSearch(query, qf, cursor, requestParams));
+                    e -> executeSearch(aggregatorId, query, requestParams, rowsPerPage));
             dialog.addContent("Are you sure you want to continue?");
             dialog.open();
         } else {
-            executeSearch(query, qf, cursor, requestParams);
+            executeSearch(aggregatorId, query, requestParams, rowsPerPage);
         }
     }
 
     /**
      * Execute search in the SearchResultsComponent and add facets
      *
+     * @param aggregatorId aggregator identifier
      * @param query  query string
-     * @param qf     query filter
-     * @param cursor cursor
-     * @param requestParams other request parameters e.g. media, reusability
+     * @param requestParams request parameters e.g. media, reusability
+     * @param rowsPerPage number of results on result page
      */
-    private void executeSearch(String query, String qf, String cursor, Map<String, List<String>> requestParams) {
+    private void executeSearch(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
 		currentUserRecordSelection.clearSelectedRecords();
         if (query == null || query.isEmpty()) {
             resultsComponent.clear();
             facets.addFacets(null);
             showFacets(false);
             search.clear();
+            this.query = null;
+            this.requestParams = null;
         } else {
             if (search.isEmpty()) {
                 search.setValue(query);
             }
-            SearchResults results = resultsComponent.executeSearch(query, qf, cursor, onlyIiif, requestParams);
-            if (results != null) {
-                facets.addFacets(results.getFacets());
-                facets.updateState(qf, requestParams);
+            this.query = query;
+            this.requestParams = requestParams;
+            SearchResults searchResults = searchService.search(aggregatorId, query, requestParams, rowsPerPage);
+
+            if (searchResults != null) {
+                resultsComponent.handleSearchResults(searchResults);
+                fillMissingValuesAndVerifyResult(searchResults);
+                facets.addFacets(searchResults.getFacets());
+                facets.updateState(requestParams);
                 showFacets(true);
-                noResults.setVisible(results.getTotalResults() == 0);
-                invertSelectionButton.setVisible(results.getTotalResults() > 0);
-                selectAllButton.setVisible(results.getTotalResults() > 0);
-                addElementsButton.setVisible(results.getTotalResults() > 0);
+                noResults.setVisible(searchResults.getTotalResults() == 0);
+                invertSelectionButton.setVisible(searchResults.getTotalResults() > 0);
+                selectAllButton.setVisible(searchResults.getTotalResults() > 0);
+                addElementsButton.setVisible(searchResults.getTotalResults() > 0);
+            } else {
+                Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
             }
         }
+    }
+
+    /**
+     * Fills missing values from search request, validates if record can be transferred to TP, pushes values' updates
+     * to clients
+     *
+     * @param searchResults searchResults object that should be filled and verified
+     */
+    public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
+        int aggregatorId = aggregator.getValue().getId();
+        List<SearchResult> results = searchResults.getResults();
+        UI ui = UI.getCurrent();
+
+        results.forEach(result -> {
+            if (onlyIiif) {
+                result.setIiifAvailability(IiifAvailability.AVAILABLE);
+                resultsComponent.updateSearchResult(ui, result);
+            }
+            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
+                    .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
+        });
+    }
+
+    /**
+     * Execute facet search after a facet was selected or deselected. The current query string is used and the pagination is
+     * set as for the first execution.
+     */
+    public void executeFacetSearch(Map<String, String> requestParams) {
+        getUI().ifPresent(ui -> ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
+    }
+
+    /**
+     * Execute search after result page was selected. Current query string and request parameters are used.
+     *
+     * @param paginationParams pagination request parameters
+     * @return SearchResponse object if search operation finish successfully, null otherwise.
+     */
+    public SearchResults goToPage(Map<String, String> paginationParams) {
+        if (requestParams != null) {
+            requestParams.putAll(paginationParams);
+            int rowsPerPage = resultsComponent.getRowsPerPage();
+            return searchService.search(aggregator.getValue().getId(), query, requestParams, rowsPerPage);
+        }
+        return null;
+    }
+
+    /**
+     * Execute search after rows per page value changed. Current query string and facet parameters are used for this
+     * search. Any existing pagination parameters are removed from parameters map.
+     *
+     * @param paginationParams Pagination parameters that should be removed from request parameters.
+     */
+    public void executeRowsPerPageChange(Map<String, String> paginationParams) {
+    	requestParams.keySet().removeAll(paginationParams.keySet());
+		getUI().ifPresent(ui -> ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
     }
 
     /**
@@ -342,24 +457,51 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public void setParameter(BeforeEvent event, @OptionalParameter String parameter) {
         Location location = event.getLocation();
         QueryParameters queryParameters = location.getQueryParameters();
-        if (queryParameters != null) {
+        if (queryParameters != null && !queryParameters.getParameters().isEmpty()) {
             Map<String, List<String>> parametersMap = queryParameters.getParameters();
-            String query = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
-            String qf = getParameterValue(parametersMap.get(QF_PARAM_NAME), false);
-            String cursor = getParameterValue(parametersMap.get(CURSOR_PARAM_NAME), true);
+            String aggregatorParamValue = getParameterValue(parametersMap.get(AGGREGATOR_PARAM_NAME), true);
+            boolean valid = Aggregator.isValid(aggregatorParamValue);
+            if (!valid) {
+            	if (aggregatorParamValue != null) {
+					Notification.show("Unknown/Invalid aggregator!", 4000, Notification.Position.TOP_CENTER);
+				}
+                return;
+            }
+            int aggregatorId = Integer.parseInt(aggregatorParamValue);
+            aggregator.setValue(Aggregator.getById(aggregatorId));
+            currentUserRecordSelection.setAggregator(Aggregator.getById(aggregatorId));
+
+            String queryString = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
+
             String onlyIiifParam = getParameterValue(parametersMap.get(ONLY_IIIF_PARAM_NAME), true);
             setOnlyIiif(onlyIiifParam == null || Boolean.parseBoolean(onlyIiifParam));
             searchOnlyIiif.setValue(onlyIiif);
-            Map<String, List<String>> requestParams = new HashMap<>();
+
+            Map<String, String> requestParams = new HashMap<>();
             parametersMap.entrySet().stream()
-                    .filter(e -> {
-                                String key = e.getKey();
-                                return !(key.equalsIgnoreCase(QUERY_PARAM_NAME) || key.equalsIgnoreCase(QF_PARAM_NAME)
-                                        || key.equalsIgnoreCase(CURSOR_PARAM_NAME) || key.equalsIgnoreCase(ONLY_IIIF_PARAM_NAME));
-                            })
-                    .forEach(e -> requestParams.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).addAll(e.getValue()));
-            search(query, qf, cursor, requestParams);
+                    .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)
+                            || e.getKey().equalsIgnoreCase(ROWS_PER_PAGE_PARAM_NAME)))
+                    .forEach(e -> requestParams.put(e.getKey(), e.getValue().get(0)));
+
+            int rowsPerPage = getRowsPerPage(parametersMap);
+
+            search(aggregatorId, queryString, requestParams, rowsPerPage);
         }
+    }
+
+    private int getRowsPerPage(Map<String, List<String>> parametersMap) {
+        int rowsPerPage = resultsComponent.getRowsPerPage();
+        String rowsPerPageParam = getParameterValue(parametersMap.get(ROWS_PER_PAGE_PARAM_NAME), true);
+        if (rowsPerPageParam != null && !rowsPerPageParam.isEmpty()) {
+            try {
+                int rowsPerPageParamValue = Integer.parseInt(rowsPerPageParam);
+                rowsPerPage = resultsComponent.setRowsPerPage(rowsPerPageParamValue);
+            } catch (NumberFormatException e) {
+                logger.warn("Cannot parse {} parameter. Will use default/currently selected value instead ({})",
+                        ROWS_PER_PAGE_PARAM_NAME, rowsPerPage, e);
+            }
+        }
+        return rowsPerPage;
     }
 
     /**
@@ -389,8 +531,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     @Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
-		uiPollingManager.unregisterAllPollRequests(UI.getCurrent());
-		recordTransferValidationCache.clear();
+		searchResultProcessorService.clearCache();
 	}
 
 	@Override

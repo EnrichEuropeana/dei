@@ -6,6 +6,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 class PageNavigationComponent extends HorizontalLayout {
+
     private int totalPages;
 
     private int currentPage;

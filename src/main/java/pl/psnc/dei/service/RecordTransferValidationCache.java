@@ -1,7 +1,7 @@
 package pl.psnc.dei.service;
 
 import org.springframework.stereotype.Service;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.IiifAvailability;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -15,8 +15,8 @@ public class RecordTransferValidationCache {
 		return cache.get(recordId);
 	}
 
-	public void addValidationResult(String recordId, String mimeType, RecordTransferValidationUtil.TransferPossibility transferPossibility) {
-		cache.put(recordId, new ValidationResult(mimeType, transferPossibility));
+	public void addValidationResult(String recordId, String mimeType, IiifAvailability iiifAvailability) {
+		cache.put(recordId, new ValidationResult(mimeType, iiifAvailability));
 	}
 
 	public void clear() {
@@ -26,19 +26,19 @@ public class RecordTransferValidationCache {
 	public class ValidationResult {
 
 		private String mimeType;
-		private RecordTransferValidationUtil.TransferPossibility transferPossibility;
+		private IiifAvailability iiifAvailability;
 
-		ValidationResult(String mimeType, RecordTransferValidationUtil.TransferPossibility transferPossibility) {
+		ValidationResult(String mimeType, IiifAvailability iiifAvailability) {
 			this.mimeType = mimeType;
-			this.transferPossibility = transferPossibility;
+			this.iiifAvailability = iiifAvailability;
 		}
 
 		public String getMimeType() {
 			return mimeType;
 		}
 
-		public RecordTransferValidationUtil.TransferPossibility getTransferPossibility() {
-			return transferPossibility;
+		public IiifAvailability getIiifAvailability() {
+			return iiifAvailability;
 		}
 	}
 }

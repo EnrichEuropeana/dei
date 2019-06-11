@@ -21,6 +21,7 @@ public class RecordsProjectsAssignmentService {
 	private CurrentUserRecordSelection currentUserRecordSelection;
 
 	public void saveSelectedRecords() {
+		Aggregator aggregator = currentUserRecordSelection.getAggregator();
 		Project project = currentUserRecordSelection.getSelectedProject();
 		Dataset dataset = currentUserRecordSelection.getSelectedDataSet();
 		Set<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
@@ -31,6 +32,7 @@ public class RecordsProjectsAssignmentService {
 					if (record == null) {
 						Record newRecord = new Record();
 						newRecord.setIdentifier(recordId);
+						newRecord.setAggregator(aggregator);
 						newRecord.setProject(project);
 						newRecord.setDataset(dataset);
 						newRecord.setAggregator(Aggregator.EUROPEANA);
