@@ -43,8 +43,15 @@
     margin-left: 0;
     margin-bottom: 5px;
     padding: 0;
-    background-color: lightsteelblue;
     max-width:1000px;
+}
+
+.search-result-element-enabled {
+    background-color: lightsteelblue;
+}
+
+.search-result-element-disabled {
+    background-color: lightgray;
 }
 
 .search-result-checkbox {
@@ -78,6 +85,7 @@
     height: fit-content;
     max-width: 100px;
     max-height: 100px;
+    padding-top: 0;
     padding-bottom: 0;
 }
 
@@ -88,9 +96,13 @@
 }
 
 .query-form {
-    margin-top: 0;
     max-width: 1000px;
     max-height: 40px;
+}
+
+.aggregator-selector {
+    margin-top: 0;
+    width: 300px;
 }
 
 .search-field {
@@ -117,8 +129,13 @@
     width: 1000px;
 }
 
-.page-navigation-bar {
+.rows-per-page {
     margin-left: auto;
+    padding-right: 10px;
+}
+
+.rows-per-page-combobox {
+    width: 80px;
 }
 
 .button-as-text{

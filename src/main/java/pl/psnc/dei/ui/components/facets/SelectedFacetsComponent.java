@@ -1,4 +1,4 @@
-package pl.psnc.dei.ui.components;
+package pl.psnc.dei.ui.components.facets;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.icon.Icon;
@@ -9,7 +9,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static pl.psnc.dei.ui.components.FacetBox.FACET_LABELS;
+import static pl.psnc.dei.util.EuropeanaConstants.FACET_LABELS;
 
 public class SelectedFacetsComponent extends HorizontalLayout {
     private FacetComponent facetComponent;

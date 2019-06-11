@@ -1,50 +1,16 @@
 package pl.psnc.dei.response.search;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+public interface Facet<T extends FacetField> {
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({
-        "name",
-        "fields"
-})
-public class Facet {
+	String getName();
 
-    @JsonProperty("name")
-    private String name;
-    @JsonProperty("fields")
-    private List<FacetField> fields = null;
+	void setName(String name);
 
-    @JsonProperty("name")
-    public String getName() {
-        return name;
-    }
+	List<T> getFields();
 
-    @JsonProperty("name")
-    public void setName(String name) {
-        this.name = name;
-    }
+	void setFields(List<T> fields);
 
-    @JsonProperty("fields")
-    public List<FacetField> getFields() {
-        return fields;
-    }
-
-    @JsonProperty("fields")
-    public void setFields(List<FacetField> fields) {
-        this.fields = fields;
-    }
-
-    @JsonIgnore
-    public List<String> getFieldsAsStrings() {
-        List<String> strings = new ArrayList<>();
-        Objects.requireNonNull(fields).forEach(field -> strings.add(field.toString()));
-        return strings;
-    }
+	List<String> getFieldsAsStrings();
 }

@@ -33,5 +33,4 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
     Optional<Record> findByIdentifier(String id);
 
     List<Record> findAllByStateIsNotIn(List<Record.RecordState> states);
-
 }

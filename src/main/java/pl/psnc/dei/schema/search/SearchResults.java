@@ -6,25 +6,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class SearchResults {
-    public static final String FIRST_CURSOR = "*";
-
     private int totalResults;
 
     private int resultsCollected;
 
     private List<Facet> facets = new ArrayList<>();
 
-    private List<String> pageCursors = new ArrayList<>();
+    private Pagination nextPagination;
 
-    private String nextCursor;
+    private Pagination defaultPagination;
 
     private List<SearchResult> results = new ArrayList<>();
 
     public SearchResults() {
         totalResults = 0;
         resultsCollected = 0;
-        pageCursors.add(FIRST_CURSOR);
-        nextCursor = FIRST_CURSOR;
     }
 
     public int getTotalResults() {
@@ -54,12 +50,12 @@ public class SearchResults {
         }
     }
 
-    public String getNextCursor() {
-        return nextCursor;
+    public Pagination getNextPagination() {
+        return nextPagination;
     }
 
-    public void setNextCursor(String nextCursor) {
-        this.nextCursor = nextCursor;
+    public void setNextPagination(Pagination nextPagination) {
+        this.nextPagination = nextPagination;
     }
 
     public List<SearchResult> getResults() {
@@ -73,32 +69,24 @@ public class SearchResults {
         }
     }
 
-    public void setPageCursor(int page, String cursor) {
-        if (page <= pageCursors.size()) {
-            pageCursors.set(page - 1, cursor);
-        } else if (page == pageCursors.size() + 1) {
-            pageCursors.add(cursor);
-        }
+    public Pagination getDefaultPagination() {
+        return defaultPagination;
     }
 
-    public String getPageCursor(int page) {
-        if (page <= pageCursors.size()) {
-            return pageCursors.get(page - 1);
-        }
-        return null;
-    }
-
-    public void clearPageCursors() {
-        pageCursors.clear();
-        pageCursors.add(FIRST_CURSOR);
+    public void setDefaultPagination(Pagination defaultPagination) {
+        this.defaultPagination = defaultPagination;
     }
 
     public void clear() {
-        clearPageCursors();
+        clearPagination();
         setResultsCollected(0);
         results.clear();
         facets.clear();
-        setNextCursor(SearchResults.FIRST_CURSOR);
         setTotalResults(0);
+    }
+
+    private void clearPagination() {
+        setNextPagination(null);
+        setDefaultPagination(null);
     }
 }

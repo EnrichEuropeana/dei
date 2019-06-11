@@ -1,20 +1,16 @@
 package pl.psnc.dei.ui.components;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import org.springframework.util.LinkedMultiValueMap;
-import pl.psnc.dei.controllers.SearchController;
+import com.vaadin.flow.component.select.Select;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.response.search.Item;
-import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.schema.search.Pagination;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.RecordTransferValidationCache;
-import pl.psnc.dei.service.UIPollingManager;
 import pl.psnc.dei.ui.pages.SearchPage;
 
 import java.util.ArrayList;
@@ -23,28 +19,26 @@ import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
-    public static final int DEFAULT_PAGE_SIZE = 12;
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    private static final List<Integer> ROWS_PER_PAGE_ALLOWED_VALUES = new ArrayList<>();
+    private static final int FIRST_PAGE = 1;
 
-    // query string
-    private transient String query;
+    static {
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(DEFAULT_PAGE_SIZE);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(20);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(50);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(100);
+    }
 
-    // query filter
-    private transient String qf;
-
-    // search only objects available via iiif
-    private transient boolean onlyIiif;
-
-    // other request parameters
-    private transient Map<String, List<String>> requestParams;
+    private int rowsPerPage = DEFAULT_PAGE_SIZE;
 
     // search results container
     private transient SearchResults searchResults;
 
-    // search controller to execute searches
-    private transient SearchController searchController;
-
     // results label
     private Label resultsCount;
+
+    private Select<Integer> rowsCount;
 
     // navigation bar with results count and page navigation
     private HorizontalLayout navigationBar;
@@ -55,24 +49,16 @@ public class SearchResultsComponent extends VerticalLayout {
     // list of results
     private VerticalLayout resultsList;
 
+    private SearchPage searchPage;
+
     private CurrentUserRecordSelection currentUserRecordSelection;
 
-    private EuropeanaRestService europeanaRestService;
+    private List<Pagination> paginationCache = new ArrayList<>();
 
-    private UIPollingManager uiPollingManager;
-
-    private RecordTransferValidationCache recordTransferValidationCache;
-
-    public SearchResultsComponent(SearchController searchController,
-                                  CurrentUserRecordSelection currentUserRecordSelection,
-                                  EuropeanaRestService europeanaRestService,
-                                  UIPollingManager uiPollingManager,
-                                  RecordTransferValidationCache recordTransferValidationCache) {
-        this.searchController = searchController;
+    public SearchResultsComponent(SearchPage searchPage,
+                                  CurrentUserRecordSelection currentUserRecordSelection) {
+        this.searchPage = searchPage;
         this.currentUserRecordSelection = currentUserRecordSelection;
-        this.europeanaRestService = europeanaRestService;
-        this.uiPollingManager = uiPollingManager;
-        this.recordTransferValidationCache = recordTransferValidationCache;
         this.searchResults = new SearchResults();
 
         addClassName("search-results-component");
@@ -99,20 +85,45 @@ public class SearchResultsComponent extends VerticalLayout {
         navigationBar.setDefaultVerticalComponentAlignment(Alignment.CENTER);
 
         // add results count
-        resultsCount = new Label(prepareResultsText());
+        resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
+        if (rowsCount == null) {
+            createRowsCountSelect(DEFAULT_PAGE_SIZE);
+        }
+        HorizontalLayout rowsCountLayout = new HorizontalLayout();
+        rowsCountLayout.addClassName("rows-per-page");
+        rowsCountLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        rowsCountLayout.add(new Label("Rows per page:"), rowsCount);
+        navigationBar.add(rowsCountLayout);
+
         // page navigation
-        pageNavigationComponent = new PageNavigationComponent(this, DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent = new PageNavigationComponent(this, rowsPerPage, searchResults.getTotalResults());
         navigationBar.add(pageNavigationComponent);
 
         add(navigationBar);
     }
 
     /**
+     * Create component to choose number of result per page on result page.
+     *
+     * @param rowsPerPageToSet number of rows that should be set as active
+     */
+    private void createRowsCountSelect(int rowsPerPageToSet) {
+        rowsCount = new Select<>();
+        rowsCount.addClassName("rows-per-page-combobox");
+        rowsCount.setItems(ROWS_PER_PAGE_ALLOWED_VALUES);
+        rowsCount.setValue(rowsPerPageToSet);
+        rowsCount.addValueChangeListener(e -> {
+            rowsPerPage = e.getValue();
+            searchPage.executeRowsPerPageChange(paginationCache.get(0).getRequestParams());
+        });
+    }
+
+    /**
      * Shows / hides this component according to number of results.
      */
-    private void updateComponent() {
+    private void updateComponent(int currentPage) {
         setVisible(searchResults != null
                 && searchResults.getResults() != null
                 && !searchResults.getResults().isEmpty());
@@ -125,11 +136,10 @@ public class SearchResultsComponent extends VerticalLayout {
             if (resultsList == null) {
                 createResultList();
             }
-            resultsCount.setText(prepareResultsText());
+            resultsCount.setText(prepareResultsText(currentPage));
             resultsList.removeAll();
             searchResults.getResults().forEach(searchResult ->
-					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, europeanaRestService,
-                            uiPollingManager, recordTransferValidationCache, searchResult)));
+					resultsList.add(new SearchResultEntryComponent(currentUserRecordSelection, searchResult)));
         }
     }
 
@@ -137,48 +147,25 @@ public class SearchResultsComponent extends VerticalLayout {
      * Resets the page navigation component when number of total results has changed
      */
     private void updateNavigationBar() {
-        pageNavigationComponent.resetPages(DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent.resetPages(rowsPerPage, searchResults.getTotalResults());
     }
 
     /**
-     * Execute facet search after a facet was selected or deselected. The current query string is used and the cursor is
-     * set as for the first execution.
-     */
-    public void executeFacetSearch(String qf, Map<String, String> requestParams) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(query, qf, SearchResults.FIRST_CURSOR, requestParams)));
-    }
-
-    /**
-     * Execute new search
+     * Handles new search results
      *
-     * @param query  query entered by the user
-     * @param qf     query filter from facets
-     * @param cursor cursor for a search
-     * @param onlyIiif true to query only objects available via IIIF, false otherwise
-     * @param requestParams other request parameters e.g. media, reusability
-     * @return search results object
+     * @param searchResults result of the search
      */
-    public SearchResults executeSearch(String query, String qf, String cursor, boolean onlyIiif, Map<String, List<String>> requestParams) {
-        this.query = query;
-        this.qf = qf;
-        this.onlyIiif = onlyIiif;
-        if (this.qf == null) {
-            this.qf = "";
-        }
-        this.requestParams = requestParams;
-        searchResults.clear();
-        recordTransferValidationCache.clear();
+    public void handleSearchResults(SearchResults searchResults) {
+        this.searchResults = searchResults;
 
-        SearchResponse result = searchController.search(query, qf, cursor, onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
-        if (result == null) {
-            // we should show failure warning
-            Notification.show("Search failed!", 3, Notification.Position.MIDDLE);
-            return null;
-        }
-        updateSearchResults(result, true);
-        updateComponent();
-        return searchResults;
+        rowsPerPage = searchResults.getResultsCollected();
+        paginationCache.clear();
+        paginationCache.add(searchResults.getDefaultPagination());
+        paginationCache.add(searchResults.getNextPagination());
+
+        updateComponent(FIRST_PAGE);
     }
+
 
     /**
      * Change page from current to a new one in either direction
@@ -188,118 +175,41 @@ public class SearchResultsComponent extends VerticalLayout {
      */
     void goToPage(int currentPage, int newPage) {
         int page;
-        if (newPage < currentPage) {
-            String cursor = searchResults.getPageCursor(newPage);
-            if (cursor == null) {
-                // when there is no cursor for specific page we should start from the beginning
-                searchResults.setNextCursor(SearchResults.FIRST_CURSOR);
-                searchResults.setResultsCollected(0);
-                page = 0;
+        Pagination pagination = paginationCache.size() >= newPage ? paginationCache.get(newPage - 1) : null;
+
+        SearchResults result = null;
+        if (pagination == null) {
+            if (newPage > currentPage) {
+                pagination = paginationCache.get(paginationCache.size() - 1);
+                page = currentPage;
+                while (++page <= newPage) {
+                    Map<String, String> paginationParams = pagination.getRequestParams();
+                    result = searchPage.goToPage(paginationParams);
+                    if (result == null) {
+                        // redirect to error page
+                        Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
+                        return;
+                    }
+                    pagination = result.getNextPagination();
+                    paginationCache.add(result.getNextPagination());
+                }
             } else {
-                // we should set all things as we would be one page behind the requested one
-                searchResults.setNextCursor(cursor);
-                searchResults.setResultsCollected(DEFAULT_PAGE_SIZE * (newPage - 1));
-                page = newPage - 1;
-            }
-        } else if (newPage > currentPage) {
-            // we will start from the current page and retrieve missing pages one by one
-            page = currentPage;
-        } else {
-            // do nothing when the current page is requested
-            return;
-        }
-        while (++page <= newPage) {
-            SearchResponse result = searchController.search(query, qf, searchResults.getNextCursor(), onlyIiif, new LinkedMultiValueMap<>(requestParams)).block();
-            if (result == null) {
-                // redirect to error page
+                // do nothing when the current page is requested
                 return;
             }
-            updateSearchResults(result, page == newPage);
-        }
-        updateComponent();
-    }
-
-    /**
-     * Updates SearchResults container based on the SearchResponse. When updateResultsList is true also the actual result items are updated.
-     *
-     * @param result            result from search execution
-     * @param updateResultsList when true the actual items are also updated
-     */
-    private void updateSearchResults(SearchResponse result, boolean updateResultsList) {
-        if (result.getTotalResults() == 0) {
-            searchResults.clear();
         } else {
-            searchResults.setResultsCollected(searchResults.getResultsCollected() + result.getItemsCount());
-            if (searchResults.getResultsCollected() % DEFAULT_PAGE_SIZE == 0) {
-                searchResults.setPageCursor(searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE, searchResults.getNextCursor());
-            } else {
-                searchResults.setPageCursor((searchResults.getResultsCollected() / DEFAULT_PAGE_SIZE) + 1, searchResults.getNextCursor());
-            }
-            searchResults.setNextCursor(result.getNextCursor());
-            searchResults.setTotalResults(result.getTotalResults());
-            searchResults.setFacets(result.getFacets());
-            searchResults.setResults(new ArrayList<>());
-
-            if (updateResultsList) {
-                result.getItems().forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
+            Map<String, String> paginationParams = pagination.getRequestParams();
+            result = searchPage.goToPage(paginationParams);
+            if (result == null) {
+                // redirect to error page
+                Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
+                return;
             }
         }
-    }
 
-    /**
-     * Create a SearchResult object from Item which is retrieved from the response
-     *
-     * @param item item found in the results
-     * @return item converted to search result object
-     */
-    private SearchResult itemToSearchResult(Item item) {
-        SearchResult searchResult = new SearchResult();
-
-        //id
-        searchResult.setId(item.getId());
-
-        // title
-        if (item.getTitle() != null && !item.getTitle().isEmpty()) {
-            searchResult.setTitle(item.getTitle().get(0));
-        }
-
-        // author
-        if (item.getDcCreator() != null && !item.getDcCreator().isEmpty()) {
-            searchResult.setAuthor(item.getDcCreator().get(0));
-        } else if (item.getDcContributor() != null && !item.getDcContributor().isEmpty()) {
-            searchResult.setAuthor(item.getDcContributor().get(0));
-        }
-
-        // issued
-
-        // provider institution
-        if (item.getDataProvider() != null && !item.getDataProvider().isEmpty()) {
-            searchResult.setProvider(item.getDataProvider().get(0));
-        }
-
-        // format
-
-        // language
-        if (item.getLanguage() != null && !item.getLanguage().isEmpty()) {
-            searchResult.setLanguage(item.getLanguage().get(0));
-        }
-
-        // license
-        if (item.getRights() != null && !item.getRights().isEmpty()) {
-            searchResult.setLicense(item.getRights().get(0));
-        }
-
-        // image URL
-        if (item.getEdmPreview() != null && !item.getEdmPreview().isEmpty()) {
-            searchResult.setImageURL(item.getEdmPreview().get(0));
-        }
-
-        // source object URL
-        if (item.getGuid() != null && !item.getGuid().isEmpty()) {
-            searchResult.setSourceObjectURL(item.getGuid());
-        }
-
-        return searchResult;
+        this.searchResults = result;
+        updateComponent(newPage);
+        searchPage.fillMissingValuesAndVerifyResult(result);
     }
 
     /**
@@ -307,36 +217,17 @@ public class SearchResultsComponent extends VerticalLayout {
      *
      * @return info string
      */
-    private String prepareResultsText() {
-        return prepareFromResultsText()
-                + " - "
-                + searchResults.getResultsCollected()
-                + " of "
-                + searchResults.getTotalResults();
-    }
+    private String prepareResultsText(int currentPage) {
+        int from = 1 + (currentPage - 1) * rowsPerPage;
+        int to = from + searchResults.getResultsCollected() - 1;
+        int of = searchResults.getTotalResults();
 
-    /**
-     * Text with first shown result
-     *
-     * @return first shown result index
-     */
-    private String prepareFromResultsText() {
-        int fromResults = searchResults.getResultsCollected();
-        if (fromResults >= DEFAULT_PAGE_SIZE) {
-            if (fromResults >= searchResults.getTotalResults()) {
-                fromResults -= searchResults.getResults().size();
-            } else {
-                fromResults -= DEFAULT_PAGE_SIZE;
-            }
-        } else {
-            fromResults = 0;
-        }
-        return String.valueOf(fromResults + 1);
+        return from + " - " + to + " of " + of;
     }
 
     public void clear() {
         searchResults.clear();
-        updateComponent();
+        updateComponent(FIRST_PAGE);
     }
 
     public void selectAll() {
@@ -360,5 +251,35 @@ public class SearchResultsComponent extends VerticalLayout {
 				.map(c -> (SearchResultEntryComponent)c)
                 .filter(SearchResultEntryComponent::isRecordEnabled)
 				.forEach(SearchResultEntryComponent::invertRecordSelection);
+    }
+
+    public void updateSearchResult(UI ui, SearchResult searchResult) {
+        String recordId = searchResult.getId();
+        resultsList.getChildren()
+                .filter(c -> c instanceof SearchResultEntryComponent)
+                .map(c -> (SearchResultEntryComponent)c)
+                .filter(c -> c.getRecordId().equals(recordId))
+                .findFirst()
+                .ifPresent(c -> ui.access(() -> c.updateMetadata(searchResult)));
+    }
+
+    public int getRowsPerPage() {
+        return rowsPerPage;
+    }
+
+    /**
+     * Sets active number of rows on result page. If given value is not allowed, default value is used instead.
+     *
+     * @param rowsPerPage numbers of rows that should be set
+     * @return actual number of rows that was set
+     */
+    public int setRowsPerPage(int rowsPerPage) {
+        this.rowsPerPage = SearchResultsComponent.ROWS_PER_PAGE_ALLOWED_VALUES.contains(rowsPerPage) ? rowsPerPage : DEFAULT_PAGE_SIZE;
+        if (rowsCount == null) {
+            createRowsCountSelect(this.rowsPerPage);
+        } else {
+            rowsCount.setValue(this.rowsPerPage);
+        }
+        return this.rowsPerPage;
     }
 }

@@ -1,5 +1,7 @@
 package pl.psnc.dei.schema.search;
 
+import pl.psnc.dei.util.IiifAvailability;
+
 public class SearchResult {
 
     private String id;
@@ -19,6 +21,8 @@ public class SearchResult {
     private String language;
 
     private String license;
+
+    private IiifAvailability iiifAvailability;
 
     /**
      * URL to object on aggregator portal
@@ -104,5 +108,13 @@ public class SearchResult {
 
     public void setSourceObjectURL(String sourceObjectURL) {
         this.sourceObjectURL = sourceObjectURL;
+    }
+
+    public IiifAvailability getIiifAvailability() {
+        return iiifAvailability;
+    }
+
+    public void setIiifAvailability(IiifAvailability iiifAvailability) {
+        this.iiifAvailability = iiifAvailability;
     }
 }

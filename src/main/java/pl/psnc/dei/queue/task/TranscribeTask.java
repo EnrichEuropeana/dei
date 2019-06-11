@@ -9,7 +9,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.EuropeanaRecordTransferValidationUtil;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
@@ -39,7 +39,8 @@ public class TranscribeTask extends Task {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
 				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
-				if (RecordTransferValidationUtil.checkIfIiif(recordJson)) {
+
+				if (EuropeanaRecordTransferValidationUtil.checkIfIiif(recordJson)) {
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {

@@ -1,59 +1,58 @@
 package pl.psnc.dei.controllers;
 
-import org.springframework.context.ApplicationContext;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.RequestAttributes;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.response.search.SearchResponse;
-import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.SearchService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import reactor.core.publisher.Mono;
 
-import java.util.Arrays;
+import javax.servlet.http.HttpServletResponse;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 public class SearchController {
 
-    private ApplicationContext applicationContext;
+    private EuropeanaSearchService europeanaSearchService;
 
-    private static final String QUERY_ALL = "*";
-
-    private static final String[] FIXED_PARAMS = {"query", "qf", "cursor", "only_iiif"};
-
-    public SearchController(ApplicationContext applicationContext) {
-        this.applicationContext = applicationContext;
+    public SearchController(EuropeanaSearchService europeanaSearchService) {
+        this.europeanaSearchService = europeanaSearchService;
     }
 
     @GetMapping(value = "/api/search", produces = "application/json")
-    public Mono<SearchResponse> search(@RequestParam(value = "query") String query,
-                                       @RequestParam(value = "qf", required = false) String qf,
-                                       @RequestParam(value = "cursor", required = false) String cursor,
-                                       @RequestParam(value = "only_iiif", required = false) Boolean onlyIiif,
+    public Mono<SearchResponse> search(@RequestParam(value = "aggregator") Integer aggregatorId,
+                                       @RequestParam(value = "query") String query,
+                                       @RequestParam(value = "rows", defaultValue = "10") Integer rows,
                                        @RequestParam MultiValueMap<String, String> allParams) {
-        if (query.isEmpty()) {
-            query = QUERY_ALL;
-        }
-        if (cursor ==  null || cursor.isEmpty()) {
-            cursor = SearchResults.FIRST_CURSOR;
-        }
-        if (onlyIiif == null) {
-            onlyIiif = true;
-        }
 
-        allParams.keySet().removeAll(Arrays.asList(FIXED_PARAMS));
-
-        Map<String, String> otherParams = new HashMap<>();
+        Map<String, String> requestParams = new HashMap<>();
         allParams.forEach((k, v) -> {
             String joinValue = String.join(",", v);
-            otherParams.put(k, joinValue);
+            requestParams.put(k, joinValue);
         });
 
-        SearchService searchService = applicationContext.getBean(SearchService.class);
+        Aggregator aggregator = Aggregator.getById(aggregatorId);
 
-        return searchService.search(query, qf, cursor, onlyIiif, otherParams);
+        switch (aggregator) {
+            case EUROPEANA:
+                return europeanaSearchService.search(query, requestParams, rows);
+            case DDB:
+                //todo search in ddb
+            case UNKNOWN:
+            default:
+                RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();
+                if (requestAttributes != null) {
+                    HttpServletResponse response = ((ServletRequestAttributes)requestAttributes).getResponse();
+                    response.setStatus(HttpStatus.BAD_REQUEST.value());
+                }
+                return Mono.empty();
+        }
     }
-
 }

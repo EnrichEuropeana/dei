@@ -2,6 +2,7 @@ package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.hibernate.annotations.Cascade;
+import pl.psnc.dei.converter.AggregatorConverter;
 import pl.psnc.dei.converter.RecordStateConverter;
 
 import javax.persistence.*;
@@ -17,8 +18,8 @@ public class Record {
     private long id;
 
 	/**
-	 * Record identifier (from Europeana)
-	 * Looks like: "[DATASET_ID]/[LOCAL_ID]"
+	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)
+	 * Europeana id looks like: "/[DATASET_ID]/[LOCAL_ID]"
 	 */
 	private String identifier;
 
@@ -46,6 +47,10 @@ public class Record {
     @JsonIgnore
     private String iiifManifest;
 
+	@JsonIgnore
+	@Convert(converter = AggregatorConverter.class)
+    private Aggregator aggregator;
+
     public Record() {
     }
 
@@ -53,7 +58,7 @@ public class Record {
         this.identifier = identifier;
     }
 
-	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest) {
+	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest, Aggregator aggregator) {
 		this.identifier = identifier;
 		this.state = state;
 		this.project = project;
@@ -61,6 +66,7 @@ public class Record {
 		this.anImport = anImport;
 		this.transcriptions = transcriptions;
 		this.iiifManifest = iiifManifest;
+		this.aggregator = aggregator;
 	}
 
 	public long getId() {
@@ -121,6 +127,14 @@ public class Record {
 
 	public void setIiifManifest(String iiifManifest) {
 		this.iiifManifest = iiifManifest;
+	}
+
+	public Aggregator getAggregator() {
+		return aggregator;
+	}
+
+	public void setAggregator(Aggregator aggregator) {
+		this.aggregator = aggregator;
 	}
 
 	/**
