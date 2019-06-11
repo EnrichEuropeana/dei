@@ -15,6 +15,8 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
 import pl.psnc.dei.model.Aggregator;
@@ -23,12 +25,16 @@ import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
-import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.search.SearchService;
+import pl.psnc.dei.service.searchresultprocessor.SearchResultProcessorService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.ConfirmationDialog;
 import pl.psnc.dei.ui.components.SearchResultsComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponent;
 import pl.psnc.dei.ui.components.facets.FacetComponentFactory;
+import pl.psnc.dei.util.IiifAvailability;
 
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -41,6 +47,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private static final String AGGREGATOR_PARAM_NAME = "aggregator";
     private static final String QUERY_PARAM_NAME = "query";
     public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
+    private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
+
+    private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
 
     private Select<Aggregator> aggregator;
 
@@ -60,7 +69,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
-	private SearchResponseFillerService searchResponseFillerService;
+	private SearchResultProcessorService searchResultProcessorService;
 
     // label used when no results were found
     private Label noResults;
@@ -83,12 +92,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                       TranscriptionPlatformService transcriptionPlatformService,
                       CurrentUserRecordSelection currentUserRecordSelection,
                       RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-                      SearchResponseFillerService searchResponseFillerService) {
+                      SearchResultProcessorService searchResultProcessorService) {
         this.searchService = searchService;
         this.transcriptionPlatformService = transcriptionPlatformService;
         this.currentUserRecordSelection = currentUserRecordSelection;
         this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
-        this.searchResponseFillerService = searchResponseFillerService;
+        this.searchResultProcessorService = searchResultProcessorService;
 
         setDefaultVerticalComponentAlignment(Alignment.START);
         setAlignSelf(Alignment.STRETCH, this);
@@ -102,15 +111,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     /**
      * Prepare QueryParameters
      *
+     * @param aggregatorId aggregator identifier
      * @param query  query string
      * @param otherParams request parameters e.g. media, reusability
+     * @param rowsPerPage number of result on result page
      * @return QueryParameters used by the search page
      */
-    public static QueryParameters prepareQueryParameters(int aggregatorId, String query, Map<String, String> otherParams) {
+    public static QueryParameters prepareQueryParameters(int aggregatorId, String query, Map<String, String> otherParams, int rowsPerPage) {
         Map<String, List<String>> parameters = new HashMap<>();
         addParameter(AGGREGATOR_PARAM_NAME, String.valueOf(aggregatorId), parameters);
         addParameter(QUERY_PARAM_NAME, query, parameters);
         addParameter(ONLY_IIIF_PARAM_NAME, String.valueOf(onlyIiif), parameters);
+        addParameter(ROWS_PER_PAGE_PARAM_NAME, String.valueOf(rowsPerPage), parameters);
         otherParams.forEach((s, s2) -> addParameter(s.toLowerCase(), s2, parameters));
         return new QueryParameters(parameters);
     }
@@ -193,6 +205,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchOnlyIiif.setValue(true);
     }
 
+    private void showOnlyIiifBox(boolean show) {
+        searchOnlyIiif.setVisible(show);
+        searchOnlyIiif.setValue(show);
+    }
+
     private void createAggregatorSelectionBox() {
         aggregator = new Select<>();
         aggregator.addClassName("aggregator-selector");
@@ -219,10 +236,16 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         currentUserRecordSelection.clearSelectedRecords();
         currentUserRecordSelection.setAggregator(aggregator);
         resultsComponent.clear();
-        facets = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
-        facets.addFacets(null);
-        showFacets(false);
+        FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
+        facetComponent.addFacets(null);
+        getUI().ifPresent(ui -> ui.access(() -> {
+            replace(facets, facetComponent);
+            facets = facetComponent;
+            showFacets(false);
+        }));
         search.setPlaceholder("Search in " + aggregator.getFullName());
+        //for now only in Europeana we can search via iiif availability
+        showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
     }
 
     private Component createProjectSelectionBox() {
@@ -309,29 +332,32 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private void navigateToSearch(UI ui) {
         HashMap<String, String> otherParams = new HashMap<>(facets.getDefaultFacets());
-        ui.navigate("search", prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams));
+        ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams, resultsComponent.getRowsPerPage()));
     }
 
-    private void search(int aggregatorId, String query,  Map<String, String> requestParams) {
+    private void search(int aggregatorId, String query,  Map<String, String> requestParams, int rowsPerPage) {
         if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
             ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
                     "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
                             + " selected but not added record(s). Record selection will be lost with next search query execution.",
-                    e -> executeSearch(aggregatorId, query, requestParams));
+                    e -> executeSearch(aggregatorId, query, requestParams, rowsPerPage));
             dialog.addContent("Are you sure you want to continue?");
             dialog.open();
         } else {
-            executeSearch(aggregatorId, query, requestParams);
+            executeSearch(aggregatorId, query, requestParams, rowsPerPage);
         }
     }
 
     /**
      * Execute search in the SearchResultsComponent and add facets
      *
+     * @param aggregatorId aggregator identifier
      * @param query  query string
      * @param requestParams request parameters e.g. media, reusability
+     * @param rowsPerPage number of results on result page
      */
-    private void executeSearch(int aggregatorId, String query, Map<String, String> requestParams) {
+    private void executeSearch(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
 		currentUserRecordSelection.clearSelectedRecords();
         if (query == null || query.isEmpty()) {
             resultsComponent.clear();
@@ -346,7 +372,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             }
             this.query = query;
             this.requestParams = requestParams;
-            SearchResults searchResults = searchService.search(aggregatorId, query, requestParams);
+            SearchResults searchResults = searchService.search(aggregatorId, query, requestParams, rowsPerPage);
 
             if (searchResults != null) {
                 resultsComponent.handleSearchResults(searchResults);
@@ -364,13 +390,25 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         }
     }
 
+    /**
+     * Fills missing values from search request, validates if record can be transferred to TP, pushes values' updates
+     * to clients
+     *
+     * @param searchResults searchResults object that should be filled and verified
+     */
     public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
         int aggregatorId = aggregator.getValue().getId();
         List<SearchResult> results = searchResults.getResults();
         UI ui = UI.getCurrent();
 
-        results.forEach(result -> CompletableFuture.supplyAsync(() -> searchResponseFillerService.fillMissingDataAndValidate(aggregatorId, result))
-                .thenAccept(r -> resultsComponent.updateSearchResult(ui, r)));
+        results.forEach(result -> {
+            if (onlyIiif) {
+                result.setIiifAvailability(IiifAvailability.AVAILABLE);
+                resultsComponent.updateSearchResult(ui, result);
+            }
+            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
+                    .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
+        });
     }
 
     /**
@@ -378,7 +416,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * set as for the first execution.
      */
     public void executeFacetSearch(Map<String, String> requestParams) {
-        getUI().ifPresent(ui -> ui.navigate("search", SearchPage.prepareQueryParameters(aggregator.getValue().getId(), query, requestParams)));
+        getUI().ifPresent(ui -> ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
     }
 
     /**
@@ -387,12 +426,25 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
      * @param paginationParams pagination request parameters
      * @return SearchResponse object if search operation finish successfully, null otherwise.
      */
-    public SearchResults goToPage(Map<String, String> paginationParams) { //todo cache? here or in search service
+    public SearchResults goToPage(Map<String, String> paginationParams) {
         if (requestParams != null) {
             requestParams.putAll(paginationParams);
-            return searchService.search(aggregator.getValue().getId(), query, requestParams);
+            int rowsPerPage = resultsComponent.getRowsPerPage();
+            return searchService.search(aggregator.getValue().getId(), query, requestParams, rowsPerPage);
         }
         return null;
+    }
+
+    /**
+     * Execute search after rows per page value changed. Current query string and facet parameters are used for this
+     * search. Any existing pagination parameters are removed from parameters map.
+     *
+     * @param paginationParams Pagination parameters that should be removed from request parameters.
+     */
+    public void executeRowsPerPageChange(Map<String, String> paginationParams) {
+    	requestParams.keySet().removeAll(paginationParams.keySet());
+		getUI().ifPresent(ui -> ui.navigate("search",
+                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
     }
 
     /**
@@ -427,10 +479,29 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
             Map<String, String> requestParams = new HashMap<>();
             parametersMap.entrySet().stream()
-                    .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)))
+                    .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)
+                            || e.getKey().equalsIgnoreCase(ROWS_PER_PAGE_PARAM_NAME)))
                     .forEach(e -> requestParams.put(e.getKey(), e.getValue().get(0)));
-            search(aggregatorId, queryString, requestParams);
+
+            int rowsPerPage = getRowsPerPage(parametersMap);
+
+            search(aggregatorId, queryString, requestParams, rowsPerPage);
         }
+    }
+
+    private int getRowsPerPage(Map<String, List<String>> parametersMap) {
+        int rowsPerPage = resultsComponent.getRowsPerPage();
+        String rowsPerPageParam = getParameterValue(parametersMap.get(ROWS_PER_PAGE_PARAM_NAME), true);
+        if (rowsPerPageParam != null && !rowsPerPageParam.isEmpty()) {
+            try {
+                int rowsPerPageParamValue = Integer.parseInt(rowsPerPageParam);
+                rowsPerPage = resultsComponent.setRowsPerPage(rowsPerPageParamValue);
+            } catch (NumberFormatException e) {
+                logger.warn("Cannot parse {} parameter. Will use default/currently selected value instead ({})",
+                        ROWS_PER_PAGE_PARAM_NAME, rowsPerPage, e);
+            }
+        }
+        return rowsPerPage;
     }
 
     /**
@@ -460,7 +531,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     @Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
-		searchResponseFillerService.clearCache();
+		searchResultProcessorService.clearCache();
 	}
 
 	@Override

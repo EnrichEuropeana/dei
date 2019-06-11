@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 	}
 
 	@Override
-	public Mono<SearchResponse> search(String query, Map<String, String> requestParams) {
+	public Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage) { //todo rowsPerPage
 		SearchResponse result = webClient.get()
 				.uri(buildUri(query, requestParams))
 				.retrieve()

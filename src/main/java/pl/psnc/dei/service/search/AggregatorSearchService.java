@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
@@ -9,5 +9,5 @@ public interface AggregatorSearchService {
 
 	String QUERY_ALL = "*";
 
-	Mono<SearchResponse> search(String query, Map<String, String> requestParams);
+	Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage);
 }

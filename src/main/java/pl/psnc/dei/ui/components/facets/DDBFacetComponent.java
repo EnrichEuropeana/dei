@@ -47,4 +47,9 @@ public class DDBFacetComponent extends FacetComponent {
 	public Map<String, String> getDefaultFacets() {
 		return new HashMap<>();
 	}
+
+	@Override
+	public void clearValuesForFacet(String facet) {
+
+	}
 }

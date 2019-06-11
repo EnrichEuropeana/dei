@@ -7,7 +7,6 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
-import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
@@ -44,10 +43,10 @@ public class ImportsListComponent extends VerticalLayout {
 		ListDataProvider<Import> dataProvider = new ListDataProvider<>(imports);
 		importsGrid.setDataProvider(dataProvider);
 
-		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(10);
+		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(20);
 		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
-		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
-		importsGrid.addComponentColumn(this::addActionButtons).setHeader("Action").setFlexGrow(5);
+		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(4);
+		importsGrid.addComponentColumn(this::addActionButtons).setHeader("Action").setFlexGrow(4);
 
 		//
 		HeaderRow filterRow = importsGrid.appendHeaderRow();
@@ -63,11 +62,11 @@ public class ImportsListComponent extends VerticalLayout {
 		HorizontalLayout layout = new HorizontalLayout();
 		Button sendImportButton = new Button(new Icon(VaadinIcon.ENVELOPE_OPEN));
 		sendImportButton.addClickListener(click -> {
-			importPage.sendImport(anImport);
+			importPage.showSendImportView(anImport);
 		});
 		Button editImportButton = new Button(new Icon(VaadinIcon.EDIT));
 		editImportButton.addClickListener(click -> {
-			importPage.editImport(anImport);
+			importPage.showEditImportView(anImport);
 		});
 		layout.add(editImportButton);
 		layout.add(sendImportButton);

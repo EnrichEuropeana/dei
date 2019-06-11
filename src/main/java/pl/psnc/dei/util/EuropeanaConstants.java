@@ -15,6 +15,7 @@ public final class EuropeanaConstants {
 	public static final String QUERY_PARAM_NAME = "query";
 	public static final String QF_PARAM_NAME = "qf";
 	public static final String CURSOR_PARAM_NAME = "cursor";
+	public static final String ROWS_PARAM_NAME = "rows";
 
 	//Europeana default cursor
 	public static final String FIRST_CURSOR = "*";

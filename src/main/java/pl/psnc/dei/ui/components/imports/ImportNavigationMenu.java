@@ -27,13 +27,16 @@ public class ImportNavigationMenu extends VerticalLayout {
 		label.addClassName("metadata-label");
 		layout.add(label);
 		layout.add(createElement(new Button("Create import"), e -> {
-			importPage.createImportPage();
+			importPage.showCreateImportView();
 		}));
 		layout.add(createElement(new Button("List imports"), e -> {
-			importPage.createListImports();
+			importPage.showCreateListImportView();
 		}));
 		layout.add(createElement(new Button("Imports history"), e -> {
-			importPage.createHistoryImports();
+			importPage.showHistoryImportsView();
+		}));
+		layout.add(createElement(new Button("Current candidates"), e -> {
+			importPage.showCandidatesView();
 		}));
 		return layout;
 	}

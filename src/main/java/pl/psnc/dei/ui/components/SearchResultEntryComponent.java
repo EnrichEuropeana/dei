@@ -9,7 +9,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.util.RecordTransferValidationUtil;
+import pl.psnc.dei.util.IiifAvailability;
 
 /**
  * Single result component
@@ -24,8 +24,8 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	private static final String FORMAT_LOADING_PLACEHOLDER_LABEL = "Loading...";
 	private static final String LANGUAGE_LABEL = "Language:";
 	private static final String LICENSE_LABEL = "License:";
-	private static final String TRANSFER_POSSIBILITY_LABEL = "Transfer possibility:";
-	private static final String TRANSFER_POSSIBILITY_PLACEHOLDER_LABEL = "Verifying...";
+	private static final String IIIF_AVAILABILITY_LABEL = "IIIF availability:";
+	private static final String IIIF_AVAILABILITY_PLACEHOLDER_LABEL = "Verifying...";
 
 	private Checkbox searchResultCheckBox;
 	private VerticalLayout metadata;
@@ -47,6 +47,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		createSearchResultCheckBox();
 		createImage();
 		metadata = createMetadataComponent();
+		setRecordEnabled(false);
 		add(metadata);
 	}
 
@@ -58,13 +59,12 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	public void updateMetadata(SearchResult searchResult) {
 		this.searchResult = searchResult;
 		VerticalLayout updatedMetadata = createMetadataComponent();
-		if (searchResult.getTransferPossibility() != null) {
-			boolean transferPossible = searchResult.getTransferPossibility().isTransferPossible();
-			searchResultCheckBox.setEnabled(transferPossible);
-			recordEnabled = transferPossible;
+		if (searchResult.getIiifAvailability() != null) {
+			setRecordEnabled(searchResult.getIiifAvailability().isTransferPossible());
 		}
 
 		replace(metadata, updatedMetadata);
+		metadata = updatedMetadata;
 	}
 
 	/**
@@ -104,7 +104,6 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		searchResultCheckBox = new Checkbox();
 		searchResultCheckBox.setId(searchResult.getId());
 		searchResultCheckBox.addClassName("search-result-checkbox");
-		searchResultCheckBox.setEnabled(false);
 
 		boolean isSelected = currentUserRecordSelection.isRecordSelected(searchResult.getId());
 		searchResultCheckBox.setValue(isSelected);
@@ -150,24 +149,24 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 * Create metadata component which is part of the result component
 	 */
 	private VerticalLayout createMetadataComponent() {
-		RecordTransferValidationUtil.TransferPossibility transferPossibility = searchResult.getTransferPossibility();
+		IiifAvailability iiifAvailability = searchResult.getIiifAvailability();
 
 		VerticalLayout metadataLayout = new VerticalLayout();
 		createTitleMetadataLine(metadataLayout, searchResult.getTitle(), searchResult.getSourceObjectURL());
 		createMetadataLine(metadataLayout, AUTHOR_LABEL, searchResult.getAuthor());
 		createMetadataLine(metadataLayout, ISSUED_LABEL, searchResult.getIssued());
 		createMetadataLine(metadataLayout, PROVIDER_LABEL, searchResult.getProvider());
-		if (transferPossibility != null) {
+		if (searchResult.getFormat() != null) {
 			createMetadataLine(metadataLayout, FORMAT_LABEL, searchResult.getFormat());
 		} else {
 			createMetadataLine(metadataLayout, FORMAT_LABEL, FORMAT_LOADING_PLACEHOLDER_LABEL);
 		}
 		createMetadataLine(metadataLayout, LANGUAGE_LABEL, searchResult.getLanguage());
 		createMetadataLine(metadataLayout, LICENSE_LABEL, searchResult.getLicense());
-		if (transferPossibility != null) {
-			createTransferPossibilityLine(metadataLayout, transferPossibility.getMessage(), transferPossibility.isTransferPossible());
+		if (iiifAvailability != null) {
+			createTransferPossibilityLine(metadataLayout, iiifAvailability.getMessage(), iiifAvailability.isTransferPossible());
 		} else {
-			createMetadataLine(metadataLayout, TRANSFER_POSSIBILITY_LABEL, TRANSFER_POSSIBILITY_PLACEHOLDER_LABEL);
+			createMetadataLine(metadataLayout, IIIF_AVAILABILITY_LABEL, IIIF_AVAILABILITY_PLACEHOLDER_LABEL);
 		}
 
 		return metadataLayout;
@@ -231,7 +230,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	}
 
 	private void createTransferPossibilityLine(FlexComponent metadata, String message, boolean transferPossible) {
-		HorizontalLayout line = createLineWithMetadataLabel(TRANSFER_POSSIBILITY_LABEL);
+		HorizontalLayout line = createLineWithMetadataLabel(IIIF_AVAILABILITY_LABEL);
 		Label valueLabel = new Label(message);
 		if (transferPossible) {
 			valueLabel.addClassName("can-transfer-label");
@@ -241,6 +240,18 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		line.add(valueLabel);
 		line.expand(valueLabel);
 		metadata.add(line);
+	}
+
+	public void setRecordEnabled(boolean isEnabled) {
+		this.recordEnabled = isEnabled;
+		searchResultCheckBox.setEnabled(isEnabled);
+		if (isEnabled) {
+			removeClassName("search-result-element-disabled");
+			addClassName("search-result-element-enabled");
+		} else {
+			removeClassName("search-result-element-enabled");
+			addClassName("search-result-element-disabled");
+		}
 	}
 
 	public boolean isRecordEnabled() {

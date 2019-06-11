@@ -1,6 +1,6 @@
 package pl.psnc.dei.util;
 
-public class RecordIdValidator {
+public class EuropeanaRecordIdValidator {
 
 	private static final String RECORD_ID_PATTERN = "^(?U)/\\p{Digit}+/[\\p{Graph}&&[^/]]+$";
 

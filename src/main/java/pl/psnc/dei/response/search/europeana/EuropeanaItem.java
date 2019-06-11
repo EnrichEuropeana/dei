@@ -614,7 +614,7 @@ public class EuropeanaItem implements Item {
 
     @Override
     public String getDataProviderInstitution() {
-        return this.dataProvider.get(0);
+        return this.dataProvider != null ? this.dataProvider.get(0) : null;
     }
 
     @Override
@@ -646,7 +646,7 @@ public class EuropeanaItem implements Item {
 
     @Override
     public String getThumbnailURL() {
-        return this.edmPreview.get(0);
+        return this.edmPreview != null ? this.edmPreview.get(0) : null;
     }
 
     @Override

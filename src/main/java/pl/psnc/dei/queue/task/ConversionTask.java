@@ -13,6 +13,9 @@ import pl.psnc.dei.service.TasksQueueService;
 public class ConversionTask extends Task {
 
 	@Autowired
+	private Converter converter;
+
+	@Autowired
 	private TasksQueueService tqs;
 
 	@Autowired
@@ -33,9 +36,8 @@ public class ConversionTask extends Task {
 	@Override
 	public void process() {
 		new Thread(() -> {
-			Converter converter = new Converter(record, recordJson);
 			try {
-				converter.convertAndGenerateManifest();
+				converter.convertAndGenerateManifest(record, recordJson);
 				tqs.addTaskToQueue(new TranscribeTask(record));
 			} catch (ConversionImpossibleException e) {
 				try {

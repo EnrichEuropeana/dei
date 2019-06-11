@@ -10,7 +10,7 @@ public class AggregatorConverter implements AttributeConverter<Aggregator, Integ
 
 	@Override
 	public Integer convertToDatabaseColumn(Aggregator aggregator) {
-		return aggregator.getId();
+		return aggregator != null ? aggregator.getId() : -1;
 	}
 
 	@Override

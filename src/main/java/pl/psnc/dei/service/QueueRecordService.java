@@ -3,13 +3,13 @@ package pl.psnc.dei.service;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 
+import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;

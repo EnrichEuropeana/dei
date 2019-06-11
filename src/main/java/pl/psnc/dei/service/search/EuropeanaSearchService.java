@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,11 +15,9 @@ import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.FACET_SEPARATOR;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 import static pl.psnc.dei.util.EuropeanaConstants.*;
 
@@ -62,7 +60,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      * @param otherParams other request parameters e.g. media, reusability
      * @return response from search API associated with web client
      */
-    public Mono<SearchResponse> search(String query, String queryFilter, String cursor, boolean onlyIiif, Map<String, String> otherParams) {
+    public Mono<SearchResponse> search(String query, List<String> queryFilter, String cursor, boolean onlyIiif, Map<String, String> otherParams) {
         checkParameters(query, cursor);
         return webClient.get()
                 .uri(uriBuilder -> {
@@ -70,7 +68,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                     searchApiPredefinedParameters.forEach(uriBuilder::query);
                     uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(query, UTF_8_ENCODING));
                     if (queryFilter != null) {
-                        uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(queryFilter, UTF_8_ENCODING));
+                        for(String value : queryFilter)
+                            uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(value, UTF_8_ENCODING));
                     }
                     if (onlyIiif) {
                         uriBuilder.queryParam(QF_PARAM_NAME, UriUtils.encode(searchApiIiifQuery, UTF_8_ENCODING));
@@ -98,8 +97,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
     }
 
     @Override
-    public Mono<SearchResponse> search(String query, Map<String, String> requestParams) {
-        String qf = null;
+    public Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage) {
+        List<String> qf = null;
         String cursor;
         boolean onlyIiif;
 
@@ -109,7 +108,12 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
         String qfParam = requestParams.get(QF_PARAM_NAME);
         if (!(qfParam == null || qfParam.isEmpty())) {
-            qf = qfParam;
+            if(qfParam.contains(FACET_SEPARATOR)) {
+                qf = new ArrayList<>(Arrays.asList(qfParam.split(FACET_SEPARATOR)));
+            } else {
+                qf = Collections.singletonList(qfParam);
+            }
+
         }
 
         String cursorParam = requestParams.get(CURSOR_PARAM_NAME);
@@ -132,6 +136,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
             otherParams.put(k, joinValue);
         });
         otherParams.keySet().removeAll(Arrays.asList(FIXED_API_PARAMS));
+
+        otherParams.put(ROWS_PARAM_NAME, String.valueOf(rowsPerPage));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
     }

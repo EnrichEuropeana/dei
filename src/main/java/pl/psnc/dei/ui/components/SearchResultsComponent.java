@@ -6,6 +6,7 @@ import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.select.Select;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
 import pl.psnc.dei.schema.search.Pagination;
 import pl.psnc.dei.schema.search.SearchResult;
@@ -18,14 +19,26 @@ import java.util.Map;
 
 @StyleSheet("frontend://styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
-    public static final int DEFAULT_PAGE_SIZE = 12;
+    public static final int DEFAULT_PAGE_SIZE = 10;
+    private static final List<Integer> ROWS_PER_PAGE_ALLOWED_VALUES = new ArrayList<>();
     private static final int FIRST_PAGE = 1;
+
+    static {
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(DEFAULT_PAGE_SIZE);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(20);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(50);
+        ROWS_PER_PAGE_ALLOWED_VALUES.add(100);
+    }
+
+    private int rowsPerPage = DEFAULT_PAGE_SIZE;
 
     // search results container
     private transient SearchResults searchResults;
 
     // results label
     private Label resultsCount;
+
+    private Select<Integer> rowsCount;
 
     // navigation bar with results count and page navigation
     private HorizontalLayout navigationBar;
@@ -75,11 +88,36 @@ public class SearchResultsComponent extends VerticalLayout {
         resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
+        if (rowsCount == null) {
+            createRowsCountSelect(DEFAULT_PAGE_SIZE);
+        }
+        HorizontalLayout rowsCountLayout = new HorizontalLayout();
+        rowsCountLayout.addClassName("rows-per-page");
+        rowsCountLayout.setDefaultVerticalComponentAlignment(Alignment.CENTER);
+        rowsCountLayout.add(new Label("Rows per page:"), rowsCount);
+        navigationBar.add(rowsCountLayout);
+
         // page navigation
-        pageNavigationComponent = new PageNavigationComponent(this, DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent = new PageNavigationComponent(this, rowsPerPage, searchResults.getTotalResults());
         navigationBar.add(pageNavigationComponent);
 
         add(navigationBar);
+    }
+
+    /**
+     * Create component to choose number of result per page on result page.
+     *
+     * @param rowsPerPageToSet number of rows that should be set as active
+     */
+    private void createRowsCountSelect(int rowsPerPageToSet) {
+        rowsCount = new Select<>();
+        rowsCount.addClassName("rows-per-page-combobox");
+        rowsCount.setItems(ROWS_PER_PAGE_ALLOWED_VALUES);
+        rowsCount.setValue(rowsPerPageToSet);
+        rowsCount.addValueChangeListener(e -> {
+            rowsPerPage = e.getValue();
+            searchPage.executeRowsPerPageChange(paginationCache.get(0).getRequestParams());
+        });
     }
 
     /**
@@ -109,7 +147,7 @@ public class SearchResultsComponent extends VerticalLayout {
      * Resets the page navigation component when number of total results has changed
      */
     private void updateNavigationBar() {
-        pageNavigationComponent.resetPages(DEFAULT_PAGE_SIZE, searchResults.getTotalResults());
+        pageNavigationComponent.resetPages(rowsPerPage, searchResults.getTotalResults());
     }
 
     /**
@@ -120,6 +158,7 @@ public class SearchResultsComponent extends VerticalLayout {
     public void handleSearchResults(SearchResults searchResults) {
         this.searchResults = searchResults;
 
+        rowsPerPage = searchResults.getResultsCollected();
         paginationCache.clear();
         paginationCache.add(searchResults.getDefaultPagination());
         paginationCache.add(searchResults.getNextPagination());
@@ -169,8 +208,8 @@ public class SearchResultsComponent extends VerticalLayout {
         }
 
         this.searchResults = result;
-        searchPage.fillMissingValuesAndVerifyResult(result);
         updateComponent(newPage);
+        searchPage.fillMissingValuesAndVerifyResult(result);
     }
 
     /**
@@ -179,7 +218,7 @@ public class SearchResultsComponent extends VerticalLayout {
      * @return info string
      */
     private String prepareResultsText(int currentPage) {
-        int from = 1 + (currentPage - 1) * DEFAULT_PAGE_SIZE;
+        int from = 1 + (currentPage - 1) * rowsPerPage;
         int to = from + searchResults.getResultsCollected() - 1;
         int of = searchResults.getTotalResults();
 
@@ -221,12 +260,26 @@ public class SearchResultsComponent extends VerticalLayout {
                 .map(c -> (SearchResultEntryComponent)c)
                 .filter(c -> c.getRecordId().equals(recordId))
                 .findFirst()
-                .ifPresent(/*c -> this.getUI().ifPresent(*/c -> {
-                    ui.access(() -> {
-                        c.updateMetadata(searchResult);
-                        ui.push(); //todo for some reason vaadin is not pushing any changes to client. try polling again?
-                    });
-                    //ui.push();
-                }/*)*/);
+                .ifPresent(c -> ui.access(() -> c.updateMetadata(searchResult)));
+    }
+
+    public int getRowsPerPage() {
+        return rowsPerPage;
+    }
+
+    /**
+     * Sets active number of rows on result page. If given value is not allowed, default value is used instead.
+     *
+     * @param rowsPerPage numbers of rows that should be set
+     * @return actual number of rows that was set
+     */
+    public int setRowsPerPage(int rowsPerPage) {
+        this.rowsPerPage = SearchResultsComponent.ROWS_PER_PAGE_ALLOWED_VALUES.contains(rowsPerPage) ? rowsPerPage : DEFAULT_PAGE_SIZE;
+        if (rowsCount == null) {
+            createRowsCountSelect(this.rowsPerPage);
+        } else {
+            rowsCount.setValue(this.rowsPerPage);
+        }
+        return this.rowsPerPage;
     }
 }

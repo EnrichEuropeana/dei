@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.search;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +26,7 @@ public class SearchService {
 		this.ddbSearchService = ddbSearchService;
 	}
 
-	public SearchResults search(int aggregatorId, String query, Map<String, String> requestParams) {
+	public SearchResults search(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
 		Aggregator aggregator = Aggregator.getById(aggregatorId);
 
 		SearchResponse<Facet, Item> response;
@@ -34,10 +34,10 @@ public class SearchService {
 		try {
 			switch (aggregator) {
 				case EUROPEANA:
-					response = europeanaSearchService.search(query, requestParams).block();
+					response = europeanaSearchService.search(query, requestParams, rowsPerPage).block();
 					break;
 				case DDB:
-					response = ddbSearchService.search(query, requestParams).block();
+					response = ddbSearchService.search(query, requestParams, rowsPerPage).block();
 					break;
 				default:
 					return null;
@@ -56,8 +56,10 @@ public class SearchService {
 		searchResults.setDefaultPagination(response.getDefaultPagination());
 		searchResults.setNextPagination(response.getPagination());
 		searchResults.setFacets(response.getFacets());
-		searchResults.setTotalResults(response.getTotalResults());
-		searchResults.setResultsCollected(response.getItemsCount());
+		Integer totalResults = response.getTotalResults();
+		searchResults.setTotalResults(totalResults != null ? totalResults : 0);
+		Integer itemsCount = response.getItemsCount();
+		searchResults.setResultsCollected(itemsCount != null ? itemsCount : 0);
 
 		List<Item> items = response.getItems();
 		items.forEach(item -> searchResults.getResults().add(itemToSearchResult(item)));
@@ -118,8 +120,6 @@ public class SearchService {
 		if (item.getSourceObjectURL() != null && !item.getSourceObjectURL().isEmpty()) {
 			searchResult.setSourceObjectURL(item.getSourceObjectURL());
 		}
-
-		//todo verification?
 
 		return searchResult;
 	}
