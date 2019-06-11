@@ -9,7 +9,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordTransferValidationCache;
-import pl.psnc.dei.util.TransferPossibility;
+import pl.psnc.dei.util.IiifAvailability;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -26,10 +26,10 @@ public class SearchResultProcessorServiceTest {
 	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, recordTransferValidationCache);
 
 	private void setup() {
-		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class))).thenAnswer(a -> {
+		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false))).thenAnswer(a -> {
 			SearchResult argument = a.getArgument(0);
 			argument.setFormat("image/jpeg");
-			argument.setTransferPossibility(TransferPossibility.POSSIBLE);
+			argument.setIiifAvailability(IiifAvailability.AVAILABLE);
 			return argument;
 		});
 	}
@@ -45,9 +45,9 @@ public class SearchResultProcessorServiceTest {
 	public void fillEuropeanaResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.EUROPEANA.getId(), searchResult);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.EUROPEANA.getId(), searchResult, false);
 
-		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any());
+		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any(), eq(false));
 		Assert.assertEquals(filledSearchResult, searchResult);
 	}
 
@@ -55,23 +55,23 @@ public class SearchResultProcessorServiceTest {
 	public void fillUnknownAggregatorResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.UNKNOWN.getId(), searchResult);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.UNKNOWN.getId(), searchResult, false);
 
 		verifyZeroInteractions(europeanaSearchResultProcessor);
 		Assert.assertEquals(filledSearchResult, searchResult);
 		Assert.assertNull(filledSearchResult.getFormat());
-		Assert.assertNull(filledSearchResult.getTransferPossibility());
+		Assert.assertNull(filledSearchResult.getIiifAvailability());
 	}
 
 	@Test
 	public void fillInvalidAggregatorResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(123456789, searchResult);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(123456789, searchResult, false);
 
 		verifyZeroInteractions(europeanaSearchResultProcessor);
 		Assert.assertEquals(filledSearchResult, searchResult);
 		Assert.assertNull(filledSearchResult.getFormat());
-		Assert.assertNull(filledSearchResult.getTransferPossibility());
+		Assert.assertNull(filledSearchResult.getIiifAvailability());
 	}
 }

@@ -18,12 +18,12 @@ public class SearchResultProcessorService {
 		this.recordTransferValidationCache = recordTransferValidationCache;
 	}
 
-	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult) {
+	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult, boolean onlyIiif) {
 		Aggregator aggregator = Aggregator.getById(aggregatorId);
 
 		switch (aggregator) {
 			case EUROPEANA:
-				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult);
+				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			case DDB:
 				//todo implement
 			default:

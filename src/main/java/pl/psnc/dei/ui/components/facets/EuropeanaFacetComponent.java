@@ -151,12 +151,9 @@ public class EuropeanaFacetComponent extends FacetComponent {
 
 	@Override
 	public void updateState(Map<String, String> requestParams) {
+		selectedFacetsComponent.clear();
 		handleQueryFilterString(requestParams);
 		handleRequestParams(requestParams);
-
-		if (requestParams.isEmpty()) {
-			selectedFacetsComponent.clear();
-		}
 	}
 
 	@Override

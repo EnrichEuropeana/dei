@@ -43,8 +43,15 @@
     margin-left: 0;
     margin-bottom: 5px;
     padding: 0;
-    background-color: lightsteelblue;
     max-width:1000px;
+}
+
+.search-result-element-enabled {
+    background-color: lightsteelblue;
+}
+
+.search-result-element-disabled {
+    background-color: lightgray;
 }
 
 .search-result-checkbox {

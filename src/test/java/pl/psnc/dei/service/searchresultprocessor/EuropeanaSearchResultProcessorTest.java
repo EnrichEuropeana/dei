@@ -11,7 +11,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordTransferValidationCache;
-import pl.psnc.dei.util.TransferPossibility;
+import pl.psnc.dei.util.IiifAvailability;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
@@ -43,6 +43,10 @@ public class EuropeanaSearchResultProcessorTest {
 		when(europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseNoIiifWrongMimeType);
 	}
 
+	private void setupServiceUnavailable() {
+		when(europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenThrow(new RuntimeException());
+	}
+
 	private SearchResult getSearchResult () {
 		SearchResult searchResult = new SearchResult();
 		searchResult.setId("1");
@@ -54,45 +58,78 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyAsIiif() {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
-		Assert.assertEquals(TransferPossibility.POSSIBLE, result.getTransferPossibility());
+		Assert.assertEquals(IiifAvailability.AVAILABLE, result.getIiifAvailability());
 	}
 
 	@Test
-	public void fillMimeTypeAndVerifyAsPossibleToConver() {
-		setupNoIiif();
+	public void fillMimeTypeAndVerifyAsIiifOnlyIiif() {
+		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
-		Assert.assertEquals(TransferPossibility.REQUIRES_CONVERSION, result.getTransferPossibility());
+		Assert.assertEquals(IiifAvailability.AVAILABLE, result.getIiifAvailability());
+	}
+
+	@Test
+	public void fillMimeTypeAndVerifyServiceUnavailable() {
+		setupServiceUnavailable();
+		SearchResult searchResult = getSearchResult();
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+
+		Assert.assertEquals(searchResult, result);
+		Assert.assertEquals("Data unavailable", result.getFormat());
+		Assert.assertEquals(IiifAvailability.DATA_UNAVAILABLE, result.getIiifAvailability());
+	}
+
+	@Test
+	public void fillMimeTypeAndVerifyServiceUnavailableOnlyIiif() {
+		setupServiceUnavailable();
+		SearchResult searchResult = getSearchResult();
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true);
+
+		Assert.assertEquals(searchResult, result);
+		Assert.assertEquals("Data unavailable", result.getFormat());
+		Assert.assertEquals(IiifAvailability.AVAILABLE, result.getIiifAvailability());
+	}
+
+	@Test
+	public void fillMimeTypeAndVerifyAsPossibleToConvert() {
+		setupNoIiif();
+		SearchResult searchResult = getSearchResult();
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+
+		Assert.assertEquals(searchResult, result);
+		Assert.assertEquals("image/jpeg", result.getFormat());
+		Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, result.getIiifAvailability());
 	}
 
 	@Test
 	public void fillMimeTypeAndVerifyAsNotPossible() {
 		setupNoIiifWrongMimeType();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/gif", result.getFormat());
-		Assert.assertEquals(TransferPossibility.NOT_POSSIBLE, result.getTransferPossibility());
+		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, result.getIiifAvailability());
 	}
 
 	@Test
 	public void fillDataFromCache() {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		recordTransferValidationCache.addValidationResult(searchResult.getId(), "image/jpeg", TransferPossibility.POSSIBLE);
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult);
+		recordTransferValidationCache.addValidationResult(searchResult.getId(), "image/jpeg", IiifAvailability.AVAILABLE);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		verifyZeroInteractions(europeanaRestService);
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
-		Assert.assertEquals(TransferPossibility.POSSIBLE, result.getTransferPossibility());
+		Assert.assertEquals(IiifAvailability.AVAILABLE, result.getIiifAvailability());
 	}
 }
