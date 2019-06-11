@@ -129,7 +129,7 @@ public class EuropeanaSearchResponse implements SearchResponse<EuropeanaFacet, E
 
     @Override
     public Pagination getPagination() {
-        return new EuropeanaCursorPagination(this.nextCursor);
+        return new EuropeanaCursorPagination(this.nextCursor, String.valueOf(this.itemsCount));
     }
 
     @Override
@@ -139,6 +139,6 @@ public class EuropeanaSearchResponse implements SearchResponse<EuropeanaFacet, E
 
     @Override
     public Pagination getDefaultPagination() {
-        return new EuropeanaCursorPagination();
+        return new EuropeanaCursorPagination(String.valueOf(itemsCount));
     }
 }

@@ -9,5 +9,5 @@ public interface AggregatorSearchService {
 
 	String QUERY_ALL = "*";
 
-	Mono<SearchResponse> search(String query, Map<String, String> requestParams);
+	Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage);
 }

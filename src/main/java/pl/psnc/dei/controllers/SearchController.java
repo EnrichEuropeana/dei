@@ -29,6 +29,7 @@ public class SearchController {
     @GetMapping(value = "/api/search", produces = "application/json")
     public Mono<SearchResponse> search(@RequestParam(value = "aggregator") Integer aggregatorId,
                                        @RequestParam(value = "query") String query,
+                                       @RequestParam(value = "rows", defaultValue = "10") Integer rows,
                                        @RequestParam MultiValueMap<String, String> allParams) {
 
         Map<String, String> requestParams = new HashMap<>();
@@ -41,7 +42,7 @@ public class SearchController {
 
         switch (aggregator) {
             case EUROPEANA:
-                return europeanaSearchService.search(query, requestParams);
+                return europeanaSearchService.search(query, requestParams, rows);
             case DDB:
                 //todo search in ddb
             case UNKNOWN:
