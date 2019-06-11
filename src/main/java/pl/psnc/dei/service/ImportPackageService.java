@@ -10,11 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.DatasetsReposotory;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.*;
 import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
@@ -89,7 +89,26 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
+	 * @param aggregator aggregator
+	 * @param project  project for searching candidates
+	 * @return list of records which are candidates
+	 */
+	public Set<Record> getCandidates(Aggregator aggregator, Project project) {
+		if(aggregator == null && project == null) {
+			return recordsRepository.findAllByAnImportNull();
+		}
+		if(aggregator == null){
+			return recordsRepository.findAllByProjectAndAnImportNull(project);
+		}
+		if(project == null){
+			return recordsRepository.findAllByAggregatorAndAnImportNull(aggregator);
+		}
+		return recordsRepository.findAllByProjectAndAggregatorAndAnImportNull(project, aggregator);
+	}
+
+	/**
 	 * Removes records from set of candidates
+	 *
 	 * @param records records for removing
 	 */
 	public void removeRecordsFromCandidates(Set<Record> records) {

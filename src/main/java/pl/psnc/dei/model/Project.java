@@ -17,67 +17,67 @@ import java.util.Set;
 @Entity
 public class Project implements Serializable {
 
-    @Id
-    @GeneratedValue
-    @JsonIgnore
-    private long id;
+	@Id
+	@GeneratedValue
+	@JsonIgnore
+	private long id;
 
-    @JsonProperty("ProjectId")
-    private String projectId;
+	@JsonProperty("ProjectId")
+	private String projectId;
 
-    @JsonProperty("Name")
-    private String name;
+	@JsonProperty("Name")
+	private String name;
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
-    private List<Dataset> datasets = new ArrayList<>();
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
+	private List<Dataset> datasets = new ArrayList<>();
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
-    private Set<Record> records;
+	@JsonIgnore
+	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
+	private Set<Record> records;
 
-    public long getId() {
-        return id;
-    }
+	public long getId() {
+		return id;
+	}
 
-    public void setId(long id) {
-        this.id = id;
-    }
+	public void setId(long id) {
+		this.id = id;
+	}
 
-    public String getProjectId() {
-        return projectId;
-    }
+	public String getProjectId() {
+		return projectId;
+	}
 
-    public void setProjectId(String projectId) {
-        this.projectId = projectId;
-    }
+	public void setProjectId(String projectId) {
+		this.projectId = projectId;
+	}
 
-    public String getName() {
-        return name;
-    }
+	public String getName() {
+		return name;
+	}
 
-    public void setName(String name) {
-        this.name = name;
-    }
+	public void setName(String name) {
+		this.name = name;
+	}
 
-    public Set<Record> getRecords() {
-        return records;
-    }
+	public Set<Record> getRecords() {
+		return records;
+	}
 
-    public void setRecords(Set<Record> records) {
-        this.records = records;
-    }
+	public void setRecords(Set<Record> records) {
+		this.records = records;
+	}
 
-    public List<Dataset> getDatasets() {
-        return datasets;
-    }
+	public List<Dataset> getDatasets() {
+		return datasets;
+	}
 
-    public void setDatasets(List<Dataset> datasets) {
-        this.datasets = datasets;
-    }
+	public void setDatasets(List<Dataset> datasets) {
+		this.datasets = datasets;
+	}
 
-    @Override
-    public String toString() {
-        return this.getName();
-    }
+	@Override
+	public String toString() {
+		return this.getName();
+	}
 }

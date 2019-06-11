@@ -12,11 +12,12 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyObject;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -46,7 +47,7 @@ public class RecordsProjectsAssignmentServiceTest {
         record = new Record("id1");
         when(recordsRepository.save(record)).thenReturn(record);
 
-        List<Record> records = new ArrayList<>();
+        Set<Record> records = new HashSet<>();
         records.add(record);
         when(recordsRepository.findAllByProject(any(Project.class))).thenReturn(records);
         when(recordsRepository.findAllByDataset(any(Dataset.class))).thenReturn(records);
@@ -201,11 +202,11 @@ public class RecordsProjectsAssignmentServiceTest {
     public void getAssignedRecordsForProject() {
         record.setProject(project);
 
-        List<Record> records = recordsProjectsAssignmentService.getAssignedRecords(project);
+        Set<Record> records = recordsProjectsAssignmentService.getAssignedRecords(project);
 
         assertNotNull(records);
         assertFalse(records.isEmpty());
-        assertEquals(record, records.get(0));
+        assertEquals(record, records.stream().findFirst().get());
     }
 
     @Test
@@ -213,10 +214,10 @@ public class RecordsProjectsAssignmentServiceTest {
         record.setProject(project);
         record.setDataset(dataset);
 
-        List<Record> records = recordsProjectsAssignmentService.getAssignedRecords(dataset);
+        Set<Record> records = recordsProjectsAssignmentService.getAssignedRecords(dataset);
 
         assertNotNull(records);
         assertFalse(records.isEmpty());
-        assertEquals(record, records.get(0));
+        assertEquals(record, records.stream().findFirst().get());
     }
 }

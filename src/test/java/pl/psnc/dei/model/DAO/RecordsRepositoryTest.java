@@ -12,7 +12,7 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 
-import java.util.List;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -54,11 +54,11 @@ public class RecordsRepositoryTest {
         recordsRepository.save(record);
         datasetsReposotory.save(dataset);
 
-        List<Record> records = recordsRepository.findAllByProject(project);
+        Set<Record> records = recordsRepository.findAllByProject(project);
 
         assertNotNull(records);
         assertFalse(records.isEmpty());
-        assertEquals(record, records.get(0));
+        assertEquals(record, records.stream().findFirst().get());
     }
 
     @Test
@@ -66,10 +66,10 @@ public class RecordsRepositoryTest {
         recordsRepository.save(record);
         datasetsReposotory.save(dataset);
 
-        List<Record> records = recordsRepository.findAllByDataset(dataset);
+        Set<Record> records = recordsRepository.findAllByDataset(dataset);
 
         assertNotNull(records);
         assertFalse(records.isEmpty());
-        assertEquals(record, records.get(0));
+        assertEquals(record, records.stream().findFirst().get());
     }
 }

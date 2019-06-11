@@ -88,23 +88,21 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private Component createProjectSelection() {
-		Select<Project> projectSelect = new Select<>();
+		Select<Project> projectSelection = new Select<>();
 		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projectSelect.setDataProvider(listDataProvider);
+		projectSelection.setDataProvider(listDataProvider);
 
-		projectSelect.setEnabled(anImport == null);
-		projectSelect.addValueChangeListener(event -> {
+		projectSelection.setEnabled(anImport == null);
+		projectSelection.addValueChangeListener(event -> {
 			project = event.getValue();
 			allRecords = recordsRepository.findAllByProjectAndAnImportNull(project);
 			selectedRecordsForImport = new HashSet<>();
 			importName.setValue(ImportNameCreatorUtil.generateImportName(project.getName()));
 			refresh();
 		});
-		HorizontalLayout projectSelectionLayout = new HorizontalLayout();
-		Label selectProjectLabel = new Label("Select project");
-		projectSelectionLayout.add(selectProjectLabel);
-		projectSelectionLayout.add(projectSelect);
-		return projectSelectionLayout;
+
+		projectSelection.setLabel("Select project");
+		return projectSelection;
 	}
 
 	private void refresh() {

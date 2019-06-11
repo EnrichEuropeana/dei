@@ -142,7 +142,6 @@
     background:none!important;
      color:inherit;
      border:none;
-     padding:0!important;
      font: inherit;
      border:0;
      cursor: pointer;
@@ -163,4 +162,9 @@
 
 .import-switching-buttons {
     max-width: 100px;
+}
+
+.underlined-item {
+    font-weight: bold;
+    padding-left: 15px!important;
 }
