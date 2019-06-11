@@ -30,7 +30,7 @@ public class SearchResultsComponent extends VerticalLayout {
         ROWS_PER_PAGE_ALLOWED_VALUES.add(100);
     }
 
-    private int rowsPerPage = 10;
+    private int rowsPerPage = DEFAULT_PAGE_SIZE;
 
     // search results container
     private transient SearchResults searchResults;
