@@ -1,6 +1,5 @@
 package pl.psnc.dei.util.ddb;
 
-
 import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,9 +20,9 @@ import java.util.List;
 public class DDBFormatResolver extends RestRequestExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(DDBFormatResolver.class);
-	public static final String MIMETYPE = "@mimetype";
+	private static final String KEY_MIME_TYPE = "@mimetype";
 
-	private final String DDB_API_KEY_NAME = "oauth_consumer_key";
+	private static final String DDB_API_KEY_NAME = "oauth_consumer_key";
 
 	@Value("${ddb.format.api.url}")
 	private String formatApiUri;
@@ -44,6 +43,7 @@ public class DDBFormatResolver extends RestRequestExecutor {
 		log.info("Will use {} url.", ddbApiUri);
 	}
 
+	@SuppressWarnings("unchecked")
 	public synchronized String getRecordFormat(String recordId) {
 		JSONObject result = webClient.get()
 				.uri(uriBuilder -> {
@@ -64,9 +64,9 @@ public class DDBFormatResolver extends RestRequestExecutor {
 		Object binary = result.get("binary");
 		if (binary instanceof List) {
 			List<HashMap<String, String>> binaries = (ArrayList<HashMap<String, String>>) binary;
-			boolean allMatchSameMimeType = binaries.stream().allMatch(b -> b.containsKey(MIMETYPE) && b.get(MIMETYPE).equals(binaries.get(0).get(MIMETYPE)));
+			boolean allMatchSameMimeType = binaries.stream().allMatch(b -> b.containsKey(KEY_MIME_TYPE) && b.get(KEY_MIME_TYPE).equals(binaries.get(0).get(KEY_MIME_TYPE)));
 			if (allMatchSameMimeType) {
-				return binaries.get(0).get(MIMETYPE);
+				return binaries.get(0).get(KEY_MIME_TYPE);
 			}
 			return null;
 		}
@@ -75,7 +75,6 @@ public class DDBFormatResolver extends RestRequestExecutor {
 		if (fields == null || fields.isEmpty()) {
 			return null;
 		}
-		return fields.get(MIMETYPE);
+		return fields.get(KEY_MIME_TYPE);
 	}
-
 }

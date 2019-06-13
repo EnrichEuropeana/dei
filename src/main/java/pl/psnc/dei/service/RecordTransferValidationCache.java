@@ -3,6 +3,7 @@ package pl.psnc.dei.service;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.util.IiifAvailability;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -16,7 +17,14 @@ public class RecordTransferValidationCache {
 	}
 
 	public void addValidationResult(String recordId, String mimeType, IiifAvailability iiifAvailability) {
-		cache.put(recordId, new ValidationResult(mimeType, iiifAvailability));
+		cache.putIfAbsent(recordId, new ValidationResult(mimeType, iiifAvailability));
+	}
+
+	public void addValue(String recordId, String key, String value) {
+		cache.computeIfPresent(recordId, (k, v) -> {
+			v.putValue(key, value);
+			return v;
+		});
 	}
 
 	public void clear() {
@@ -27,10 +35,19 @@ public class RecordTransferValidationCache {
 
 		private String mimeType;
 		private IiifAvailability iiifAvailability;
+		private Map<String, String> otherValues = new HashMap<>();
 
 		ValidationResult(String mimeType, IiifAvailability iiifAvailability) {
 			this.mimeType = mimeType;
 			this.iiifAvailability = iiifAvailability;
+		}
+
+		public String getValue(String key) {
+			return otherValues.get(key);
+		}
+
+		public void putValue(String key, String values) {
+			otherValues.put(key, values);
 		}
 
 		public String getMimeType() {

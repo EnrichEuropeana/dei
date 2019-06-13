@@ -22,8 +22,11 @@ public class SearchResultProcessorServiceTest {
 	@Mock
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor;
 
+	@Mock
+	private DDBSearchResultProcessor ddbSearchResultProcessor;
+
 	@InjectMocks
-	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, recordTransferValidationCache);
+	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, ddbSearchResultProcessor, recordTransferValidationCache);
 
 	private void setup() {
 		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false))).thenAnswer(a -> {

@@ -1,19 +1,28 @@
 package pl.psnc.dei.service.searchresultprocessor;
 
 import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordTransferValidationCache;
-import pl.psnc.dei.util.EuropeanaRecordTransferValidationUtil;
+import pl.psnc.dei.util.RecordTransferValidator;
 import pl.psnc.dei.util.IiifAvailability;
+
+import java.util.Optional;
 
 @Service
 public class EuropeanaSearchResultProcessor implements AggregatorSearchResultProcessor {
 
 	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
+
+	private static final String KEY_GRAPH = "@graph";
+	private static final String KEY_TYPE = "@type";
+	private static final String KEY_MIME_TYPE = "hasMimeType";
+	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
 
 	private RecordTransferValidationCache recordTransferValidationCache;
 
@@ -34,7 +43,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		if (validationResult == null || validationResult.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
 			JsonObject recordObject = getRecordData(recordId);
 			//in case of Europeana we only need to fill format (mimeType)
-			mimeType = recordObject != null ? EuropeanaRecordTransferValidationUtil.getMimeType(recordObject) : "Data unavailable";
+			mimeType = recordObject != null ? getMimeType(recordObject) : DATA_UNAVAILABLE_VALUE;
 			iiifAvailability = validateRecord(recordId, mimeType, recordObject, onlyIiif);
 		} else {
 			mimeType = validationResult.getMimeType();
@@ -42,6 +51,10 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		}
 		searchResult.setIiifAvailability(iiifAvailability);
 		searchResult.setFormat(mimeType);
+		//sometimes there is no dcCreator
+		if (searchResult.getAuthor() == null) {
+			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
+		}
 		return searchResult;
 	}
 
@@ -55,8 +68,30 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	}
 
 	private IiifAvailability validateRecord(String recordId, String mimeType, JsonObject recordObject, boolean onlyIiif) {
-		IiifAvailability iiifAvailability = onlyIiif ? IiifAvailability.AVAILABLE : EuropeanaRecordTransferValidationUtil.checkIfIiifAvailable(recordObject, mimeType);
+		IiifAvailability iiifAvailability = onlyIiif ? IiifAvailability.AVAILABLE : RecordTransferValidator.checkIfIiifAvailable(Aggregator.EUROPEANA, recordObject, mimeType);
 		recordTransferValidationCache.addValidationResult(recordId, mimeType, iiifAvailability);
 		return iiifAvailability;
+	}
+
+	/**
+	 * Get mimeType for given record
+	 *
+	 * @param record record json-ld object
+	 * @return record's mimeType
+	 */
+	private String getMimeType(JsonObject record) { //todo refactor
+		Optional<JsonObject> mimeTypeEntry = record.get(KEY_GRAPH).getAsArray().stream()
+				.map(JsonValue::getAsObject)
+				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
+						&& o.keySet().stream().anyMatch(k -> k.contains(KEY_MIME_TYPE)))
+				.findFirst();
+		if (mimeTypeEntry.isPresent()) {
+			JsonObject object = mimeTypeEntry.get();
+			return (object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) != null ?
+					object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) :
+					(object.get("ebucore:" + KEY_MIME_TYPE) != null ? object.get("ebucore:" + KEY_MIME_TYPE) :
+							object.get(KEY_MIME_TYPE))).getAsString().value();
+		}
+		return null;
 	}
 }

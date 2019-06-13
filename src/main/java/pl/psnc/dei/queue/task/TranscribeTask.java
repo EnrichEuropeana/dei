@@ -5,16 +5,18 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.util.EuropeanaRecordTransferValidationUtil;
+import pl.psnc.dei.util.IiifChecker;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
 public class TranscribeTask extends Task {
 
+	//todo fix autowires
 	@Autowired
 	private TranscriptionPlatformService tps;
 
@@ -40,7 +42,7 @@ public class TranscribeTask extends Task {
 			case T_RETRIEVE_RECORD:
 				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
 
-				if (EuropeanaRecordTransferValidationUtil.checkIfIiif(recordJson)) {
+				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {

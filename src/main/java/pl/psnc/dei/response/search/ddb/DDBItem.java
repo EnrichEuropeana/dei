@@ -3,9 +3,9 @@ package pl.psnc.dei.response.search.ddb;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.commons.lang3.StringUtils;
 import pl.psnc.dei.response.search.Item;
-import pl.psnc.dei.util.ddb.DDBThumbnailUriCreator;
+import pl.psnc.dei.util.ddb.DDBUriCreator;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -47,7 +47,7 @@ public class DDBItem implements Item {
 	private List<String> rights;
 	private String thumbnailUrl;
 	private String dataProvider;
-	private String sourceUrlObject;
+	private String sourceObjectUrl;
 
 	@Override
 	public String getId() {
@@ -62,7 +62,7 @@ public class DDBItem implements Item {
 	@Override
 	public List<String> getTitle() {
 		final String generatedTitle = label + " " + subtitle;
-		return Arrays.asList(generatedTitle.replace("<match>", StringUtils.EMPTY).replace("</match>", StringUtils.EMPTY));
+		return Collections.singletonList(generatedTitle.replace("<match>", StringUtils.EMPTY).replace("</match>", StringUtils.EMPTY));
 	}
 
 	@Override
@@ -122,7 +122,10 @@ public class DDBItem implements Item {
 
 	@Override
 	public String getThumbnailURL() {
-		return DDBThumbnailUriCreator.prepareThumbnailUri(thumbnail);
+		if (thumbnailUrl == null || thumbnailUrl.isEmpty()) {
+			thumbnailUrl = DDBUriCreator.prepareThumbnailUri(thumbnail);
+		}
+		return thumbnailUrl;
 	}
 
 	@Override
@@ -132,12 +135,15 @@ public class DDBItem implements Item {
 
 	@Override
 	public String getSourceObjectURL() {
-		return sourceUrlObject;
+		if (sourceObjectUrl == null || sourceObjectUrl.isEmpty()) {
+			sourceObjectUrl = DDBUriCreator.prepareSourceObjectUri(this.id);
+		}
+		return sourceObjectUrl;
 	}
 
 	@Override
 	public void setSourceObjectURL(String guid) {
-		this.sourceUrlObject = guid;
+		this.sourceObjectUrl = guid;
 	}
 
 }

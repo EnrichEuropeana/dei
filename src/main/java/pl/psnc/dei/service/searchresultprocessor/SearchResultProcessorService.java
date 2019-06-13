@@ -12,9 +12,13 @@ public class SearchResultProcessorService {
 
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor;
 
+	private DDBSearchResultProcessor ddbSearchResultProcessor;
+
 	public SearchResultProcessorService(EuropeanaSearchResultProcessor europeanaSearchResultProcessor,
+										DDBSearchResultProcessor ddbSearchResultProcessor,
 										RecordTransferValidationCache recordTransferValidationCache) {
 		this.europeanaSearchResultProcessor = europeanaSearchResultProcessor;
+		this.ddbSearchResultProcessor = ddbSearchResultProcessor;
 		this.recordTransferValidationCache = recordTransferValidationCache;
 	}
 
@@ -25,7 +29,7 @@ public class SearchResultProcessorService {
 			case EUROPEANA:
 				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			case DDB:
-				//todo implement
+				return ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			default:
 				return searchResult;
 		}
