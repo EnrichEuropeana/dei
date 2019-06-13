@@ -24,9 +24,7 @@ import static pl.psnc.dei.util.EuropeanaConstants.*;
 @Service
 public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
 
-    private static final String UTF_8_ENCODING = "UTF-8";
-
-    private static final Logger log = LoggerFactory.getLogger(EuropeanaSearchService.class);
+    private static final Logger logger = LoggerFactory.getLogger(EuropeanaSearchService.class);
 
     @Value("${europeana.api.key}")
     private String apiKey;
@@ -47,7 +45,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
     @PostConstruct
     private void configure() {
         setRootUri(searchApiUrl);
-        log.info("Will use {} url.", searchApiUrl);
+        logger.info("Will use {} url.", searchApiUrl);
     }
 
     /**
