@@ -32,6 +32,6 @@ public class DDBFacetField implements FacetField {
 
 	@Override
 	public String toString(){
-		return getLabel() + " " + getCount();
+		return String.format("%s (%d)", label, count);
 	}
 }

@@ -9,8 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static pl.psnc.dei.util.EuropeanaConstants.FACET_LABELS;
-
 public class SelectedFacetsComponent extends HorizontalLayout {
     private FacetComponent facetComponent;
 
@@ -42,7 +40,7 @@ public class SelectedFacetsComponent extends HorizontalLayout {
                 facetComponent.executeFacetSearch(s, v, false);
             });
             button.setIconAfterText(false);
-            button.getElement().setAttribute("title", FACET_LABELS.get(s));
+            button.getElement().setAttribute("title", facetComponent.getFacetsLabels().get(s));
             add(button);
         }));
     }

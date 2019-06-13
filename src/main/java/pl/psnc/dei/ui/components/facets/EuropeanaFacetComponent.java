@@ -166,4 +166,9 @@ public class EuropeanaFacetComponent extends FacetComponent {
 		facetParams.remove(facet);
 		fq.remove(facet);
 	}
+
+	@Override
+	public Map<String, String> getFacetsLabels() {
+		return FACET_LABELS;
+	}
 }

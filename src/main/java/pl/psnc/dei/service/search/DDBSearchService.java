@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
 
@@ -80,8 +81,8 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 			if (!query.isEmpty()) {
 				uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(query, UTF_8_ENCODING));
 			}
-
 			fillFacets(uriBuilder);
+			handleRequestParams(uriBuilder, requestParams);
 			uriBuilder.queryParam(ROWS_PARAM_NAME, rowsPerPage);
 			uriBuilder.queryParam(OFFSET_PARAM_NAME,  getOffsetFromParams(requestParams));
 			return uriBuilder.build();
@@ -90,7 +91,14 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 
 	private void fillFacets(UriBuilder uriBuilder) {
 		for(String facet: FACET_NAMES) {
-			uriBuilder.queryParam(FACET_PARAM_NAME, facet);
+			uriBuilder.queryParam(FACET_PARAM_NAME, UriUtils.encode(facet, UTF_8_ENCODING));
 		}
+	}
+
+	private void handleRequestParams(UriBuilder uriBuilder, Map<String, String> requestParams) {
+		requestParams.entrySet().stream()
+				.filter(e -> !e.getKey().equals(ROWS_PARAM_NAME) && !e.getKey().equals(OFFSET_PARAM_NAME))
+				.forEach(e -> Arrays.stream(e.getValue().split(","))
+						.forEach(v -> uriBuilder.queryParam(e.getKey(), UriUtils.encode(v, UTF_8_ENCODING))));
 	}
 }
