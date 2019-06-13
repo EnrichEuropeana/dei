@@ -13,12 +13,15 @@ import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @Service
 public class DDBFormatResolver extends RestRequestExecutor {
 
 	private static final Logger log = LoggerFactory.getLogger(DDBFormatResolver.class);
+	public static final String MIMETYPE = "@mimetype";
 
 	private final String DDB_API_KEY_NAME = "oauth_consumer_key";
 
@@ -54,14 +57,25 @@ public class DDBFormatResolver extends RestRequestExecutor {
 				.bodyToMono(JSONObject.class)
 				.onErrorReturn(new JSONObject())
 				.block();
-		if (result == null) {
-			return "";
+		if (result == null || result.isEmpty()) {
+			return null;
 		}
+
+		Object binary = result.get("binary");
+		if (binary instanceof List) {
+			List<HashMap<String, String>> binaries = (ArrayList<HashMap<String, String>>) binary;
+			boolean allMatchSameMimeType = binaries.stream().allMatch(b -> b.containsKey(MIMETYPE) && b.get(MIMETYPE).equals(binaries.get(0).get(MIMETYPE)));
+			if (allMatchSameMimeType) {
+				return binaries.get(0).get(MIMETYPE);
+			}
+			return null;
+		}
+
 		HashMap<String, String> fields = (HashMap<String, String>) result.get("binary");
 		if (fields == null || fields.isEmpty()) {
-			return "";
+			return null;
 		}
-		return fields.get("@mimetype");
+		return fields.get(MIMETYPE);
 	}
 
 }
