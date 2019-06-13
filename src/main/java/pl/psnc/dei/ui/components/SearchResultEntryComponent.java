@@ -1,9 +1,12 @@
 package pl.psnc.dei.ui.components;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -131,17 +134,33 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 			thumbnail.setAlt(searchResult.getTitle());
 			thumbnail.setSrc(searchResult.getImageURL());
 			thumbnail.addClassName("metadata-image");
-
-			String sourceObjectURL = searchResult.getSourceObjectURL();
-			if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
-				Anchor link = new Anchor(sourceObjectURL, thumbnail);
-				link.setTarget("_blank");
-				thumbnailContainer.add(link);
-			} else {
-				thumbnailContainer.add(thumbnail);
-			}
+			addSourceObjectUrl(thumbnailContainer, thumbnail);
+		} else {
+			Icon icon = new Icon(VaadinIcon.FILE_PICTURE);
+			icon.addClassName("metadata-image");
+			icon.setSize("100px");
+			icon.setColor("darkgray");
+			thumbnailContainer.add(icon);
+			addSourceObjectUrl(thumbnailContainer, icon);
 		}
 		add(thumbnailContainer);
+	}
+
+	/**
+	 * If possible adds link to source object to thumbnail.
+	 *
+	 * @param thumbnailContainer thumbnail container object
+	 * @param thumbnail thumbnail object, e.g. image or placeholder icon
+	 */
+	private void addSourceObjectUrl(VerticalLayout thumbnailContainer, Component thumbnail) {
+		String sourceObjectURL = searchResult.getSourceObjectURL();
+		if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
+			Anchor link = new Anchor(sourceObjectURL, thumbnail);
+			link.setTarget("_blank");
+			thumbnailContainer.add(link);
+		} else {
+			thumbnailContainer.add(thumbnail);
+		}
 	}
 
 	/**
