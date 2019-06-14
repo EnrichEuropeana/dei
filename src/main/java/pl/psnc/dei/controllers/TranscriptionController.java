@@ -6,7 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.queue.task.UpdateTask;
+import pl.psnc.dei.queue.task.TasksFactory;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
@@ -15,15 +15,17 @@ import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 @RequestMapping("/api/transcription")
 public class TranscriptionController {
 
-	private TranscriptionPlatformService transcriptionPlatformService;
+	private TranscriptionPlatformService tps;
 
-	private TasksQueueService tasksQueueService;
+	private TasksQueueService tqs;
+
+	private TasksFactory tasksFactory;
 
 	@Autowired
-	public TranscriptionController(TranscriptionPlatformService transcriptionPlatformService,
-								   TasksQueueService tasksQueueService) {
-		this.transcriptionPlatformService = transcriptionPlatformService;
-		this.tasksQueueService = tasksQueueService;
+	public TranscriptionController(TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory) {
+		this.tps = tps;
+		this.tqs = tqs;
+		this.tasksFactory = tasksFactory;
 	}
 
 	@PostMapping
@@ -34,7 +36,7 @@ public class TranscriptionController {
 		}
 
 		try {
-			transcriptionPlatformService.createNewEnrichTask(recordId);
+			tps.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
@@ -52,7 +54,7 @@ public class TranscriptionController {
 		}
 
 		try {
-			tasksQueueService.addTaskToQueue(new UpdateTask(recordId, annotationId, transcriptionId));
+			tqs.addTaskToQueue(tasksFactory.getNewUpdateTask(recordId, annotationId, transcriptionId));
 		} catch (NotFoundException e) {
 			return new ResponseEntity(HttpStatus.NOT_FOUND);
 		}
@@ -62,7 +64,7 @@ public class TranscriptionController {
 	@GetMapping(value = "/iiif/manifest", produces = "application/json")
 	public ResponseEntity getManifest(@RequestParam("recordId") String recordId) {
 		try {
-			JsonObject manifest = transcriptionPlatformService.getManifest(recordId);
+			JsonObject manifest = tps.getManifest(recordId);
 			return ResponseEntity.status(HttpStatus.OK).body(manifest.toString());
 		} catch (NotFoundException e) {
 			return new ResponseEntity(HttpStatus.NOT_FOUND);

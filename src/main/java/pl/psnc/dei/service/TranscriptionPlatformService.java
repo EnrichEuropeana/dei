@@ -24,7 +24,7 @@ import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
-import pl.psnc.dei.queue.task.EnrichTask;
+import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
@@ -56,6 +56,9 @@ public class TranscriptionPlatformService {
 
 	@Autowired
 	private TasksQueueService taskQueueService;
+
+	@Autowired
+	private TasksFactory tasksFactory;
 
 	private List<Project> availableProjects;
 	private UrlBuilder urlBuilder;
@@ -215,8 +218,7 @@ public class TranscriptionPlatformService {
 			Record savedRecord = record.get();
 			savedRecord.setState(Record.RecordState.E_PENDING);
 			recordsRepository.save(savedRecord);
-			EnrichTask enrichTask = new EnrichTask(record.get());
-			taskQueueService.addTaskToQueue(enrichTask);
+			taskQueueService.addTaskToQueue(tasksFactory.getTask(record.get()));
 		} else {
 			throw new NotFoundException("Record not found.");
 		}
