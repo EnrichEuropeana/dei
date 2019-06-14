@@ -21,6 +21,15 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 	private static final String KEY_GRAPH = "@graph";
 	private static final String KEY_TYPE = "@type";
 	private static final String TYPE_AGGREGATION = "ore:Aggregation";
+	private static final String TYPE_EDM_PROVIDED_CHO = "edm:ProvidedCHO";
+	private static final String EDM_DATA_PROVIDER = "edm:dataProvider";
+	private static final String DC_LANGUAGE = "dc:language";
+	private static final String RIGHTS = "rights";
+
+	private static final String AUTHOR = "author";
+	private static final String PROVIDER = "provider";
+	private static final String LANGUAGE = "language";
+	private static final String LICENSE = "license";
 
 	private DDBRestService ddbRestService;
 	private DDBFormatResolver ddbFormatResolver;
@@ -46,23 +55,24 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 		if (recordData == null || recordData.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
 			mimeType = getMimeType(searchResult.getId());
 			JsonObject recordObject = getRecordData(recordId);
-			author = DATA_UNAVAILABLE_VALUE; //todo find author?
-			provider = getMetadataValue(recordObject, TYPE_AGGREGATION, "edm:dataProvider");
-			language = getMetadataValue(recordObject, "edm:ProvidedCHO", "dc:language");
-			license = getMetadataValue(recordObject, TYPE_AGGREGATION, "rights");
+			//there is no dcCreator (author) IN RDF
+			author = DATA_UNAVAILABLE_VALUE;
+			provider = getMetadataValue(recordObject, TYPE_AGGREGATION, EDM_DATA_PROVIDER);
+			language = getMetadataValue(recordObject, TYPE_EDM_PROVIDED_CHO, DC_LANGUAGE);
+			license = getMetadataValue(recordObject, TYPE_AGGREGATION, RIGHTS);
 			iiifAvailability = RecordTransferValidator.checkIfIiifAvailable(Aggregator.DDB, recordObject, mimeType);
 
 			recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
-			recordDataCache.addValue(recordId, "author", author);
-			recordDataCache.addValue(recordId, "provider", provider);
-			recordDataCache.addValue(recordId, "language", language);
-			recordDataCache.addValue(recordId, "license", license);
+			recordDataCache.addValue(recordId, AUTHOR, author);
+			recordDataCache.addValue(recordId, PROVIDER, provider);
+			recordDataCache.addValue(recordId, LANGUAGE, language);
+			recordDataCache.addValue(recordId, LICENSE, license);
 		} else {
 			mimeType = recordData.getMimeType();
-			author = recordData.getValue("author");
-			provider = recordData.getValue("provider");
-			language = recordData.getValue("language");
-			license = recordData.getValue("license");
+			author = recordData.getValue(AUTHOR);
+			provider = recordData.getValue(PROVIDER);
+			language = recordData.getValue(LANGUAGE);
+			license = recordData.getValue(LICENSE);
 			iiifAvailability = recordData.getIiifAvailability();
 		}
 
