@@ -3,12 +3,12 @@ package pl.psnc.dei.service.searchresultprocessor;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 
 @Service
 public class SearchResultProcessorService {
 
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private RecordDataCache recordDataCache;
 
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor;
 
@@ -16,10 +16,10 @@ public class SearchResultProcessorService {
 
 	public SearchResultProcessorService(EuropeanaSearchResultProcessor europeanaSearchResultProcessor,
 										DDBSearchResultProcessor ddbSearchResultProcessor,
-										RecordTransferValidationCache recordTransferValidationCache) {
+										RecordDataCache recordDataCache) {
 		this.europeanaSearchResultProcessor = europeanaSearchResultProcessor;
 		this.ddbSearchResultProcessor = ddbSearchResultProcessor;
-		this.recordTransferValidationCache = recordTransferValidationCache;
+		this.recordDataCache = recordDataCache;
 	}
 
 	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult, boolean onlyIiif) {
@@ -36,6 +36,6 @@ public class SearchResultProcessorService {
 	}
 
 	public void clearCache() {
-		recordTransferValidationCache.clear();
+		recordDataCache.clear();
 	}
 }

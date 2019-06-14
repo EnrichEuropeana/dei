@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.util.RecordTransferValidator;
 import pl.psnc.dei.util.IiifAvailability;
 
@@ -24,13 +24,13 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	private static final String KEY_MIME_TYPE = "hasMimeType";
 	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
 
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private RecordDataCache recordDataCache;
 
 	private EuropeanaRestService europeanaRestService;
 
 	public EuropeanaSearchResultProcessor(EuropeanaRestService europeanaRestService,
-										  RecordTransferValidationCache recordTransferValidationCache) {
-		this.recordTransferValidationCache = recordTransferValidationCache;
+										  RecordDataCache recordDataCache) {
+		this.recordDataCache = recordDataCache;
 		this.europeanaRestService = europeanaRestService;
 	}
 
@@ -39,15 +39,15 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		String recordId = searchResult.getId();
 		String mimeType;
 		IiifAvailability iiifAvailability;
-		RecordTransferValidationCache.ValidationResult validationResult = recordTransferValidationCache.getValidationResult(recordId);
-		if (validationResult == null || validationResult.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
+		RecordDataCache.RecordData recordData = recordDataCache.getValidationResult(recordId);
+		if (recordData == null || recordData.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
 			JsonObject recordObject = getRecordData(recordId);
 			//in case of Europeana we only need to fill format (mimeType)
 			mimeType = recordObject != null ? getMimeType(recordObject) : DATA_UNAVAILABLE_VALUE;
 			iiifAvailability = validateRecord(recordId, mimeType, recordObject, onlyIiif);
 		} else {
-			mimeType = validationResult.getMimeType();
-			iiifAvailability = validationResult.getIiifAvailability();
+			mimeType = recordData.getMimeType();
+			iiifAvailability = recordData.getIiifAvailability();
 		}
 		searchResult.setIiifAvailability(iiifAvailability);
 		searchResult.setFormat(mimeType);
@@ -69,7 +69,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 
 	private IiifAvailability validateRecord(String recordId, String mimeType, JsonObject recordObject, boolean onlyIiif) {
 		IiifAvailability iiifAvailability = onlyIiif ? IiifAvailability.AVAILABLE : RecordTransferValidator.checkIfIiifAvailable(Aggregator.EUROPEANA, recordObject, mimeType);
-		recordTransferValidationCache.addValidationResult(recordId, mimeType, iiifAvailability);
+		recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
 		return iiifAvailability;
 	}
 

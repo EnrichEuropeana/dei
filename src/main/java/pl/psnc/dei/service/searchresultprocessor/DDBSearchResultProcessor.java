@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.DDBRestService;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.util.IiifAvailability;
 import pl.psnc.dei.util.RecordTransferValidator;
 import pl.psnc.dei.service.DDBFormatResolver;
@@ -24,12 +24,12 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 
 	private DDBRestService ddbRestService;
 	private DDBFormatResolver ddbFormatResolver;
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private RecordDataCache recordDataCache;
 
-	public DDBSearchResultProcessor(DDBRestService ddbRestService, DDBFormatResolver ddbFormatResolver, RecordTransferValidationCache recordTransferValidationCache) {
+	public DDBSearchResultProcessor(DDBRestService ddbRestService, DDBFormatResolver ddbFormatResolver, RecordDataCache recordDataCache) {
 		this.ddbRestService = ddbRestService;
 		this.ddbFormatResolver = ddbFormatResolver;
-		this.recordTransferValidationCache = recordTransferValidationCache;
+		this.recordDataCache = recordDataCache;
 	}
 
 	@Override
@@ -42,8 +42,8 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 		String license;
 		IiifAvailability iiifAvailability;
 
-		RecordTransferValidationCache.ValidationResult validationResult = recordTransferValidationCache.getValidationResult(recordId);
-		if (validationResult == null || validationResult.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
+		RecordDataCache.RecordData recordData = recordDataCache.getValidationResult(recordId);
+		if (recordData == null || recordData.getIiifAvailability() == IiifAvailability.DATA_UNAVAILABLE) {
 			mimeType = getMimeType(searchResult.getId());
 			JsonObject recordObject = getRecordData(recordId);
 			author = DATA_UNAVAILABLE_VALUE; //todo find author?
@@ -52,21 +52,21 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 			license = getMetadataValue(recordObject, TYPE_AGGREGATION, "rights");
 			iiifAvailability = RecordTransferValidator.checkIfIiifAvailable(Aggregator.DDB, recordObject, mimeType);
 
-			recordTransferValidationCache.addValidationResult(recordId, mimeType, iiifAvailability);
-			recordTransferValidationCache.addValue(recordId, "author", author);
-			recordTransferValidationCache.addValue(recordId, "provider", provider);
-			recordTransferValidationCache.addValue(recordId, "language", language);
-			recordTransferValidationCache.addValue(recordId, "license", license);
+			recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
+			recordDataCache.addValue(recordId, "author", author);
+			recordDataCache.addValue(recordId, "provider", provider);
+			recordDataCache.addValue(recordId, "language", language);
+			recordDataCache.addValue(recordId, "license", license);
 		} else {
-			mimeType = validationResult.getMimeType();
-			author = validationResult.getValue("author");
-			provider = validationResult.getValue("provider");
-			language = validationResult.getValue("language");
-			license = validationResult.getValue("license");
-			iiifAvailability = validationResult.getIiifAvailability();
+			mimeType = recordData.getMimeType();
+			author = recordData.getValue("author");
+			provider = recordData.getValue("provider");
+			language = recordData.getValue("language");
+			license = recordData.getValue("license");
+			iiifAvailability = recordData.getIiifAvailability();
 		}
 
-		recordTransferValidationCache.addValidationResult(recordId, mimeType, iiifAvailability);
+		recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
 		searchResult.setFormat(mimeType);
 		searchResult.setAuthor(author);
 		searchResult.setProvider(provider);

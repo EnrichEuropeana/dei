@@ -10,7 +10,7 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.util.IiifAvailability;
 
 import static org.mockito.ArgumentMatchers.anyString;
@@ -26,10 +26,10 @@ public class EuropeanaSearchResultProcessorTest {
 	@Mock
 	private EuropeanaRestService europeanaRestService;
 
-	private RecordTransferValidationCache recordTransferValidationCache = new RecordTransferValidationCache();
+	private RecordDataCache recordDataCache = new RecordDataCache();
 
 	@InjectMocks
-	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaRestService, recordTransferValidationCache);
+	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaRestService, recordDataCache);
 
 	private void setupWithIiif() {
 		when(europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseIiif);
@@ -124,7 +124,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillDataFromCache() {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		recordTransferValidationCache.addValidationResult(searchResult.getId(), "image/jpeg", IiifAvailability.AVAILABLE);
+		recordDataCache.addValidationResult(searchResult.getId(), "image/jpeg", IiifAvailability.AVAILABLE);
 		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		verifyZeroInteractions(europeanaRestService);

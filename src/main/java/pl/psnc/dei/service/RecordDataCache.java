@@ -8,16 +8,16 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Service
-public class RecordTransferValidationCache {
+public class RecordDataCache {
 
-	private Map<String, ValidationResult> cache = new ConcurrentHashMap<>();
+	private Map<String, RecordData> cache = new ConcurrentHashMap<>();
 
-	public ValidationResult getValidationResult(String recordId) {
+	public RecordData getValidationResult(String recordId) {
 		return cache.get(recordId);
 	}
 
 	public void addValidationResult(String recordId, String mimeType, IiifAvailability iiifAvailability) {
-		cache.putIfAbsent(recordId, new ValidationResult(mimeType, iiifAvailability));
+		cache.putIfAbsent(recordId, new RecordData(mimeType, iiifAvailability));
 	}
 
 	public void addValue(String recordId, String key, String value) {
@@ -31,13 +31,13 @@ public class RecordTransferValidationCache {
 		cache.clear();
 	}
 
-	public class ValidationResult {
+	public class RecordData {
 
 		private String mimeType;
 		private IiifAvailability iiifAvailability;
 		private Map<String, String> otherValues = new HashMap<>();
 
-		ValidationResult(String mimeType, IiifAvailability iiifAvailability) {
+		RecordData(String mimeType, IiifAvailability iiifAvailability) {
 			this.mimeType = mimeType;
 			this.iiifAvailability = iiifAvailability;
 		}
