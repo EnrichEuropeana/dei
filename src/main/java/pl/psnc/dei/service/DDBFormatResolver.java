@@ -1,4 +1,4 @@
-package pl.psnc.dei.util.ddb;
+package pl.psnc.dei.service;
 
 import net.minidev.json.JSONObject;
 import org.slf4j.Logger;
@@ -53,7 +53,7 @@ public class DDBFormatResolver extends RestRequestExecutor {
 				})
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()))				)
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
 				.bodyToMono(JSONObject.class)
 				.onErrorReturn(new JSONObject())
 				.block();

@@ -11,7 +11,7 @@ import pl.psnc.dei.service.DDBRestService;
 import pl.psnc.dei.service.RecordTransferValidationCache;
 import pl.psnc.dei.util.IiifAvailability;
 import pl.psnc.dei.util.RecordTransferValidator;
-import pl.psnc.dei.util.ddb.DDBFormatResolver;
+import pl.psnc.dei.service.DDBFormatResolver;
 
 @Service
 public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor {

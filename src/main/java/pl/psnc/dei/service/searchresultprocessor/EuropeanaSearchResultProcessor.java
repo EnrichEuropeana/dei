@@ -51,7 +51,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		}
 		searchResult.setIiifAvailability(iiifAvailability);
 		searchResult.setFormat(mimeType);
-		//sometimes there is no dcCreator
+		//sometimes there is no dcCreator (author)
 		if (searchResult.getAuthor() == null) {
 			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
 		}
@@ -79,7 +79,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	 * @param record record json-ld object
 	 * @return record's mimeType
 	 */
-	private String getMimeType(JsonObject record) { //todo refactor
+	private String getMimeType(JsonObject record) {
 		Optional<JsonObject> mimeTypeEntry = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
 				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
@@ -87,11 +87,25 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 				.findFirst();
 		if (mimeTypeEntry.isPresent()) {
 			JsonObject object = mimeTypeEntry.get();
-			return (object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) != null ?
-					object.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE) :
-					(object.get("ebucore:" + KEY_MIME_TYPE) != null ? object.get("ebucore:" + KEY_MIME_TYPE) :
-							object.get(KEY_MIME_TYPE))).getAsString().value();
+			return extractMimeType(object);
 		}
 		return null;
+	}
+
+	private String extractMimeType(JsonObject mimeTypeEntryObject) {
+		JsonValue jsonValue = mimeTypeEntryObject.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE);
+		if (jsonValue != null) {
+			return jsonValue.getAsString().value();
+		}
+		jsonValue = mimeTypeEntryObject.get("ebucore:" + KEY_MIME_TYPE);
+		if (jsonValue != null) {
+			return jsonValue.getAsString().value();
+		}
+		jsonValue = mimeTypeEntryObject.get(KEY_MIME_TYPE);
+		if (jsonValue != null) {
+			return jsonValue.getAsString().value();
+		}
+		logger.error("Cannot extract mimeType value from Europeana record.");
+		throw new IllegalStateException("Cannot extract mimeType value from Europeana record.");
 	}
 }
