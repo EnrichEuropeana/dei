@@ -12,7 +12,7 @@ import java.util.Map;
 public class SelectedFacetsComponent extends HorizontalLayout {
     private FacetComponent facetComponent;
 
-    private transient Map<String, List<String>> selectedValues;
+    private transient Map<String, Map<String, String>> selectedValues;
 
     public SelectedFacetsComponent(FacetComponent facetComponent) {
         selectedValues = new HashMap<>();
@@ -22,17 +22,17 @@ public class SelectedFacetsComponent extends HorizontalLayout {
         addClassName("selected-facets");
     }
 
-    public void addSelectedValues(String facetField, List<String> facetValues) {
+    public void addSelectedValues(String facetField, Map<String, String> facetValues) {
         this.selectedValues.put(facetField, facetValues);
         updateLabels();
     }
 
     private void updateLabels() {
         removeAll();
-        selectedValues.forEach((s, strings) -> strings.forEach(v -> {
+        selectedValues.forEach((s, strings) -> strings.forEach((v, l) -> {
             Icon icon = new Icon(VaadinIcon.CLOSE_SMALL);
             icon.addClassName("selected-facet-icon");
-            Button button = new Button(v, icon);
+            Button button = new Button(l, icon);
             button.addClassName("selected-facet-button");
             button.addClickListener(buttonClickEvent -> {
                 selectedValues.get(s).remove(v);

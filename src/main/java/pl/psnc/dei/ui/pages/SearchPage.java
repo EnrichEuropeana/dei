@@ -238,11 +238,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         resultsComponent.clear();
         FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
         facetComponent.addFacets(null);
-        getUI().ifPresent(ui -> ui.access(() -> {
-            replace(facets, facetComponent);
-            facets = facetComponent;
-            showFacets(false);
-        }));
+        replace(facets, facetComponent);
+        facets = facetComponent;
+        showFacets(false);
         search.setPlaceholder("Search in " + aggregator.getFullName());
         //for now only in Europeana we can search via iiif availability
         showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
@@ -470,6 +468,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
             int aggregatorId = Integer.parseInt(aggregatorParamValue);
             aggregator.setValue(Aggregator.getById(aggregatorId));
             currentUserRecordSelection.setAggregator(Aggregator.getById(aggregatorId));
+            handleAggregatorChange(Aggregator.getById(aggregatorId));
 
             String queryString = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
 

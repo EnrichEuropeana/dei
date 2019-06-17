@@ -3,6 +3,8 @@ package pl.psnc.dei.response.search.ddb;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import pl.psnc.dei.response.search.FacetField;
 
+import static pl.psnc.dei.util.DDBConstants.FACET_VALUES_NAMES;
+
 public class DDBFacetField implements FacetField {
 
 	@JsonProperty("value")
@@ -32,6 +34,7 @@ public class DDBFacetField implements FacetField {
 
 	@Override
 	public String toString(){
-		return String.format("%s (%d)", label, count);
+		String displayName = FACET_VALUES_NAMES.getOrDefault(label, label);
+		return String.format("%s (%d)", displayName, count);
 	}
 }

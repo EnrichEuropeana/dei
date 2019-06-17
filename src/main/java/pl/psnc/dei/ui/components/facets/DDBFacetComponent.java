@@ -5,6 +5,7 @@ import pl.psnc.dei.ui.pages.SearchPage;
 import java.util.*;
 
 import static pl.psnc.dei.util.DDBConstants.FACET_LABELS;
+import static pl.psnc.dei.util.DDBConstants.FACET_VALUES_NAMES;
 
 public class DDBFacetComponent extends FacetComponent {
 
@@ -46,7 +47,12 @@ public class DDBFacetComponent extends FacetComponent {
 			if (!facetParams.isEmpty()) {
 				facetParams.keySet().forEach(s -> {
 					facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equalsIgnoreCase(s)).forEach(facetBox -> facetBox.updateFacets(facetParams.get(s)));
-					selectedFacetsComponent.addSelectedValues(s, facetParams.get(s));
+					HashMap<String, String> valuesToDisplay = new HashMap<>();
+					facetParams.get(s).forEach(v -> {
+						String displayName = FACET_VALUES_NAMES.getOrDefault(v, v);
+						valuesToDisplay.put(v, displayName);
+					});
+					selectedFacetsComponent.addSelectedValues(s, valuesToDisplay);
 				});
 			}
 		} else {
