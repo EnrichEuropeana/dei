@@ -111,9 +111,8 @@
 }
 
 .navigation-button {
-    width: 42px;
+    width: fit-content;
     min-width: 42px;
-    max-width: 42px;
     height: 36px;
     margin: 2px;
     font-size: small;

@@ -136,6 +136,7 @@ class PageNavigationComponent extends HorizontalLayout {
         Button button = new Button(new Icon(icon));
         button.addClassName("navigation-button");
         button.setEnabled(enabled);
+        button.setDisableOnClick(true);
         return button;
     }
 
@@ -156,6 +157,7 @@ class PageNavigationComponent extends HorizontalLayout {
                setCurrentPage(i);
            }
         });
+        button.setDisableOnClick(true);
         return button;
     }
 

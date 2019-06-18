@@ -1,9 +1,6 @@
 package pl.psnc.dei.ui.pages;
 
-import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.DetachEvent;
-import com.vaadin.flow.component.Key;
-import com.vaadin.flow.component.UI;
+import com.vaadin.flow.component.*;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
@@ -319,10 +316,18 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.addClassName("search-field");
         search.setPlaceholder("Search in " + aggregator.getValue().getFullName());
         search.setAutofocus(true);
-        search.addKeyUpListener(Key.ENTER, keyUpEvent -> search.getUI().ifPresent(this::navigateToSearch));
+        search.addKeyUpListener(Key.ENTER, keyUpEvent -> {
+            search.setEnabled(false);
+            search.getUI().ifPresent(this::navigateToSearch);
+            search.setEnabled(true);
+        });
         Button searchButton = new Button();
         searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
-        searchButton.addClickListener(e -> e.getSource().getUI().ifPresent(this::navigateToSearch));
+        searchButton.addClickListener(e -> {
+            e.getSource().getUI().ifPresent(this::navigateToSearch);
+            e.getSource().setEnabled(true);
+        });
+        searchButton.setDisableOnClick(true);
         queryForm.add(search, searchButton);
         queryForm.expand(search);
         queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
