@@ -1,12 +1,13 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.jena.atlas.json.JsonObject;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.exception.TaskCreationException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 
 import java.util.Arrays;
@@ -14,11 +15,7 @@ import java.util.List;
 
 public class UpdateTask extends Task {
 
-	@Autowired
-	private TranscriptionPlatformService tps;
-
-	@Autowired
-	private EuropeanaRestService ers;
+	private static final Logger logger = LoggerFactory.getLogger(UpdateTask.class);
 
 	/**
 	 * It is possible that there will be more than 1 transcription update pending, so it has to be list, that situation
@@ -26,8 +23,12 @@ public class UpdateTask extends Task {
 	 */
 	private List<Transcription> transcriptions;
 
-	public UpdateTask(Record record) throws TaskCreationException {
-		super(record);
+	UpdateTask(Record record, QueueRecordService queueRecordService,
+			   TranscriptionPlatformService tps, EuropeanaRestService ers) {
+		super(record, queueRecordService, tps, ers);
+		this.tps = tps;
+		this.ers = ers;
+
 		if (record.getTranscriptions().isEmpty()) {
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
@@ -35,15 +36,16 @@ public class UpdateTask extends Task {
 				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 						+ ", identifier: " + record.getIdentifier(), e);
 			}
-			throw new TaskCreationException("Database inconsistency, update pending task has to have at" +
-					" least one transcription! Changing state to normal. Record identifier: " + record.getIdentifier());
+			logger.error("Database inconsistency, update pending task has to have at" +
+					" least one transcription! Changing state to normal. Record identifier: {}", record.getIdentifier());
 		}
 		transcriptions = record.getTranscriptions();
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 	}
 
-	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId) throws NotFoundException {
-		super(queueRecordService.getRecord(recordIdentifier));
+	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaRestService ers) throws NotFoundException {
+		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ers);
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);

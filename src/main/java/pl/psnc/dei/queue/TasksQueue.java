@@ -2,12 +2,8 @@ package pl.psnc.dei.queue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import pl.psnc.dei.exception.TaskCreationException;
-import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.*;
-import pl.psnc.dei.service.QueueRecordService;
+import pl.psnc.dei.queue.task.Task;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -33,17 +29,6 @@ public class TasksQueue implements Runnable {
 	private long failsCount = 0;
 
 	private static long HOUR = 60 * 60 * 1000;
-
-	@Autowired
-	public TasksQueue(QueueRecordService queueRecordService) {
-		for (Record record : queueRecordService.getRecordsToProcess()) {
-			try {
-				tasks.add(createTask(record));
-			} catch (TaskCreationException e) {
-				logger.error("Task creation exception: ", e);
-			}
-		}
-	}
 
 	@Override
 	public void run() {
@@ -96,22 +81,6 @@ public class TasksQueue implements Runnable {
 		log += "\nLast successful try: " + LocalDateTime.ofInstant(Instant.ofEpochMilli(lastSuccessfulTask), ZoneId.systemDefault());
 		log += "\nQueue records:\n" + tasks.stream().map(Task::getRecord).map(e -> "(" + e.getId() + " " + e.getState() + ")").collect(Collectors.joining(","));
 		logger.info(log);
-	}
-
-	private Task createTask(Record record) throws TaskCreationException {
-		switch (record.getState()) {
-			case E_PENDING:
-				return new EnrichTask(record);
-			case T_PENDING:
-				return new TranscribeTask(record);
-			case U_PENDING:
-				return new UpdateTask(record);
-			case C_PENDING:
-				return new ConversionTask(record);
-
-			default:
-				throw new RuntimeException("Incorrect record state!");
-		}
 	}
 
 }
