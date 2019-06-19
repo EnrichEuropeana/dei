@@ -20,6 +20,7 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import pl.psnc.dei.queue.task.TasksFactory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -48,6 +49,9 @@ public class TranscriptionPlatformServiceTest {
 
     @MockBean
     private TasksQueueService tasksQueueService;
+
+    @MockBean
+    private TasksFactory tasksFactory;
 
     @TestConfiguration
     static class TranscriptionPlatformServiceContextConfiguration {
