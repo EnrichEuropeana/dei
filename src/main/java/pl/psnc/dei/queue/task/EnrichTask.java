@@ -2,10 +2,10 @@ package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonValue;
-import org.springframework.beans.factory.annotation.Autowired;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -14,16 +14,10 @@ import java.util.stream.Collectors;
 
 public class EnrichTask extends Task {
 
-	@Autowired
-	private TranscriptionPlatformService tps;
-
-	@Autowired
-	private EuropeanaRestService ers;
-
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
-	public EnrichTask(Record record) {
-		super(record);
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaRestService ers) {
+		super(record, queueRecordService, tps, ers);
 	}
 
 	@Override

@@ -10,6 +10,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.service.search.DDBSearchService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import reactor.core.publisher.Mono;
 
@@ -21,6 +22,7 @@ import java.util.Map;
 public class SearchController {
 
     private EuropeanaSearchService europeanaSearchService;
+    private DDBSearchService ddbSearchService;
 
     public SearchController(EuropeanaSearchService europeanaSearchService) {
         this.europeanaSearchService = europeanaSearchService;
@@ -44,7 +46,7 @@ public class SearchController {
             case EUROPEANA:
                 return europeanaSearchService.search(query, requestParams, rows);
             case DDB:
-                //todo search in ddb
+                return ddbSearchService.search(query, requestParams, rows);
             case UNKNOWN:
             default:
                 RequestAttributes requestAttributes = RequestContextHolder.getRequestAttributes();

@@ -8,7 +8,7 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.util.IiifAvailability;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -17,13 +17,16 @@ import static org.mockito.Mockito.*;
 @RunWith(SpringRunner.class)
 public class SearchResultProcessorServiceTest {
 
-	private RecordTransferValidationCache recordTransferValidationCache = new RecordTransferValidationCache();
+	private RecordDataCache recordDataCache = new RecordDataCache();
 
 	@Mock
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor;
 
+	@Mock
+	private DDBSearchResultProcessor ddbSearchResultProcessor;
+
 	@InjectMocks
-	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, recordTransferValidationCache);
+	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, ddbSearchResultProcessor, recordDataCache);
 
 	private void setup() {
 		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false))).thenAnswer(a -> {

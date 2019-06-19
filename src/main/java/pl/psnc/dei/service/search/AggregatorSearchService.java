@@ -9,5 +9,7 @@ public interface AggregatorSearchService {
 
 	String QUERY_ALL = "*";
 
+	String UTF_8_ENCODING = "UTF-8";
+
 	Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage);
 }

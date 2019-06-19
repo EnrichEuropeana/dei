@@ -41,7 +41,10 @@ public class SearchServiceTest {
 	private EuropeanaSearchService europeanaSearchService = new EuropeanaSearchService(WebClient.builder());
 
 	@InjectMocks
-	private SearchService searchService = new SearchService(europeanaSearchService);
+	private DDBSearchService ddbSearchService = new DDBSearchService(WebClient.builder());
+
+	@InjectMocks
+	private SearchService searchService = new SearchService(europeanaSearchService, ddbSearchService);
 
 	private void mockWebClientResponse(final EuropeanaSearchResponse resp) {
 		final WebClient.RequestHeadersUriSpec uriSpecMock = Mockito.mock(WebClient.RequestHeadersUriSpec.class);

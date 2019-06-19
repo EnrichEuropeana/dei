@@ -86,7 +86,9 @@ public class EuropeanaFacetComponent extends FacetComponent {
 			if (!fq.isEmpty()) {
 				fq.keySet().forEach(s -> {
 					facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equals(s)).forEach(facetBox -> facetBox.updateFacets(fq.get(s)));
-					selectedFacetsComponent.addSelectedValues(s, fq.get(s));
+					HashMap<String, String> valuesToDisplay = new HashMap<>();
+					fq.get(s).forEach(v -> valuesToDisplay.put(v, v));
+					selectedFacetsComponent.addSelectedValues(s, valuesToDisplay);
 				});
 			}
 		} else {
@@ -113,7 +115,9 @@ public class EuropeanaFacetComponent extends FacetComponent {
 			if (!facetParams.isEmpty()) {
 				facetParams.keySet().forEach(s -> {
 					facetBoxes.stream().filter(facetBox -> facetBox.getFacet().equalsIgnoreCase(s)).forEach(facetBox -> facetBox.updateFacets(facetParams.get(s)));
-					selectedFacetsComponent.addSelectedValues(s, facetParams.get(s));
+					HashMap<String, String> valuesToDisplay = new HashMap<>();
+					facetParams.get(s).forEach(v -> valuesToDisplay.put(v, v));
+					selectedFacetsComponent.addSelectedValues(s, valuesToDisplay);
 				});
 			}
 		} else {
@@ -165,5 +169,10 @@ public class EuropeanaFacetComponent extends FacetComponent {
 	public void clearValuesForFacet(String facet) {
 		facetParams.remove(facet);
 		fq.remove(facet);
+	}
+
+	@Override
+	public Map<String, String> getFacetsLabels() {
+		return FACET_LABELS;
 	}
 }

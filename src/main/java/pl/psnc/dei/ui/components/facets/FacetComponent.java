@@ -87,4 +87,11 @@ public abstract class FacetComponent extends VerticalLayout {
      * @param facet facet name
      */
     public abstract void clearValuesForFacet(String facet);
+
+    /**
+     * Get collection of labels for facets.
+     *
+     * @return facets labels collection
+     */
+    public abstract Map<String, String> getFacetsLabels();
 }

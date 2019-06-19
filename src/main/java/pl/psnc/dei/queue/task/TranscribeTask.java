@@ -2,36 +2,34 @@ package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonObject;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.EuropeanaRestService;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
-import pl.psnc.dei.util.EuropeanaRecordTransferValidationUtil;
+import pl.psnc.dei.util.IiifChecker;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
 public class TranscribeTask extends Task {
 
-	@Autowired
-	private TranscriptionPlatformService tps;
+	private final TasksFactory tasksFactory;
 
-	@Autowired
-	private EuropeanaRestService ers;
-
-	@Autowired
 	private TasksQueueService tqs;
 
 	private JsonObject recordJson;
 
-	@Value("${application.server.url}")
 	private String serverUrl;
 
-	public TranscribeTask(Record record) {
-		super(record);
+	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
+				   EuropeanaRestService ers, TasksQueueService tqs, String serverUrl, TasksFactory tasksFactory) {
+		super(record, queueRecordService, tps, ers);
+		this.tqs = tqs;
 		this.state = TaskState.T_RETRIEVE_RECORD;
+		this.serverUrl = serverUrl;
+		this.tasksFactory = tasksFactory;
 	}
 
 	@Override
@@ -40,7 +38,7 @@ public class TranscribeTask extends Task {
 			case T_RETRIEVE_RECORD:
 				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
 
-				if (EuropeanaRecordTransferValidationUtil.checkIfIiif(recordJson)) {
+				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
@@ -49,7 +47,7 @@ public class TranscribeTask extends Task {
 					} else {
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
-							tqs.addTaskToQueue(new ConversionTask(record, recordJson));
+							tqs.addTaskToQueue(tasksFactory.getTask(record));
 							return;
 						} catch (NotFoundException e) {
 							throw new AssertionError("Record deleted while being processed, id: " + record.getId()

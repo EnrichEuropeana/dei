@@ -24,20 +24,18 @@ import static pl.psnc.dei.util.EuropeanaConstants.*;
 @Service
 public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
 
-    private static final String UTF_8_ENCODING = "UTF-8";
+    private static final Logger logger = LoggerFactory.getLogger(EuropeanaSearchService.class);
 
-    private static final Logger log = LoggerFactory.getLogger(EuropeanaSearchService.class);
-
-    @Value("${api.key}")
+    @Value("${europeana.api.key}")
     private String apiKey;
 
-    @Value("${search.api.url}")
+    @Value("${europeana.search.api.url}")
     private String searchApiUrl;
 
-    @Value("#{'${search.api.predefined.parameters}'.split(',')}")
+    @Value("#{'${europeana.search.api.predefined.parameters}'.split(',')}")
     private List<String> searchApiPredefinedParameters;
 
-    @Value("${search.api.iiif.query}")
+    @Value("${europeana.search.api.iiif.query}")
     private String searchApiIiifQuery;
 
     public EuropeanaSearchService(WebClient.Builder webClientBuilder) {
@@ -47,7 +45,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
     @PostConstruct
     private void configure() {
         setRootUri(searchApiUrl);
-        log.info("Will use {} url.", searchApiUrl);
+        logger.info("Will use {} url.", searchApiUrl);
     }
 
     /**

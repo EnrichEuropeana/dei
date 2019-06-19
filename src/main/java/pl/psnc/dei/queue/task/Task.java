@@ -1,20 +1,25 @@
 package pl.psnc.dei.queue.task;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.QueueRecordService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 
 public abstract class Task {
 
-	@Autowired
-	protected static QueueRecordService queueRecordService;
+	QueueRecordService queueRecordService;
+	TranscriptionPlatformService tps;
+	EuropeanaRestService ers;
 
 	protected TaskState state;
 
 	protected Record record;
 
-	public Task(Record record) {
+	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaRestService ers) {
 		this.record = record;
+		this.queueRecordService = queueRecordService;
+		this.tps = tps;
+		this.ers = ers;
 	}
 
 	public Record getRecord() {

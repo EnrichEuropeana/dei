@@ -1,9 +1,12 @@
 package pl.psnc.dei.ui.components;
 
+import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Anchor;
 import com.vaadin.flow.component.html.Image;
 import com.vaadin.flow.component.html.Label;
+import com.vaadin.flow.component.icon.Icon;
+import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
@@ -21,7 +24,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	private static final String ISSUED_LABEL = "Issued:";
 	private static final String PROVIDER_LABEL = "Provider institution:";
 	private static final String FORMAT_LABEL = "Format:";
-	private static final String FORMAT_LOADING_PLACEHOLDER_LABEL = "Loading...";
+	private static final String LOADING_PLACEHOLDER_LABEL = "Loading...";
 	private static final String LANGUAGE_LABEL = "Language:";
 	private static final String LICENSE_LABEL = "License:";
 	private static final String IIIF_AVAILABILITY_LABEL = "IIIF availability:";
@@ -126,11 +129,30 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		thumbnailContainer.addClassName("metadata-image-container");
 		thumbnailContainer.setAlignItems(Alignment.CENTER);
 
-		Image thumbnail = new Image();
-		thumbnail.setAlt(searchResult.getTitle());
-		thumbnail.setSrc(searchResult.getImageURL());
-		thumbnail.addClassName("metadata-image");
+		if(searchResult.getImageURL() != null) {
+			Image thumbnail = new Image();
+			thumbnail.setAlt(searchResult.getTitle());
+			thumbnail.setSrc(searchResult.getImageURL());
+			thumbnail.addClassName("metadata-image");
+			addSourceObjectUrl(thumbnailContainer, thumbnail);
+		} else {
+			Icon icon = new Icon(VaadinIcon.FILE_PICTURE);
+			icon.addClassName("metadata-image");
+			icon.setSize("100px");
+			icon.setColor("darkgray");
+			thumbnailContainer.add(icon);
+			addSourceObjectUrl(thumbnailContainer, icon);
+		}
+		add(thumbnailContainer);
+	}
 
+	/**
+	 * If possible adds link to source object to thumbnail.
+	 *
+	 * @param thumbnailContainer thumbnail container object
+	 * @param thumbnail thumbnail object, e.g. image or placeholder icon
+	 */
+	private void addSourceObjectUrl(VerticalLayout thumbnailContainer, Component thumbnail) {
 		String sourceObjectURL = searchResult.getSourceObjectURL();
 		if (sourceObjectURL != null && !sourceObjectURL.isEmpty()) {
 			Anchor link = new Anchor(sourceObjectURL, thumbnail);
@@ -139,28 +161,47 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		} else {
 			thumbnailContainer.add(thumbnail);
 		}
-
-		add(thumbnailContainer);
 	}
 
 	/**
 	 * Create metadata component which is part of the result component
 	 */
 	private VerticalLayout createMetadataComponent() {
-		IiifAvailability iiifAvailability = searchResult.getIiifAvailability();
-
 		VerticalLayout metadataLayout = new VerticalLayout();
 		createTitleMetadataLine(metadataLayout, searchResult.getTitle(), searchResult.getSourceObjectURL());
-		createMetadataLine(metadataLayout, AUTHOR_LABEL, searchResult.getAuthor());
-		createMetadataLine(metadataLayout, ISSUED_LABEL, searchResult.getIssued());
-		createMetadataLine(metadataLayout, PROVIDER_LABEL, searchResult.getProvider());
+		if (searchResult.getAuthor() != null) {
+			createMetadataLine(metadataLayout, AUTHOR_LABEL, searchResult.getAuthor());
+		} else {
+			createMetadataLine(metadataLayout, AUTHOR_LABEL, LOADING_PLACEHOLDER_LABEL);
+		}
+
+		createMetadataLine(metadataLayout, ISSUED_LABEL, searchResult.getIssued()); //todo never used?
+
+		if (searchResult.getProvider() != null) {
+			createMetadataLine(metadataLayout, PROVIDER_LABEL, searchResult.getProvider());
+		} else {
+			createMetadataLine(metadataLayout, PROVIDER_LABEL, LOADING_PLACEHOLDER_LABEL);
+		}
+
 		if (searchResult.getFormat() != null) {
 			createMetadataLine(metadataLayout, FORMAT_LABEL, searchResult.getFormat());
 		} else {
-			createMetadataLine(metadataLayout, FORMAT_LABEL, FORMAT_LOADING_PLACEHOLDER_LABEL);
+			createMetadataLine(metadataLayout, FORMAT_LABEL, LOADING_PLACEHOLDER_LABEL);
 		}
-		createMetadataLine(metadataLayout, LANGUAGE_LABEL, searchResult.getLanguage());
-		createMetadataLine(metadataLayout, LICENSE_LABEL, searchResult.getLicense());
+
+		if (searchResult.getLanguage() != null) {
+			createMetadataLine(metadataLayout, LANGUAGE_LABEL, searchResult.getLanguage());
+		} else {
+			createMetadataLine(metadataLayout, LANGUAGE_LABEL, LOADING_PLACEHOLDER_LABEL);
+		}
+
+		if (searchResult.getLicense() != null) {
+			createMetadataLine(metadataLayout, LICENSE_LABEL, searchResult.getLicense());
+		} else {
+			createMetadataLine(metadataLayout, LICENSE_LABEL, LOADING_PLACEHOLDER_LABEL);
+		}
+
+		IiifAvailability iiifAvailability = searchResult.getIiifAvailability();
 		if (iiifAvailability != null) {
 			createTransferPossibilityLine(metadataLayout, iiifAvailability.getMessage(), iiifAvailability.isTransferPossible());
 		} else {

@@ -31,7 +31,7 @@ public class EuropeanaRestService extends RestRequestExecutor {
 	@Value("${europeana.api.record.endpoint}")
 	private String recordApiEndpoint;
 
-	@Value("${api.key}")
+	@Value("${europeana.api.key}")
 	private String apiKey;
 
 	@Value("${api.userToken}")

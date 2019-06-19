@@ -3,19 +3,23 @@ package pl.psnc.dei.service.searchresultprocessor;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.service.RecordTransferValidationCache;
+import pl.psnc.dei.service.RecordDataCache;
 
 @Service
 public class SearchResultProcessorService {
 
-	private RecordTransferValidationCache recordTransferValidationCache;
+	private RecordDataCache recordDataCache;
 
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor;
 
+	private DDBSearchResultProcessor ddbSearchResultProcessor;
+
 	public SearchResultProcessorService(EuropeanaSearchResultProcessor europeanaSearchResultProcessor,
-										RecordTransferValidationCache recordTransferValidationCache) {
+										DDBSearchResultProcessor ddbSearchResultProcessor,
+										RecordDataCache recordDataCache) {
 		this.europeanaSearchResultProcessor = europeanaSearchResultProcessor;
-		this.recordTransferValidationCache = recordTransferValidationCache;
+		this.ddbSearchResultProcessor = ddbSearchResultProcessor;
+		this.recordDataCache = recordDataCache;
 	}
 
 	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult, boolean onlyIiif) {
@@ -25,13 +29,13 @@ public class SearchResultProcessorService {
 			case EUROPEANA:
 				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			case DDB:
-				//todo implement
+				return ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			default:
 				return searchResult;
 		}
 	}
 
 	public void clearCache() {
-		recordTransferValidationCache.clear();
+		recordDataCache.clear();
 	}
 }

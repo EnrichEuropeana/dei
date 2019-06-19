@@ -1,5 +1,6 @@
 package pl.psnc.dei.ui.components.facets;
 
+import pl.psnc.dei.response.search.ddb.DDBFacet;
 import pl.psnc.dei.response.search.FacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.Facet;
@@ -17,7 +18,9 @@ public class FacetBoxFactory {
 			} else {
 				return new EuropeanaFacetBox(parent, facet);
 			}
-		} else { //todo implement DDB facetBox
+		} else if(facet instanceof DDBFacet) {
+			return new DDBFacetBox(parent, facet);
+		} else {
 			throw new NotImplementedException();
 		}
 	}

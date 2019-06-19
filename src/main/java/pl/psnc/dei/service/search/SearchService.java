@@ -19,9 +19,11 @@ public class SearchService {
 	private static final Logger logger = LoggerFactory.getLogger(SearchService.class);
 
 	private EuropeanaSearchService europeanaSearchService;
+	private DDBSearchService ddbSearchService;
 
-	public SearchService(EuropeanaSearchService europeanaSearchService) {
+	public SearchService(EuropeanaSearchService europeanaSearchService, DDBSearchService ddbSearchService) {
 		this.europeanaSearchService = europeanaSearchService;
+		this.ddbSearchService = ddbSearchService;
 	}
 
 	public SearchResults search(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
@@ -35,7 +37,8 @@ public class SearchService {
 					response = europeanaSearchService.search(query, requestParams, rowsPerPage).block();
 					break;
 				case DDB:
-					//todo implement DDB search
+					response = ddbSearchService.search(query, requestParams, rowsPerPage).block();
+					break;
 				default:
 					return null;
 			}
