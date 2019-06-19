@@ -6,7 +6,7 @@ import pl.psnc.dei.model.Aggregator;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RecordTransferValidator {
+public class IiifValidator {
 
 	private static final List<String> ALLOWED_TYPES = new ArrayList<>();
 
@@ -18,8 +18,9 @@ public class RecordTransferValidator {
 	}
 
 	/**
-	 * Checks if given record can be converted and/or transferred to TP
+	 * Checks if IIF is available or conversion is possible for given record.
 	 *
+	 * @param aggregator aggregator object
 	 * @param record   record json-ld object
 	 * @param mimeType record's mimeType
 	 * @return {@link IiifAvailability}

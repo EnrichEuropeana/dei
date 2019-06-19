@@ -122,9 +122,11 @@ public class DDBItem implements Item {
 
 	@Override
 	public String getThumbnailURL() {
-		if (thumbnailUrl == null || thumbnailUrl.isEmpty()) {
+		//todo uncomment in case DDB binary endpoint starts working
+		//in case it is not possible to get thumbnail url return null
+		/*if (thumbnailUrl == null || thumbnailUrl.isEmpty()) {
 			thumbnailUrl = DDBUriCreator.prepareThumbnailUri(thumbnail);
-		}
+		}*/
 		return thumbnailUrl;
 	}
 

@@ -10,7 +10,7 @@ import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.DDBRestService;
 import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.util.IiifAvailability;
-import pl.psnc.dei.util.RecordTransferValidator;
+import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.service.DDBFormatResolver;
 
 @Service
@@ -60,7 +60,7 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 			provider = getMetadataValue(recordObject, TYPE_AGGREGATION, EDM_DATA_PROVIDER);
 			language = getMetadataValue(recordObject, TYPE_EDM_PROVIDED_CHO, DC_LANGUAGE);
 			license = getMetadataValue(recordObject, TYPE_AGGREGATION, RIGHTS);
-			iiifAvailability = RecordTransferValidator.checkIfIiifAvailable(Aggregator.DDB, recordObject, mimeType);
+			iiifAvailability = IiifValidator.checkIfIiifAvailable(Aggregator.DDB, recordObject, mimeType);
 
 			recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
 			recordDataCache.addValue(recordId, AUTHOR, author);

@@ -9,7 +9,7 @@ import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordDataCache;
-import pl.psnc.dei.util.RecordTransferValidator;
+import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.util.IiifAvailability;
 
 import java.util.Optional;
@@ -68,7 +68,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	}
 
 	private IiifAvailability validateRecord(String recordId, String mimeType, JsonObject recordObject, boolean onlyIiif) {
-		IiifAvailability iiifAvailability = onlyIiif ? IiifAvailability.AVAILABLE : RecordTransferValidator.checkIfIiifAvailable(Aggregator.EUROPEANA, recordObject, mimeType);
+		IiifAvailability iiifAvailability = onlyIiif ? IiifAvailability.AVAILABLE : IiifValidator.checkIfIiifAvailable(Aggregator.EUROPEANA, recordObject, mimeType);
 		recordDataCache.addValidationResult(recordId, mimeType, iiifAvailability);
 		return iiifAvailability;
 	}
