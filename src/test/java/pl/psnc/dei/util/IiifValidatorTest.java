@@ -40,8 +40,9 @@ public class IiifValidatorTest {
 		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability3);
 		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability4);
 		Assert.assertEquals(IiifAvailability.DATA_UNAVAILABLE, iiifAvailability5);
-		Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, iiifAvailability6);
-		Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, iiifAvailability7);
+		//todo uncomment when DDB binary endpoint become available. For now IiifValidator always returns CONVERSION_IMPOSSIBLE for DDB
+		//Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, iiifAvailability6);
+		//Assert.assertEquals(IiifAvailability.CONVERSION_POSSIBLE, iiifAvailability7);
 		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability8);
 		Assert.assertEquals(IiifAvailability.CONVERSION_IMPOSSIBLE, iiifAvailability9);
 		Assert.assertEquals(IiifAvailability.DATA_UNAVAILABLE, iiifAvailability10);

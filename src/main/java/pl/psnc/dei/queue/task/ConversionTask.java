@@ -5,11 +5,9 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.EuropeanaRestService;
-import pl.psnc.dei.service.QueueRecordService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.*;
 
 public class ConversionTask extends Task {
 
@@ -21,13 +19,27 @@ public class ConversionTask extends Task {
 
 	private TasksFactory tasksFactory;
 
+	private DDBFormatResolver ddbFormatResolver;
+
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaRestService ers, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
+				   EuropeanaRestService ers, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
 		super(record, queueRecordService, tps, ers);
 		this.tqs = tqs;
+		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
 		this.tasksFactory = tasksFactory;
-		recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+
+		Aggregator aggregator = record.getAggregator();
+		switch (aggregator) {
+			case EUROPEANA:
+				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				break;
+			case DDB:
+				recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());
+				break;
+			default:
+				throw new IllegalStateException("Unsupported aggregator for conversion.");
+		}
 	}
 
 	@Override
