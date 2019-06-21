@@ -44,23 +44,10 @@ public class DDBFormatResolver extends RestRequestExecutor {
 	}
 
 	public synchronized String getRecordFormat(String recordId) {
-		String result = webClient.get()
-				.uri(uriBuilder -> {
-					uriBuilder.path(formatApiUri);
-					uriBuilder.queryParam(DDB_API_KEY_NAME, apiKey);
-					return uriBuilder.build(recordId);
-				})
-				.retrieve()
-				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-				.bodyToMono(String.class)
-				.onErrorReturn("")
-				.block();
-		if (result == null || result.isEmpty() || result.equals("null")) {
+		JsonObject json = getRecordBinariesObject(recordId);
+		if (json == null) {
 			return null;
 		}
-
-		JsonObject json = JSON.parse(result);
 
 		Object binary = json.get("binary");
 		if (binary instanceof JsonArray) {
@@ -80,5 +67,25 @@ public class DDBFormatResolver extends RestRequestExecutor {
 			return null;
 		}
 		return singleBinary.get(KEY_MIME_TYPE).getAsString().value();
+	}
+
+	public synchronized JsonObject getRecordBinariesObject(String recordId) {
+		String result = webClient.get()
+				.uri(uriBuilder -> {
+					uriBuilder.path(formatApiUri);
+					uriBuilder.queryParam(DDB_API_KEY_NAME, apiKey);
+					return uriBuilder.build(recordId);
+				})
+				.retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.bodyToMono(String.class)
+				.onErrorReturn("")
+				.block();
+		if (result == null || result.isEmpty() || result.equals("null")) {
+			return null;
+		}
+
+		return JSON.parse(result);
 	}
 }

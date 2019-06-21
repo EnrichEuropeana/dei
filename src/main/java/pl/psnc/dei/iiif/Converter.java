@@ -10,14 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -66,19 +64,11 @@ public class Converter {
 		outDir = new File(conversionDirectory, "/out/" + imagePath);
 		outDir.mkdirs();
 
-		Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
-				.map(JsonValue::getAsObject)
-				.filter(e -> e.get("edm:isShownBy") != null)
-				.findFirst();
-
-		if (!aggregatorData.isPresent())
-			throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
-
 		try {
-			ConversionDataHolder conversionDataHolder = new ConversionDataHolder(aggregatorData.get());
+			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson);
 			saveFilesInTempDirectory(conversionDataHolder);
 			convertFiles(conversionDataHolder);
-			List<ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 					.filter(e -> e.outFile != null)
 					.collect(Collectors.toList());
 
@@ -93,15 +83,37 @@ public class Converter {
 		}
 	}
 
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson) throws ConversionImpossibleException {
+		Aggregator aggregator = record.getAggregator();
+		switch (aggregator) {
+			case EUROPEANA:
+				Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
+						.map(JsonValue::getAsObject)
+						.filter(e -> e.get("edm:isShownBy") != null)
+						.findFirst();
+
+				if (!aggregatorData.isPresent()) {
+					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
+				}
+
+				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get());
+			case DDB:
+				if (recordJson == null) {
+					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
+				}
+				return new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+			default:
+				throw new IllegalStateException("Unsupported aggregator");
+		}
+	}
+
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
-		for (ConversionData data : dataHolder.fileObjects) {
+		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
 				continue;
 
 			try {
-				String filePath = data.srcFileUrl.getPath();
-				filePath = filePath.endsWith("/") ? filePath.substring(0, filePath.length() - 1) : filePath;
-				String fileName = filePath.substring(filePath.lastIndexOf("/") + 1);
+				String fileName = getFileName(data);
 				File tempFile = new File(srcDir, fileName);
 				FileUtils.copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
@@ -110,6 +122,15 @@ public class Converter {
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
 			}
 		}
+	}
+
+	private String getFileName(ConversionDataHolder.ConversionData data) {
+		String filePath = data.srcFileUrl.getPath();
+		filePath = filePath.endsWith("/") ? filePath.substring(0, filePath.length() - 1) : filePath;
+		if (filePath.contains("?")) {
+			return filePath.substring(filePath.lastIndexOf('/') + 1, filePath.indexOf('?'));
+		}
+		return filePath.substring(filePath.lastIndexOf('/') + 1);
 	}
 
 	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionImpossibleException {
@@ -126,7 +147,7 @@ public class Converter {
 				logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier(), e);
 			}
 		} else {
-			for (ConversionData convData : dataHolder.fileObjects) {
+			for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 				if (convData.srcFile == null)
 					continue;
 
@@ -165,7 +186,7 @@ public class Converter {
 		return file.getName().split("\\.")[0] + ".tif";
 	}
 
-	private JsonObject getManifest(List<ConversionData> storedFilesData) {
+	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
 		manifest.put("@id", serverUrl + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
@@ -181,10 +202,10 @@ public class Converter {
 		return manifest;
 	}
 
-	private JsonArray getSequenceJson(List<ConversionData> storedFilesData) {
+	private JsonArray getSequenceJson(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
 
-		for (ConversionData data : storedFilesData) {
+		for (ConversionDataHolder.ConversionData data : storedFilesData) {
 			JsonObject canvas = new JsonObject();
 			canvases.add(canvas);
 
@@ -206,9 +227,9 @@ public class Converter {
 			image.put("resource", resource);
 
 			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath + "/full/full/0/default.jpg");
-			data.json.put("manifestFileId", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath + "/full/full/0/default.jpg");
 			resource.put("@type", "dctypes:Image");
 			JsonObject service = new JsonObject();
+			resource.put("service", service);
 
 			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath);
 			service.put("@context", "http://iiif.io/api/image/2/context.json");
@@ -217,50 +238,4 @@ public class Converter {
 
 		return canvases;
 	}
-
-	private class ConversionDataHolder {
-
-		List<ConversionData> fileObjects = new ArrayList<>();
-
-		ConversionDataHolder(JsonObject aggregatorData) {
-			ConversionData isShownBy = new ConversionData();
-			isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
-			fileObjects.add(isShownBy);
-			String mainFileUrl = isShownBy.json.get("@id").getAsString().value();
-			String mainFileFormat = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
-
-			if (aggregatorData.get("edm:hasView") != null)
-				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
-						.filter(e -> e.getAsObject().get("@id").getAsString().value().endsWith(mainFileFormat))
-						.map(e -> {
-							ConversionData data = new ConversionData();
-							data.json = e.getAsObject();
-							return data;
-						})
-						.collect(Collectors.toList()));
-
-			initFileUrls();
-		}
-
-		void initFileUrls() {
-			for (ConversionData data : fileObjects) {
-				String url = data.json.get("@id").getAsString().value();
-				try {
-					data.srcFileUrl = new URL(url);
-				} catch (MalformedURLException e) {
-					logger.error("Incorrect file URL for record: {}, url: {}", record.getIdentifier(), url, e);
-				}
-			}
-		}
-
-	}
-
-	private class ConversionData {
-		JsonObject json;
-		URL srcFileUrl;
-		File outFile;
-		File srcFile;
-		String imagePath;
-	}
-
 }

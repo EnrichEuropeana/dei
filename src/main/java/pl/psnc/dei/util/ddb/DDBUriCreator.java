@@ -41,6 +41,15 @@ public class DDBUriCreator {
 		return itemUrl + recordId;
 	}
 
+	public static String prepareObjectUriForConversion(String resource) {
+		Properties baseProperties = getBaseProperties();
+		String api = baseProperties.getProperty("ddb.item.url");
+		String binaryEndpoint = baseProperties.getProperty("ddb.binary.api.url");
+		String apiKey = baseProperties.getProperty("ddb.api.key");
+
+		return api + binaryEndpoint + resource + "?oauth_consumer_key=" + apiKey; //todo add .extension? check this when DDB binary endpoint become available
+	}
+
 	private static String getCurrentProfile() {
 		Properties properties = getBaseProperties();
 		return properties.getProperty("spring.profiles.active");

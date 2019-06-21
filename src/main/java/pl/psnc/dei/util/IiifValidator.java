@@ -33,6 +33,10 @@ public class IiifValidator {
 			return IiifAvailability.AVAILABLE;
 		}
 		if (ALLOWED_TYPES.contains(mimeType)) {
+			//todo remove below if statement when ddb binaries endpoint become available
+			if (aggregator == Aggregator.DDB) {
+				return IiifAvailability.CONVERSION_IMPOSSIBLE;
+			}
 			return IiifAvailability.CONVERSION_POSSIBLE;
 		}
 		return IiifAvailability.CONVERSION_IMPOSSIBLE;
