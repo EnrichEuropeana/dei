@@ -43,6 +43,7 @@ public class TranscribeTask extends Task {
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
 						recordJson.put("iiif_url", serverUrl + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
+						queueRecordService.fillRecordJsonData(record, recordJson);
 						state = T_SEND_RESULT;
 					} else {
 						try {
