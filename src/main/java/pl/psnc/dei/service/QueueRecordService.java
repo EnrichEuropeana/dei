@@ -1,9 +1,11 @@
 package pl.psnc.dei.service;
 
+import org.apache.jena.atlas.json.JsonObject;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
@@ -23,6 +25,9 @@ public class QueueRecordService {
 
 	@Autowired
 	private TranscriptionRepository transcriptionRepository;
+
+	@Autowired
+	private Converter converter;
 
 	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNotIn(Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED));
@@ -55,5 +60,9 @@ public class QueueRecordService {
 
 	public void saveTranscription(Transcription transcription) {
 		transcriptionRepository.save(transcription);
+	}
+
+	public void fillRecordJsonData(Record record, JsonObject json) {
+		converter.fillJsonData(record, json);
 	}
 }

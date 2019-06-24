@@ -238,4 +238,22 @@ public class Converter {
 
 		return canvases;
 	}
+
+	public void fillJsonData(Record record, JsonObject jsonObject) {
+		try {
+			ConversionDataHolder conversionData = createDataHolder(record, jsonObject);
+			conversionData.initFileUrls(record.getIdentifier());
+			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().endsWith(".pdf"))
+				return;
+			for (ConversionDataHolder.ConversionData data : conversionData.fileObjects)
+				data.json.put("manifestFileId",
+						iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF="
+								+ record.getProject().getProjectId() + "/"
+								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+								+ record.getIdentifier() + "/"
+								+ getTiffFileName(data.srcFile) + "/full/full/0/default.jpg");
+		} catch (ConversionImpossibleException e) {
+			logger.warn("Manifest data couldn't be added!", e);
+		}
+	}
 }
