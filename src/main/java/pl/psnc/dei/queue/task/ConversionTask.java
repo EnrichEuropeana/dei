@@ -8,6 +8,7 @@ import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 public class ConversionTask extends Task {
 
@@ -22,8 +23,8 @@ public class ConversionTask extends Task {
 	private DDBFormatResolver ddbFormatResolver;
 
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaRestService ers, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
-		super(record, queueRecordService, tps, ers);
+				   EuropeanaSearchService ess, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
+		super(record, queueRecordService, tps, ess);
 		this.tqs = tqs;
 		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
@@ -32,7 +33,7 @@ public class ConversionTask extends Task {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
-				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				recordJson = ess.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
 				break;
 			case DDB:
 				recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());

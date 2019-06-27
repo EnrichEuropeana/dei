@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.service.DDBRestService;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.search.DDBSearchService;
 import pl.psnc.dei.util.IiifAvailability;
 import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.service.DDBFormatResolver;
@@ -31,12 +31,12 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 	private static final String LANGUAGE = "language";
 	private static final String LICENSE = "license";
 
-	private DDBRestService ddbRestService;
+	private DDBSearchService ddbSearchService;
 	private DDBFormatResolver ddbFormatResolver;
 	private RecordDataCache recordDataCache;
 
-	public DDBSearchResultProcessor(DDBRestService ddbRestService, DDBFormatResolver ddbFormatResolver, RecordDataCache recordDataCache) {
-		this.ddbRestService = ddbRestService;
+	public DDBSearchResultProcessor(DDBSearchService ddbSearchService, DDBFormatResolver ddbFormatResolver, RecordDataCache recordDataCache) {
+		this.ddbSearchService = ddbSearchService;
 		this.ddbFormatResolver = ddbFormatResolver;
 		this.recordDataCache = recordDataCache;
 	}
@@ -100,7 +100,7 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 
 	private JsonObject getRecordData(String recordId) {
 		try {
-			return ddbRestService.retrieveRecordFromDDBAndConvertToJsonLd(recordId);
+			return ddbSearchService.retrieveRecordFromDDBAndConvertToJsonLd(recordId);
 		} catch (Exception e) {
 			logger.warn("Cannot retrieve record data for record {} from DDB items edm endpoint.", recordId, e);
 			return null;
