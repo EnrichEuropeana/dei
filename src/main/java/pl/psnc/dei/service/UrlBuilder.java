@@ -13,13 +13,15 @@ import pl.psnc.dei.model.Transcription;
  */
 @Service
 public class UrlBuilder {
-
-
-    private static final String ALL_PROJECTS_SUFFIX = "/projects";
-    private static final String DATASETS_SEARCH_SUFFIX = "/datasets";
+    private static final String PROJECTS_SUFFIX = "/projects";
+    private static final String DATASETS_SUFFIX = "/datasets";
     private static final String IMPORTS_ADD_SUFFIX = "/";
-    private static final String RECORDS_SUFFIX = "/records";
-    private static final String TRANSCRIPTIONS_SUFFIX = "/transcription";
+    private static final String STORIES_SUFFIX = "/stories";
+    private static final String ENRICHMENTS_SUFFIX = "/enrichments";
+    private static final String DATASET_PARAM = "datasetId=";
+    private static final String IMPORT_NAME_PARAM = "importName=";
+    private static final String STORY_ID_PARAM = "storyId=";
+    private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
 
 	@Value("${transcription.api.url}")
 	private String transcriptionPlatformLocation;
@@ -29,23 +31,36 @@ public class UrlBuilder {
 	}
 
 	public String urlForAllProjects() {
-		return transcriptionPlatformLocation + ALL_PROJECTS_SUFFIX;
+		return transcriptionPlatformLocation + PROJECTS_SUFFIX;
 	}
 
-	public String urlForSendingRecord() {
-		return transcriptionPlatformLocation + RECORDS_SUFFIX;
+	public String urlForSendingRecord(Record record) {
+	    String url = transcriptionPlatformLocation
+                + PROJECTS_SUFFIX
+                + '/'
+                + record.getProject().getProjectId()
+                + STORIES_SUFFIX
+                + '?'
+                + IMPORT_NAME_PARAM
+                + record.getAnImport().getName();
+		if (record.getDataset() != null) {
+            url += '&'
+                    + DATASET_PARAM
+                    + record.getDataset().getDatasetId();
+        }
+		return url;
 	}
 
     public String urlForTranscription(Transcription transcription) {
-        return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id();
+        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + "/" + transcription.getTp_id();
     }
 
     public String urlForTranscriptionUpdate(Transcription transcription) {
-        return transcriptionPlatformLocation + TRANSCRIPTIONS_SUFFIX + "/" + transcription.getTp_id() + "?annotationId=" + transcription.getAnnotationId();
+        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + "/" + transcription.getTp_id() + "?annotationId=" + transcription.getAnnotationId();
     }
 
     public String urlForProjectDatasets(Project project) {
-        return transcriptionPlatformLocation + DATASETS_SEARCH_SUFFIX + "?ProjectId=" + project.getProjectId();
+        return transcriptionPlatformLocation + PROJECTS_SUFFIX + '/' + project.getProjectId() + DATASETS_SUFFIX;
     }
 
     public String urlForSendingImport() {
@@ -53,8 +68,18 @@ public class UrlBuilder {
         //todo change to real url
     }
 
-    public String urlForRecord(Record record) {
-        return transcriptionPlatformLocation + RECORDS_SUFFIX + "/" + record.getIdentifier();
+    public String urlForRecordEnrichments(Record record, String europeanaAnnotationId) {
+        String url = transcriptionPlatformLocation
+                + ENRICHMENTS_SUFFIX
+                + '?'
+                + STORY_ID_PARAM
+                + record.getIdentifier();
+        if (europeanaAnnotationId != null) {
+            url += '&'
+                    + EUROPEANA_ANNOTATION_ID_PARAM
+                    + europeanaAnnotationId;
+        }
+        return url;
     }
 
 }

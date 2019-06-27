@@ -11,18 +11,17 @@ import org.apache.jena.atlas.json.JsonValue;
 import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.*;
+import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
@@ -30,9 +29,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Service responsible for communication with Transcription Platform.
@@ -53,6 +50,9 @@ public class TranscriptionPlatformService {
 
 	@Autowired
 	private RecordsRepository recordsRepository;
+
+	@Autowired
+	private ImportsRepository importsRepository;
 
 	@Autowired
 	private TasksQueueService taskQueueService;
@@ -123,10 +123,11 @@ public class TranscriptionPlatformService {
 	 * @throws TranscriptionPlatformException
 	 */
 
-	public void sendRecord(JsonObject record) throws TranscriptionPlatformException {
+	public void sendRecord(JsonObject recordBody, Record record) throws TranscriptionPlatformException {
 		this.webClient.post()
-				.uri(urlBuilder.urlForSendingRecord())
-				.body(BodyInserters.fromObject(record))
+				.uri(urlBuilder.urlForSendingRecord(record))
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(BodyInserters.fromObject(recordBody.toString()))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
@@ -152,7 +153,7 @@ public class TranscriptionPlatformService {
 		String recordTranscriptions =
 				this.webClient
 						.get()
-						.uri(urlBuilder.urlForRecord(record))
+						.uri(urlBuilder.urlForRecordEnrichments(record, null))
 						.retrieve()
 						.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
 						.bodyToMono(String.class)
@@ -195,7 +196,7 @@ public class TranscriptionPlatformService {
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
 		String response = this.webClient
 				.get()
-				.uri(urlBuilder.urlForTranscriptionUpdate(transcription))
+				.uri(urlBuilder.urlForRecordEnrichments(transcription.getRecord(), transcription.getAnnotationId()))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
@@ -208,7 +209,7 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
-
+		// TODO retrieve just the transcription that we need
 		return JSON.parse(response);
 	}
 
@@ -235,5 +236,65 @@ public class TranscriptionPlatformService {
 			}
 		}
 		throw new NotFoundException("Record " + recordId + " not found!");
+	}
+
+	public void sendImport(String importName) throws NotFoundException {
+		Optional<Import> anImport = importsRepository.findImportByName(importName);
+		if (!anImport.isPresent()) {
+			throw new NotFoundException("Import " + importName + " not found");
+		}
+		// sending import can be done only for imports that are in progress
+		if (ImportStatus.IN_PROGRESS.equals(anImport.get().getStatus())) {
+			// We have to start the process of sending records by setting record state to T_PENDING and creating TranscribeTask
+			// Only records in NORMAL or T_FAILED state are considered
+			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport.get(), Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED));
+			toSend.forEach(record -> {
+				record.setState(Record.RecordState.T_PENDING);
+				recordsRepository.save(record);
+				taskQueueService.addTaskToQueue(tasksFactory.getTask(record));
+			});
+		}
+	}
+
+	/**
+	 * Update import state based on records. This is possible only when the import is in IN_PROGRESS state.
+	 * @param anImport import object
+	 */
+	public void updateImportState(Import anImport) {
+		if (ImportStatus.IN_PROGRESS.equals(anImport.getStatus())) {
+			// if there is any record in state T_PENDING import is still IN_PROGRESS
+			Set<Record> pendingRecords = recordsRepository.findAllByAnImportAndState(anImport, Record.RecordState.T_PENDING);
+			if (pendingRecords.isEmpty()) {
+				if (!recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.T_FAILED, Record.RecordState.C_FAILED)).isEmpty()) {
+					anImport.setStatus(ImportStatus.FAILED);
+				} else {
+					anImport.setStatus(ImportStatus.SENT);
+				}
+				importsRepository.save(anImport);
+			}
+		}
+	}
+
+	/**
+	 * Adds failure information to the specified import. The failure is related to the record specified as recordIdentifier
+	 * and the reason of failure is passed in message parameter.
+	 *
+	 * @param importName import name
+	 * @param recordIdentifier record identifier
+	 * @param message failure reason
+	 * @throws NotFoundException when import not found
+	 */
+	public void addFailure(String importName, String recordIdentifier, String message) throws NotFoundException {
+		Optional<Import> anImport = importsRepository.findImportByName(importName);
+		if (!anImport.isPresent()) {
+			throw new NotFoundException("Import " + importName + " not found!");
+		}
+		ImportFailure importFailure = new ImportFailure();
+		importFailure.setAnImport(anImport.get());
+		importFailure.setOccurenceDate(new Date());
+		importFailure.setReason("Sending record " + recordIdentifier + " failed. Reason: " + message);
+		Hibernate.initialize(anImport.get().getFailures());
+		anImport.get().getFailures().add(importFailure);
+		importsRepository.save(anImport.get());
 	}
 }

@@ -27,6 +27,10 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     Set<Record> findAllByAnImport(Import anImport);
 
+    Set<Record> findAllByAnImportAndStateIsIn(Import anImport, List<Record.RecordState> states);
+
+    Set<Record> findAllByAnImportAndState(Import anImport, Record.RecordState state);
+
     Optional<Record> findByIdentifier(String id);
 
     List<Record> findAllByStateIsNotIn(List<Record.RecordState> states);
