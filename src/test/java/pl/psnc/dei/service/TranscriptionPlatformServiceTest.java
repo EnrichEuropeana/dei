@@ -110,7 +110,7 @@ public class TranscriptionPlatformServiceTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withFixedDelay(6000)
+                        .withFixedDelay((TranscriptionPlatformService.READ_TIMEOUT_IN_SECONDS + 1) * 1000)
                         .withBody("[{\"transcription\":\"test123\",\"target\":\"test321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"},{\"transcription\":\"test12345\",\"target\":\"test54321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"}]")));
         //
         Record testRecord = new Record();
@@ -149,7 +149,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withFixedDelay(7000)));
+                        .withFixedDelay((TranscriptionPlatformService.READ_TIMEOUT_IN_SECONDS + 1) * 1000)));
 
         //
         Transcription testTranscription = new Transcription();
