@@ -41,7 +41,7 @@ import java.util.*;
 @Transactional
 public class TranscriptionPlatformService {
 
-	private static final int READ_TIMEOUT_IN_SECONDS = 5;
+	public static final int READ_TIMEOUT_IN_SECONDS = 600;
 	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
 	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 1;
 

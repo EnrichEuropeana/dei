@@ -7,33 +7,52 @@ import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
+import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.Import;
+import pl.psnc.dei.model.ImportStatus;
+import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.pages.ImportPage;
 
 import java.util.List;
 
 public class ImportsListComponent extends VerticalLayout {
 
+	private static final Logger logger = LoggerFactory.getLogger(ImportsListComponent.class);
+
 	//
 	private final FieldFilter nameFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getName(), currentValue);
 	private final FieldFilter statusFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getStatus().toString(), currentValue);
 	private final FieldFilter dateFilter = (currentImport, currentValue) -> StringUtils.containsIgnoreCase(currentImport.getCreationDate().toString(), currentValue);
 	private ImportsRepository importsRepository;
+	private ImportPackageService importPackageService;
 	private List<Import> imports;
 	private ImportPage importPage;
+	private Component importList;
 
-	public ImportsListComponent(ImportsRepository importsRepository, ImportPage importPage) {
+	public ImportsListComponent(ImportsRepository importsRepository, ImportPackageService importPackageService, ImportPage importPage) {
 		this.importsRepository = importsRepository;
-		imports = importsRepository.findAll();
+		this.importPackageService = importPackageService;
 		this.importPage = importPage;
-		add(generate());
+		refreshImportList();
+	}
+
+	private void refreshImportList(){
+		imports = importsRepository.findAll();
+		if(importList != null){
+			remove(importList);
+		}
+		importList = generate();
+		add(importList);
 	}
 
 	public Grid<Import> generate() {
@@ -62,8 +81,18 @@ public class ImportsListComponent extends VerticalLayout {
 		HorizontalLayout layout = new HorizontalLayout();
 		Button sendImportButton = new Button(new Icon(VaadinIcon.ENVELOPE_OPEN));
 		sendImportButton.addClickListener(click -> {
-			importPage.showSendImportView(anImport);
+			try {
+				importPackageService.sendExistingImport(anImport.getName());
+				Notification.show("Sending import started", 3000, Notification.Position.TOP_CENTER);
+				//importPage.showCreateListImportView();
+			} catch (NotFoundException ex) {
+				Notification.show("Something goes wrong", 3000, Notification.Position.TOP_CENTER);
+				logger.error("Import not found!", ex);
+			}
+			refreshImportList();
 		});
+		sendImportButton.setEnabled(shouldShowSendButton(anImport));
+
 		Button editImportButton = new Button(new Icon(VaadinIcon.EDIT));
 		editImportButton.addClickListener(click -> {
 			importPage.showEditImportView(anImport);
@@ -71,6 +100,10 @@ public class ImportsListComponent extends VerticalLayout {
 		layout.add(editImportButton);
 		layout.add(sendImportButton);
 		return layout;
+	}
+
+	private boolean shouldShowSendButton(Import anImport) {
+		return anImport != null && (ImportStatus.CREATED.equals(anImport.getStatus()) || ImportStatus.FAILED.equals(anImport.getStatus()));
 	}
 
 	private void addFilter(ListDataProvider<Import> dataProvider, HeaderRow filterRow, Grid.Column<Import> columnName, FieldFilter fieldFilter) {
