@@ -98,7 +98,6 @@ public class TranscriptionPlatformServiceTest {
         Assert.assertEquals("test12345", transcriptions.get(1).getAsObject().get("transcription").getAsString().value());
     }
 
-    @Ignore("Large read timeout, should be uncomment after performance improvement in tp api and timeout decreased")
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnTimeoutWhileFetchingTranscriptions() {
         wireMockRule.resetAll();
@@ -138,7 +137,6 @@ public class TranscriptionPlatformServiceTest {
         Assert.fail();
     }
 
-    @Ignore("Large read timeout, should be uncomment after performance improvement in tp api and timeout decreased")
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnTimeoutWhileSendingAnnotationUrl() {
         wireMockRule.resetAll();

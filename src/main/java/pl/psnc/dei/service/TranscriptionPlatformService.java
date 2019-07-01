@@ -13,6 +13,8 @@ import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.hibernate.Hibernate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -22,10 +24,10 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
@@ -45,7 +47,8 @@ import java.util.*;
 @Transactional
 public class TranscriptionPlatformService {
 
-	public static final int READ_TIMEOUT_IN_SECONDS = 30;
+	public static final int READ_TIMEOUT_IN_SECONDS = 10;
+	private static final Logger logger = LoggerFactory.getLogger(TranscriptionPlatformService.class);
 	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
 	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 1;
 
@@ -213,22 +216,31 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
-		return JSON.parse(retrieveCurrentTranscription(transcription, response));
+
+		final String currentTranscription = retrieveCurrentTranscription(transcription.getTp_id(), response);
+		if (currentTranscription != null) {
+			return JSON.parse(currentTranscription);
+		}
+		return null;
 	}
 
-	private String retrieveCurrentTranscription(Transcription transcription, String enrichments){
-		String transcriptionId = transcription.getTp_id();
+	private String retrieveCurrentTranscription(String transcriptionId, String enrichments) {
 		JSONArray enrichmentsJson = null;
 		try {
 			JSONParser parser = new JSONParser();
 			enrichmentsJson = (JSONArray) parser.parse(enrichments);
 		} catch (ParseException e) {
-			e.printStackTrace();
+			logger.error("Parsing transcription error", e);
 		}
 
-		for(Object en: enrichmentsJson){
+		if(enrichmentsJson == null) {
+			logger.info("Empty transcription object {}", transcriptionId);
+			return null;
+		}
+
+		for (Object en : enrichmentsJson) {
 			JSONObject json = (JSONObject) en;
-			if(json.getAsString("AnnotationId").equals(transcriptionId)){
+			if (json.getAsString("AnnotationId").equals(transcriptionId)) {
 				return json.toJSONString();
 			}
 		}
@@ -280,6 +292,7 @@ public class TranscriptionPlatformService {
 
 	/**
 	 * Update import state based on records. This is possible only when the import is in IN_PROGRESS state.
+	 *
 	 * @param anImport import object
 	 */
 	public void updateImportState(Import anImport) {
@@ -301,9 +314,9 @@ public class TranscriptionPlatformService {
 	 * Adds failure information to the specified import. The failure is related to the record specified as recordIdentifier
 	 * and the reason of failure is passed in message parameter.
 	 *
-	 * @param importName import name
+	 * @param importName       import name
 	 * @param recordIdentifier record identifier
-	 * @param message failure reason
+	 * @param message          failure reason
 	 * @throws NotFoundException when import not found
 	 */
 	public void addFailure(String importName, String recordIdentifier, String message) throws NotFoundException {
