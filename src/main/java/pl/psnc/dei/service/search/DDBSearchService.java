@@ -93,7 +93,7 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 		return Mono.just(result);
 	}
 
-	public JsonObject retrieveRecordFromDDBAndConvertToJsonLd(String recordId) {
+	public JsonObject retrieveRecordAndConvertToJsonLd(String recordId) {
 		logger.info("Retrieving record from ddb {}", recordId);
 
 		String xmlRecord = webClient.get()

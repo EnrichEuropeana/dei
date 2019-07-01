@@ -60,7 +60,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 
 	private JsonObject getRecordData(String recordId) {
 		try {
-			return europeanaSearchService.retrieveRecordFromEuropeanaAndConvertToJsonLd(recordId);
+			return europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
 		} catch (Exception e) {
 			logger.warn("Cannot retrieve record data from Europeana Record API.", e);
 			return null;

@@ -33,7 +33,7 @@ public class ConversionTask extends Task {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
-				recordJson = ess.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 				break;
 			case DDB:
 				recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());

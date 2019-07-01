@@ -50,11 +50,11 @@ public class DDBSearchResultProcessorTest {
 	}
 
 	private void setupRestResponse() {
-		when(ddbSearchService.retrieveRecordFromDDBAndConvertToJsonLd(anyString())).thenReturn(ddbRestResponse);
+		when(ddbSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(ddbRestResponse);
 	}
 
 	private void setupServiceUnavailable() {
-		when(ddbSearchService.retrieveRecordFromDDBAndConvertToJsonLd(anyString())).thenThrow(new RuntimeException());
+		when(ddbSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenThrow(new RuntimeException());
 	}
 
 	private SearchResult getSearchResult () {

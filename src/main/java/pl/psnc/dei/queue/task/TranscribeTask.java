@@ -36,7 +36,7 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				recordJson = ess.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;

@@ -32,19 +32,19 @@ public class EuropeanaSearchResultProcessorTest {
 	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaSearchService, recordDataCache);
 
 	private void setupWithIiif() {
-		when(europeanaSearchService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseIiif);
+		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseIiif);
 	}
 
 	private void setupNoIiif() {
-		when(europeanaSearchService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseNoIiif);
+		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseNoIiif);
 	}
 
 	private void setupNoIiifWrongMimeType() {
-		when(europeanaSearchService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseNoIiifWrongMimeType);
+		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseNoIiifWrongMimeType);
 	}
 
 	private void setupServiceUnavailable() {
-		when(europeanaSearchService.retrieveRecordFromEuropeanaAndConvertToJsonLd(anyString())).thenThrow(new RuntimeException());
+		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenThrow(new RuntimeException());
 	}
 
 	private SearchResult getSearchResult () {

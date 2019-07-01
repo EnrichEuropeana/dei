@@ -138,7 +138,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      * @param recordId record identifier that will be used for retrieval
      * @return Retrieved record in JSON_LD format
      */
-    public JsonObject retrieveRecordFromEuropeanaAndConvertToJsonLd(String recordId) {
+    public JsonObject retrieveRecordAndConvertToJsonLd(String recordId) {
         logger.info("Retrieving record from europeana {}", recordId);
         String record = webClient.get()
                 .uri(recordApiEndpoint + "/" + recordId + ".json-ld?wskey=" + apiKey)

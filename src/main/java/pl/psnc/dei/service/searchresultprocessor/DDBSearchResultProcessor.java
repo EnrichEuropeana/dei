@@ -100,7 +100,7 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 
 	private JsonObject getRecordData(String recordId) {
 		try {
-			return ddbSearchService.retrieveRecordFromDDBAndConvertToJsonLd(recordId);
+			return ddbSearchService.retrieveRecordAndConvertToJsonLd(recordId);
 		} catch (Exception e) {
 			logger.warn("Cannot retrieve record data for record {} from DDB items edm endpoint.", recordId, e);
 			return null;
