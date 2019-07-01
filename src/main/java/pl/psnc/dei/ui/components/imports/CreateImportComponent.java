@@ -214,7 +214,6 @@ public class CreateImportComponent extends VerticalLayout {
 			anImport = importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
 			Notification.show("Import was created", 3000, Notification.Position.TOP_CENTER);
 			updateComponents();
-			//importPage.showCreateListImportView();
 		});
 		actionButtons.add(createButton);
 
@@ -228,7 +227,6 @@ public class CreateImportComponent extends VerticalLayout {
 			importPackageService.updateImport(anImport, selectedRecordsForImport);
 			Notification.show("Import was updated", 3000, Notification.Position.TOP_CENTER);
 			updateComponents();
-			//importPage.showCreateListImportView();
 		});
 		actionButtons.add(updateButton);
 
@@ -239,7 +237,6 @@ public class CreateImportComponent extends VerticalLayout {
 				importPackageService.sendExistingImport(anImport.getName());
 				Notification.show("Sending import started", 3000, Notification.Position.TOP_CENTER);
 				updateComponents();
-				//importPage.showCreateListImportView();
 			} catch (NotFoundException ex) {
 				Notification.show("Something goes wrong", 3000, Notification.Position.TOP_CENTER);
 				logger.error("Import not found!", ex);

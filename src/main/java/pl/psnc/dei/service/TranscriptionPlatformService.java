@@ -3,6 +3,10 @@ package pl.psnc.dei.service;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
+import net.minidev.json.parser.JSONParser;
+import net.minidev.json.parser.ParseException;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
@@ -41,7 +45,7 @@ import java.util.*;
 @Transactional
 public class TranscriptionPlatformService {
 
-	public static final int READ_TIMEOUT_IN_SECONDS = 600;
+	public static final int READ_TIMEOUT_IN_SECONDS = 30;
 	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
 	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 1;
 
@@ -153,7 +157,7 @@ public class TranscriptionPlatformService {
 		String recordTranscriptions =
 				this.webClient
 						.get()
-						.uri(urlBuilder.urlForRecordEnrichments(record, null))
+						.uri(urlBuilder.urlForRecordEnrichments(record, null, null, null))
 						.retrieve()
 						.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
 						.bodyToMono(String.class)
@@ -196,7 +200,7 @@ public class TranscriptionPlatformService {
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
 		String response = this.webClient
 				.get()
-				.uri(urlBuilder.urlForRecordEnrichments(transcription.getRecord(), transcription.getAnnotationId()))
+				.uri(urlBuilder.urlForRecordEnrichments(transcription.getRecord(), transcription.getAnnotationId(), transcription.getTp_id(), "transcribing"))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
@@ -209,8 +213,26 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
-		// TODO retrieve just the transcription that we need
-		return JSON.parse(response);
+		return JSON.parse(retrieveCurrentTranscription(transcription, response));
+	}
+
+	private String retrieveCurrentTranscription(Transcription transcription, String enrichments){
+		String transcriptionId = transcription.getTp_id();
+		JSONArray enrichmentsJson = null;
+		try {
+			JSONParser parser = new JSONParser();
+			enrichmentsJson = (JSONArray) parser.parse(enrichments);
+		} catch (ParseException e) {
+			e.printStackTrace();
+		}
+
+		for(Object en: enrichmentsJson){
+			JSONObject json = (JSONObject) en;
+			if(json.getAsString("AnnotationId").equals(transcriptionId)){
+				return json.toJSONString();
+			}
+		}
+		return null;
 	}
 
 	public void createNewEnrichTask(String recordId) throws NotFoundException {

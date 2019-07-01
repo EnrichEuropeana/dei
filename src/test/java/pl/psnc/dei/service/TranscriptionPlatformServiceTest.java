@@ -34,10 +34,6 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 })
 public class TranscriptionPlatformServiceTest {
 
-    @Test
-    public void test() {
-    }
-
     @Rule
     public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().port(8181));
 

@@ -84,7 +84,6 @@ public class ImportsListComponent extends VerticalLayout {
 			try {
 				importPackageService.sendExistingImport(anImport.getName());
 				Notification.show("Sending import started", 3000, Notification.Position.TOP_CENTER);
-				//importPage.showCreateListImportView();
 			} catch (NotFoundException ex) {
 				Notification.show("Something goes wrong", 3000, Notification.Position.TOP_CENTER);
 				logger.error("Import not found!", ex);

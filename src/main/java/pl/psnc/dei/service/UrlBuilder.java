@@ -22,6 +22,9 @@ public class UrlBuilder {
     private static final String IMPORT_NAME_PARAM = "importName=";
     private static final String STORY_ID_PARAM = "storyId=";
     private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
+    private static final String ANNOTATION_ID = "annotationId=";
+    private static final String MOTIVATION = "motivation=";
+
 
 	@Value("${transcription.api.url}")
 	private String transcriptionPlatformLocation;
@@ -55,10 +58,6 @@ public class UrlBuilder {
         return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + "/" + transcription.getTp_id();
     }
 
-    public String urlForTranscriptionUpdate(Transcription transcription) {
-        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + "/" + transcription.getTp_id() + "?annotationId=" + transcription.getAnnotationId();
-    }
-
     public String urlForProjectDatasets(Project project) {
         return transcriptionPlatformLocation + PROJECTS_SUFFIX + '/' + project.getProjectId() + DATASETS_SUFFIX;
     }
@@ -68,7 +67,7 @@ public class UrlBuilder {
         //todo change to real url
     }
 
-    public String urlForRecordEnrichments(Record record, String europeanaAnnotationId) {
+    public String urlForRecordEnrichments(Record record, String europeanaAnnotationId, String annotationId, String motivation) {
         String url = transcriptionPlatformLocation
                 + ENRICHMENTS_SUFFIX
                 + '?'
@@ -79,7 +78,19 @@ public class UrlBuilder {
                     + EUROPEANA_ANNOTATION_ID_PARAM
                     + europeanaAnnotationId;
         }
+
+        if (annotationId != null) {
+        	url += '&'
+					+ ANNOTATION_ID
+					+ annotationId;
+		}
+
+        if (motivation != null) {
+        	url += '&'
+					+ MOTIVATION
+					+ motivation;
+        }
+
         return url;
     }
-
 }
