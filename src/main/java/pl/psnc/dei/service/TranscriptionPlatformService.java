@@ -240,7 +240,12 @@ public class TranscriptionPlatformService {
 
 		for (Object en : enrichmentsJson) {
 			JSONObject json = (JSONObject) en;
-			if (json.getAsString("AnnotationId").equals(transcriptionId)) {
+			final String annotationId = json.getAsString("AnnotationId");
+			if(annotationId == null) {
+				logger.info("Missing field AnnotationId for transcription {}", transcriptionId);
+				return null;
+			}
+			if (annotationId.equals(transcriptionId)) {
 				return json.toJSONString();
 			}
 		}
