@@ -55,7 +55,7 @@ public class ImportPage extends HorizontalLayout {
 		if (displayingPlace != null) {
 			remove(displayingPlace);
 		}
-		displayingPlace = new ImportsListComponent(importsRepository, this);
+		displayingPlace = new ImportsListComponent(importsRepository, importPackageService, this);
 		add(displayingPlace);
 	}
 

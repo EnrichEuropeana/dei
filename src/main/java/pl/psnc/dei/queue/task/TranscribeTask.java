@@ -5,6 +5,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
@@ -57,9 +58,19 @@ public class TranscribeTask extends Task {
 					}
 				}
 			case T_SEND_RESULT:
-				tps.sendRecord(recordJson);
 				try {
-					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
+					tps.sendRecord(recordJson, record);
+					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
+					tps.updateImportState(record.getAnImport());
+				} catch (TranscriptionPlatformException e) {
+					try {
+						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+						tps.addFailure(record.getAnImport().getName(), record.getIdentifier(), e.getMessage());
+						tps.updateImportState(record.getAnImport());
+					} catch (NotFoundException e1) {
+						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+								+ ", identifier: " + record.getIdentifier(), e1);
+					}
 				} catch (NotFoundException e) {
 					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 							+ ", identifier: " + record.getIdentifier(), e);

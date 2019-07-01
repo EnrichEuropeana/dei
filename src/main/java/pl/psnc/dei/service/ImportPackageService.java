@@ -19,10 +19,7 @@ import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static pl.psnc.dei.util.ImportNameCreatorUtil.generateImportName;
 
@@ -43,6 +40,8 @@ public class ImportPackageService extends RestRequestExecutor {
 	private DatasetsReposotory datasetsReposotory;
 	@Autowired
 	private UrlBuilder urlBuilder;
+	@Autowired
+	private TranscriptionPlatformService transcriptionPlatformService;
 
 	public ImportPackageService(WebClient.Builder weBuilder) {
 		configure(weBuilder);
@@ -144,33 +143,17 @@ public class ImportPackageService extends RestRequestExecutor {
 	 */
 	public void sendExistingImport(String importName) throws NotFoundException {
 		log.info("Sending existing import {}", importName);
-		Import anImport = importsRepository.findImportByName(importName);
-		if (anImport == null) {
+		Optional<Import> anImport = importsRepository.findImportByName(importName);
+		if (!anImport.isPresent()) {
 			throw new NotFoundException("Import not found");
 		}
-		anImport.setStatus(ImportStatus.IN_PROGRESS);
-		importsRepository.save(anImport);
-		webClient.post()
-				.uri(urlBuilder.urlForSendingImport())
-				.body(BodyInserters.fromObject(anImport))
-				.retrieve()
-				.onStatus(HttpStatus::is4xxClientError, (clientResponse) -> {
-					log.info("Failed to send import {} {}", clientResponse.statusCode(), clientResponse.rawStatusCode());
-					anImport.setStatus(ImportStatus.FAILED);
-					return Mono.empty();
-				})
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-					log.info("Failed to send import {} {}", clientResponse.statusCode(), clientResponse.rawStatusCode());
-					anImport.setStatus(ImportStatus.FAILED);
-					return Mono.empty();
-				})
-				.onStatus(HttpStatus::is2xxSuccessful, clientResponse -> {
-					log.info("Import send successfully {}", clientResponse.statusCode());
-					anImport.setStatus(ImportStatus.SENT);
-					return Mono.empty();
-				})
-				.bodyToMono(Object.class).block();
-		importsRepository.save(anImport);
+		// sending is possible only for created (first attempt) or failed (another attempt) imports with non empty records list
+		if ((ImportStatus.CREATED.equals(anImport.get().getStatus()) || ImportStatus.FAILED.equals(anImport.get().getStatus()))
+			&& !anImport.get().getRecords().isEmpty()) {
+			anImport.get().setStatus(ImportStatus.IN_PROGRESS);
+			importsRepository.save(anImport.get());
+			transcriptionPlatformService.sendImport(anImport.get().getName());
+		}
 	}
 
 	/**
@@ -190,22 +173,22 @@ public class ImportPackageService extends RestRequestExecutor {
 	 */
 	public ImportReport getStatusWithFailure(String importName) throws NotFoundException {
 		log.info("Getting status with failure {}", importName);
-		Import anImport = importsRepository.findImportByName(importName);
-		if (anImport == null) {
+		Optional<Import> anImport = importsRepository.findImportByName(importName);
+		if (!anImport.isPresent()) {
 			log.error("Empty import name for getting import status");
 			throw new NotFoundException("Import not found");
 		}
-		return ImportReport.from(anImport.getStatus(), new ArrayList<>(anImport.getFailures()));
+		return ImportReport.from(anImport.get().getStatus(), new ArrayList<>(anImport.get().getFailures()));
 	}
 
 	public Import addRecordsToImport(String importName, Set<Record> records) throws NotFoundException {
 		log.info("Adding records to import {}, records {}", importName, records);
-		Import anImport = importsRepository.findImportByName(importName);
-		if (anImport == null) {
+		Optional<Import> anImport = importsRepository.findImportByName(importName);
+		if (!anImport.isPresent()) {
 			throw new NotFoundException("Import not found");
 		}
-		updateRecords(records, anImport);
-		return anImport;
+		updateRecords(records, anImport.get());
+		return anImport.get();
 	}
 
 	private void updateRecords(Set<Record> records, Import anImport) {
