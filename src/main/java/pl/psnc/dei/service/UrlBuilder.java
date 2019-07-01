@@ -64,7 +64,6 @@ public class UrlBuilder {
 
     public String urlForSendingImport() {
         return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
-        //todo change to real url
     }
 
     public String urlForRecordEnrichments(Record record, String europeanaAnnotationId, String annotationId, String motivation) {

@@ -39,7 +39,7 @@ public class EnrichTask extends Task {
 		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
 			Transcription transcription = new Transcription();
 			transcription.setRecord(record);
-//					transcription.setTp_id(val.get("transcriptionId").toString()); TODO change transcriptionId to value provided by TP
+			transcription.setTp_id(val.getAsObject().get("transcriptionId").toString());
 			transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
 			transcriptions.put(transcription.getTp_id(), transcription);
 		}
