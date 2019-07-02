@@ -27,13 +27,10 @@ public class LogoutPage extends HorizontalLayout implements BeforeEnterObserver 
                 UI.getCurrent().getSession().getSession().invalidate();
                 VaadinServletRequest.getCurrent().getHttpServletRequest().logout();
                 SecurityContextHolder.clearContext();
-                beforeEnterEvent.forwardTo(MainView.class);
             } catch (Exception e) {
                 logger.error("Error while logging out", e);
                 // redirect to error page
             }
-        } else {
-            beforeEnterEvent.forwardTo(MainView.class);
         }
     }
 }
