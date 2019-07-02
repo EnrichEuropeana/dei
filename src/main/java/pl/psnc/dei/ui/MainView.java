@@ -18,7 +18,6 @@ import pl.psnc.dei.ui.pages.ImportPage;
 import pl.psnc.dei.ui.pages.LogoutPage;
 import pl.psnc.dei.ui.pages.SearchPage;
 
-//@Push
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
 @BodySize(height = "100%", width = "100%")
