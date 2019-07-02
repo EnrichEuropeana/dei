@@ -54,6 +54,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private HorizontalLayout switchingTables;
 	private Component actionButtons;
+	private Label statusLabel;
 
 	private Input importName;
 	private Project project;
@@ -150,7 +151,8 @@ public class CreateImportComponent extends VerticalLayout {
 
 			HorizontalLayout statusLayout = new HorizontalLayout();
 			statusLayout.add(new Label("Import status"));
-			statusLayout.add(new Label(ImportStatus.NEW.toString()));
+			statusLabel = new Label(ImportStatus.NEW.toString());
+			statusLayout.add(statusLabel);
 			add(statusLayout);
 		} else {
 			HorizontalLayout importNameLayout = new HorizontalLayout();
@@ -163,7 +165,8 @@ public class CreateImportComponent extends VerticalLayout {
 
 			HorizontalLayout statusLayout = new HorizontalLayout();
 			statusLayout.add(new Label("Import status"));
-			statusLayout.add(new Label(anImport.getStatus().toString()));
+			statusLabel = new Label(anImport.getStatus().toString());
+			statusLayout.add(statusLabel);
 			add(statusLayout);
 		}
 		refresh();
@@ -208,9 +211,9 @@ public class CreateImportComponent extends VerticalLayout {
 				Notification.show("Import cannot be empty", 3000, Notification.Position.TOP_CENTER);
 				return;
 			}
-			importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
+			anImport = importPackageService.createImport(importName.getValue(), project.getProjectId(), selectedRecordsForImport);
 			Notification.show("Import was created", 3000, Notification.Position.TOP_CENTER);
-			importPage.showCreateListImportView();
+			updateComponents();
 		});
 		actionButtons.add(createButton);
 
@@ -223,7 +226,7 @@ public class CreateImportComponent extends VerticalLayout {
 			}
 			importPackageService.updateImport(anImport, selectedRecordsForImport);
 			Notification.show("Import was updated", 3000, Notification.Position.TOP_CENTER);
-			importPage.showCreateListImportView();
+			updateComponents();
 		});
 		actionButtons.add(updateButton);
 
@@ -232,8 +235,8 @@ public class CreateImportComponent extends VerticalLayout {
 		sendButton.addClickListener(e -> {
 			try {
 				importPackageService.sendExistingImport(anImport.getName());
-				Notification.show("Import was send", 3000, Notification.Position.TOP_CENTER);
-				importPage.showCreateListImportView();
+				Notification.show("Sending import started", 3000, Notification.Position.TOP_CENTER);
+				updateComponents();
 			} catch (NotFoundException ex) {
 				Notification.show("Something goes wrong", 3000, Notification.Position.TOP_CENTER);
 				logger.error("Import not found!", ex);
@@ -242,6 +245,23 @@ public class CreateImportComponent extends VerticalLayout {
 		actionButtons.add(sendButton);
 
 		return actionButtons;
+	}
+
+	private void updateComponents() {
+		if (anImport != null) {
+			statusLabel.setText(anImport.getStatus().toString());
+		}
+		actionButtons.getChildren().filter(component -> component instanceof Button).forEach(component -> {
+			Button button = (Button) component;
+			if (button.getText().equals("Create")) {
+				button.setEnabled(shouldShowCreateButton());
+			} else if (button.getText().equals("Update")) {
+				button.setEnabled(shouldShowUpdateButton());
+			} else if (button.getText().equals("Send")) {
+				button.setEnabled(shouldShowSendButton());
+			}
+		});
+		importName.setEnabled(anImport == null);
 	}
 
 	private boolean shouldShowSendButton() {
