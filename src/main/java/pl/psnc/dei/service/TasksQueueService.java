@@ -14,7 +14,7 @@ public class TasksQueueService {
 	private TasksQueue queue;
 
 	@Autowired
-	public TasksQueueService(TasksQueue tasksQueue,QueueRecordService queueRecordService, @Lazy TasksFactory tasksFactory) {
+	public TasksQueueService(TasksQueue tasksQueue,QueueRecordService queueRecordService, TasksFactory tasksFactory) {
 		queue = tasksQueue;
 		tasksFactory.setTasksQueueService(this);
 		for (Record record : queueRecordService.getRecordsToProcess()) {
