@@ -2,6 +2,7 @@ package pl.psnc.dei.queue.task;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.Converter;
@@ -23,6 +24,8 @@ public class TasksFactory {
 	@Autowired
 	private DDBFormatResolver ddbfr;
 
+	@Autowired
+	@Lazy
 	private TasksQueueService tqs;
 
 	@Autowired
