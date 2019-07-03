@@ -7,8 +7,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
-import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.util.IiifAvailability;
 
@@ -26,12 +26,12 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 
 	private RecordDataCache recordDataCache;
 
-	private EuropeanaRestService europeanaRestService;
+	private EuropeanaSearchService europeanaSearchService;
 
-	public EuropeanaSearchResultProcessor(EuropeanaRestService europeanaRestService,
+	public EuropeanaSearchResultProcessor(EuropeanaSearchService europeanaSearchService,
 										  RecordDataCache recordDataCache) {
 		this.recordDataCache = recordDataCache;
-		this.europeanaRestService = europeanaRestService;
+		this.europeanaSearchService = europeanaSearchService;
 	}
 
 	@Override
@@ -60,7 +60,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 
 	private JsonObject getRecordData(String recordId) {
 		try {
-			return europeanaRestService.retrieveRecordFromEuropeanaAndConvertToJsonLd(recordId);
+			return europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
 		} catch (Exception e) {
 			logger.warn("Cannot retrieve record data from Europeana Record API.", e);
 			return null;
