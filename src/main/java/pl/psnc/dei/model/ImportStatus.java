@@ -3,9 +3,9 @@ package pl.psnc.dei.model;
 /**
  * Import status:
  * NEW when an import was created but it is not stored in DB yet,
- * CREATED when an import was created and stored in DB but preparation has not started yet
- * IN_PROGRESS when preparation of the import is in progress
- * FAILED when an import was sent but there a failure
+ * CREATED when an import was created and stored in DB and preparation is in progress (records can be added or removed)
+ * IN_PROGRESS when sending of the import is in progress
+ * FAILED when an import was sent but there was a failure
  * SENT when an import was sent successfully
  */
 public enum ImportStatus {
