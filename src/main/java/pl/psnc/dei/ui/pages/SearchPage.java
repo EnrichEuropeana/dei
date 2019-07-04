@@ -103,6 +103,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         createFacetComponent();
         add(facets, searchResultsList);
         expand(searchResultsList);
+        UI.getCurrent().setPollInterval(1000);
     }
 
     /**
