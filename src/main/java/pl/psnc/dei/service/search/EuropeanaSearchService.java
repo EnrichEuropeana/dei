@@ -109,8 +109,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
                 .bodyToMono(String.class)
                 .block();
     }
@@ -126,8 +132,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                 .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
                 .bodyToMono(String.class)
                 .block();
     }
@@ -143,8 +155,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         String record = webClient.get()
                 .uri(recordApiEndpoint + "/" + recordId + ".json-ld?wskey=" + apiKey)
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    logger.error("Error {} while retrieving record. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while retrieving record. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
                 .bodyToMono(String.class)
                 .block();
         return JSON.parse(record);
