@@ -100,7 +100,16 @@ public class TranscriptionPlatformService {
 
 	public void refreshAvailableProjects() {
 		availableProjects = new ArrayList<>();
-		Project[] projects = webClient.get().uri(urlBuilder.urlForAllProjects()).retrieve().bodyToMono(Project[].class).block();
+		Project[] projects = webClient.get().uri(urlBuilder.urlForAllProjects()).retrieve()
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+					logger.error("Error {} while getting project. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+				})
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+					logger.error("Error {} while gerring project. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+				})
+				.bodyToMono(Project[].class).block();
 		if (projects == null)
 			return;
 
