@@ -1,10 +1,12 @@
 package pl.psnc.dei.queue.task;
 
+import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
+@Transactional
 public abstract class Task {
 
 	QueueRecordService queueRecordService;
