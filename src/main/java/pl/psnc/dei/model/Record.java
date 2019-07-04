@@ -37,7 +37,7 @@ public class Record {
     private Dataset dataset;
 
     @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Import anImport;
 
     @JsonIgnore
