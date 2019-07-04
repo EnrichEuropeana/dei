@@ -54,7 +54,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 	}
 
 	@Bean
-	public KeycloakRestTemplate createKeycloakRestTemplate( ) {
+	public KeycloakRestTemplate createKeycloakRestTemplate() {
 		return new KeycloakRestTemplate(keycloakClientRequestFactory);
 	}
 
