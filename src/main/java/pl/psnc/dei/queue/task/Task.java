@@ -1,25 +1,25 @@
 package pl.psnc.dei.queue.task;
 
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 public abstract class Task {
 
 	QueueRecordService queueRecordService;
 	TranscriptionPlatformService tps;
-	EuropeanaRestService ers;
+	EuropeanaSearchService ess;
 
 	protected TaskState state;
 
 	protected Record record;
 
-	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaRestService ers) {
+	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess) {
 		this.record = record;
 		this.queueRecordService = queueRecordService;
 		this.tps = tps;
-		this.ers = ers;
+		this.ess = ess;
 	}
 
 	public Record getRecord() {

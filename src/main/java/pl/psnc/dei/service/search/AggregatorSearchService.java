@@ -1,5 +1,6 @@
 package pl.psnc.dei.service.search;
 
+import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
@@ -12,4 +13,7 @@ public interface AggregatorSearchService {
 	String UTF_8_ENCODING = "UTF-8";
 
 	Mono<SearchResponse> search(String query, Map<String, String> requestParams, int rowsPerPage);
-}
+
+	JsonObject retrieveRecordAndConvertToJsonLd(String recordId);
+
+	}

@@ -2,11 +2,13 @@ package pl.psnc.dei.queue.task;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 @Service
 public class TasksFactory {
@@ -18,11 +20,13 @@ public class TasksFactory {
 	private TranscriptionPlatformService tps;
 
 	@Autowired
-	private EuropeanaRestService ers;
+	private EuropeanaSearchService ess;
 
 	@Autowired
 	private DDBFormatResolver ddbfr;
 
+	@Autowired
+	@Lazy
 	private TasksQueueService tqs;
 
 	@Autowired
@@ -34,13 +38,13 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ers);
+				return new EnrichTask(record, qrs, tps, ess);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ers, tqs, serverUrl, this);
+				return new TranscribeTask(record, qrs, tps, ess, tqs, serverUrl, this);
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ers);
+				return new UpdateTask(record, qrs, tps, ess);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ers, ddbfr, tqs, converter, this);
+				return new ConversionTask(record, qrs, tps, ess, ddbfr, tqs, converter, this);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
@@ -48,7 +52,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ers);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess);
 	}
 
 	public void setTasksQueueService(TasksQueueService tasksQueueService) {

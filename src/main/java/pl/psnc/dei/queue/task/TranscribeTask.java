@@ -6,10 +6,10 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
-import pl.psnc.dei.service.EuropeanaRestService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
@@ -25,8 +25,8 @@ public class TranscribeTask extends Task {
 	private String serverUrl;
 
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaRestService ers, TasksQueueService tqs, String serverUrl, TasksFactory tasksFactory) {
-		super(record, queueRecordService, tps, ers);
+				   EuropeanaSearchService ess, TasksQueueService tqs, String serverUrl, TasksFactory tasksFactory) {
+		super(record, queueRecordService, tps, ess);
 		this.tqs = tqs;
 		this.state = TaskState.T_RETRIEVE_RECORD;
 		this.serverUrl = serverUrl;
@@ -37,7 +37,7 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				recordJson = ers.retrieveRecordFromEuropeanaAndConvertToJsonLd(record.getIdentifier());
+				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
