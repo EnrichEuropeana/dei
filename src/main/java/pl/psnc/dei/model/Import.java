@@ -8,7 +8,6 @@ import java.util.Date;
 import java.util.Set;
 
 @Entity
-@Transactional
 public class Import {
     @Id
     @GeneratedValue
