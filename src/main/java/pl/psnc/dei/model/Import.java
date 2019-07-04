@@ -1,12 +1,14 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Set;
 
 @Entity
+@Transactional
 public class Import {
     @Id
     @GeneratedValue
