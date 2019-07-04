@@ -131,6 +131,7 @@ public class TranscriptionPlatformService {
 	 */
 
 	public void sendRecord(JsonObject recordBody, Record record) throws TranscriptionPlatformException {
+		Hibernate.initialize(record.getAnImport());
 		this.webClient.post()
 				.uri(urlBuilder.urlForSendingRecord(record))
 				.contentType(MediaType.APPLICATION_JSON)
