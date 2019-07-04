@@ -13,9 +13,9 @@ import java.util.Map;
 @Entity
 public class Record {
 
-    @Id
-    @GeneratedValue
-    private long id;
+	@Id
+	@GeneratedValue
+	private long id;
 
 	/**
 	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)
@@ -23,42 +23,50 @@ public class Record {
 	 */
 	private String identifier;
 
-    @Convert(converter = RecordStateConverter.class)
+	@Convert(converter = RecordStateConverter.class)
 	@Column(columnDefinition = "int default 0")
-    private RecordState state;
+	private RecordState state;
 
 	@JsonIgnore
-    @ManyToOne
+	@ManyToOne
 	@Cascade(value = {org.hibernate.annotations.CascadeType.SAVE_UPDATE, org.hibernate.annotations.CascadeType.MERGE})
-    private Project project;
+	private Project project;
 
-    @JsonIgnore
-    @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
-    private Dataset dataset;
+	@JsonIgnore
+	@ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.EAGER)
+	private Dataset dataset;
 
-    @JsonIgnore
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Import anImport;
+	@JsonIgnore
+	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	private Import anImport;
 
-    @JsonIgnore
-    @OneToMany(orphanRemoval = true)
-    private List<Transcription> transcriptions;
+	@JsonIgnore
+	@OneToMany(orphanRemoval = true)
+	private List<Transcription> transcriptions;
 
-    @JsonIgnore
-    private String iiifManifest;
+	@JsonIgnore
+	private String iiifManifest;
 
 	@JsonIgnore
 	@Convert(converter = AggregatorConverter.class)
-    private Aggregator aggregator;
+	private Aggregator aggregator;
 
-    public Record() {
-    }
+	@JsonIgnore
+	private String title;
 
-    public Record(String identifier) {
-        this.identifier = identifier;
-    }
+	public Record() {
+	}
 
-	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest, Aggregator aggregator) {
+	public Record(String identifier, String title) {
+		this.identifier = identifier;
+		this.title = title;
+	}
+
+	public Record(String identifier) {
+		this.identifier = identifier;
+	}
+
+	public Record(String identifier, RecordState state, Project project, Dataset dataset, Import anImport, List<Transcription> transcriptions, String iiifManifest, Aggregator aggregator, String title) {
 		this.identifier = identifier;
 		this.state = state;
 		this.project = project;
@@ -67,6 +75,15 @@ public class Record {
 		this.transcriptions = transcriptions;
 		this.iiifManifest = iiifManifest;
 		this.aggregator = aggregator;
+		this.title = title;
+	}
+
+	public String getTitle() {
+		return title;
+	}
+
+	public void setTitle(String title) {
+		this.title = title;
 	}
 
 	public long getId() {
@@ -74,44 +91,44 @@ public class Record {
 	}
 
 	public String getIdentifier() {
-        return identifier;
-    }
+		return identifier;
+	}
 
-    public void setIdentifier(String identifier) {
-        this.identifier = identifier;
-    }
+	public void setIdentifier(String identifier) {
+		this.identifier = identifier;
+	}
 
-    public RecordState getState() {
-        return state;
-    }
+	public RecordState getState() {
+		return state;
+	}
 
-    public void setState(RecordState state) {
-        this.state = state;
-    }
+	public void setState(RecordState state) {
+		this.state = state;
+	}
 
-    public Project getProject() {
-        return project;
-    }
+	public Project getProject() {
+		return project;
+	}
 
-    public void setProject(Project project) {
-        this.project = project;
-    }
+	public void setProject(Project project) {
+		this.project = project;
+	}
 
-    public Dataset getDataset() {
-        return dataset;
-    }
+	public Dataset getDataset() {
+		return dataset;
+	}
 
-    public void setDataset(Dataset dataset) {
-        this.dataset = dataset;
-    }
+	public void setDataset(Dataset dataset) {
+		this.dataset = dataset;
+	}
 
-    public Import getAnImport() {
-        return anImport;
-    }
+	public Import getAnImport() {
+		return anImport;
+	}
 
-    public void setAnImport(Import anImport) {
-        this.anImport = anImport;
-    }
+	public void setAnImport(Import anImport) {
+		this.anImport = anImport;
+	}
 
 	public List<Transcription> getTranscriptions() {
 		return transcriptions;
@@ -160,25 +177,25 @@ public class Record {
 		T_SENT(7);
 
 
+		private static final Map<Integer, RecordState> map = new HashMap<>();
+
+		static {
+			for (RecordState state : RecordState.values())
+				map.put(state.value, state);
+		}
+
 		private final int value;
 
 		RecordState(int value) {
 			this.value = value;
 		}
 
-		public int getValue() {
-			return value;
-		}
-
-		private static final Map<Integer, RecordState> map = new HashMap<>();
-
-		static {
-			for(RecordState state : RecordState.values())
-				map.put(state.value, state);
-		}
-
 		public static RecordState getState(int value) {
 			return map.get(value);
+		}
+
+		public int getValue() {
+			return value;
 		}
 	}
 }

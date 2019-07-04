@@ -24,14 +24,15 @@ public class RecordsProjectsAssignmentService {
 		Aggregator aggregator = currentUserRecordSelection.getAggregator();
 		Project project = currentUserRecordSelection.getSelectedProject();
 		Dataset dataset = currentUserRecordSelection.getSelectedDataSet();
-		Set<String> recordIds = currentUserRecordSelection.getSelectedRecordIds();
-		if (recordIds != null) {
-			recordIds.forEach(recordId -> {
-				if (recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset) == null) {
-					Record record = recordsRepository.findByIdentifierAndProject(recordId, project);
+		Set<Record> records = currentUserRecordSelection.getSelectedRecords();
+		if (records != null) {
+			records.forEach(r -> {
+				if (recordsRepository.findByIdentifierAndProjectAndDataset(r.getIdentifier(), project, dataset) == null) {
+					Record record = recordsRepository.findByIdentifierAndProject(r.getIdentifier(), project);
 					if (record == null) {
 						Record newRecord = new Record();
-						newRecord.setIdentifier(recordId);
+						newRecord.setIdentifier(r.getIdentifier());
+						newRecord.setTitle(r.getTitle());
 						newRecord.setAggregator(aggregator);
 						newRecord.setProject(project);
 						newRecord.setDataset(dataset);

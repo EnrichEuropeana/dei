@@ -87,7 +87,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 		recordsGrid.addSelectionListener((SelectionListener<Grid<Record>, Record>) selectionEvent ->
 				deleteButton.setEnabled(!selectionEvent.getSource().getSelectedItems().isEmpty()));
 
-		Grid.Column<Record> recordIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("Id").setSortable(true).setFlexGrow(10);
+		Grid.Column<Record> recordIdColumn = recordsGrid.addColumn(Record::getTitle).setHeader("Title").setSortable(true).setFlexGrow(10);
 		Grid.Column<Record> datasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("Dataset").setSortable(true).setFlexGrow(10);
 
 		HeaderRow filterRow = recordsGrid.appendHeaderRow();

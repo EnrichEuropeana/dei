@@ -282,7 +282,7 @@ public class CreateImportComponent extends VerticalLayout {
 		ListDataProvider<Record> dataProvider = new ListDataProvider<>(records);
 		recordsGrid.setDataProvider(dataProvider);
 
-		Grid.Column<Record> importIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("id").setSortable(true).setFlexGrow(10);
+		Grid.Column<Record> importIdColumn = recordsGrid.addColumn(Record::getTitle).setHeader("title").setSortable(true).setFlexGrow(10);
 		Grid.Column<Record> importDatasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("dataset").setSortable(true).setFlexGrow(10);
 
 		recordsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
