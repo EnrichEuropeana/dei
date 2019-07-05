@@ -54,7 +54,7 @@ public class CurrentUserRecordSelection {
     }
 
     public boolean isRecordSelected(String recordId) {
-        return selectedRecords.contains(recordId);
+        return selectedRecords.stream().anyMatch(r -> r.getIdentifier().equals(recordId));
     }
 
     public boolean isRecordSelectedForImport(String recordId) {
