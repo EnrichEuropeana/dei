@@ -217,9 +217,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         aggregator.setLabel("Available aggregators");
         aggregator.setEmptySelectionAllowed(false);
         aggregator.addValueChangeListener(event -> {
-            if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
+            if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
                 ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
-                        "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+                        "There are " + currentUserRecordSelection.getSelectedRecords().size()
                                 + " selected but not added record(s). Record selection will be lost when aggregator is changed.",
                         e -> handleAggregatorChange(event.getValue()));
                 dialog.addContent("Are you sure you want to continue?");
@@ -289,7 +289,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         addElementsButton.addClickListener(
                 e -> {
                     recordsProjectsAssignmentService.saveSelectedRecords();
-					Notification.show(currentUserRecordSelection.getSelectedRecordIds().size() + " record(s) added!",
+					Notification.show(currentUserRecordSelection.getSelectedRecords().size() + " record(s) added!",
 							3000, Notification.Position.TOP_CENTER);
 					UI ui = UI.getCurrent();
 					ui.access(() -> resultsComponent.deselectAll());
@@ -341,9 +341,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     }
 
     private void search(int aggregatorId, String query,  Map<String, String> requestParams, int rowsPerPage) {
-        if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty()) {
+        if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
             ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
-                    "There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+                    "There are " + currentUserRecordSelection.getSelectedRecords().size()
                             + " selected but not added record(s). Record selection will be lost with next search query execution.",
                     e -> executeSearch(aggregatorId, query, requestParams, rowsPerPage));
             dialog.addContent("Are you sure you want to continue?");
@@ -547,7 +547,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
 	@Override
 	public void beforeLeave(BeforeLeaveEvent beforeLeaveEvent) {
-		if (!currentUserRecordSelection.getSelectedRecordIds().isEmpty() && beforeLeaveEvent.getNavigationTarget() != getClass()) {
+		if (!currentUserRecordSelection.getSelectedRecords().isEmpty() && beforeLeaveEvent.getNavigationTarget() != getClass()) {
 			BeforeLeaveEvent.ContinueNavigationAction action = beforeLeaveEvent.postpone();
 
 			// replace the top most history state in the browser with this view's location
@@ -555,7 +555,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 			UI.getCurrent().getPage().executeJavaScript("history.replaceState({},'','" + originalLocation + "');");
 
 			ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
-					"There are " + currentUserRecordSelection.getSelectedRecordIds().size()
+					"There are " + currentUserRecordSelection.getSelectedRecords().size()
 							+ " selected but not added record(s). Record selection will be lost if you leave this page.",
 					e -> {
 						action.proceed();

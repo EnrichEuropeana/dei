@@ -4,6 +4,7 @@ import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.Record;
 
 public class RecordForImportComponent extends HorizontalLayout {
 
@@ -36,7 +37,7 @@ public class RecordForImportComponent extends HorizontalLayout {
 	}
 
 	private void addRecordIdForImport() {
-		currentUserRecordSelection.addSelectedRecordIdForImport(recordId);
+		currentUserRecordSelection.addSelectedRecordIdForImport(new Record(recordId));
 	}
 
 	private void removeRecordIdForImport() {

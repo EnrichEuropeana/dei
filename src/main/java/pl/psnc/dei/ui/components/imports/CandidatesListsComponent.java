@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 public class CandidatesListsComponent extends VerticalLayout {
 
-	private final CreateImportComponent.FieldFilter recordIdField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
+	private final CreateImportComponent.FieldFilter recordIdField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getTitle(), currentValue);
 	private final CreateImportComponent.FieldFilter recordDatasetField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private final ProjectsRepository projectsRepository;
@@ -87,7 +87,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 		recordsGrid.addSelectionListener((SelectionListener<Grid<Record>, Record>) selectionEvent ->
 				deleteButton.setEnabled(!selectionEvent.getSource().getSelectedItems().isEmpty()));
 
-		Grid.Column<Record> recordIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("Id").setSortable(true).setFlexGrow(10);
+		Grid.Column<Record> recordIdColumn = recordsGrid.addColumn(Record::getTitle).setHeader("Title").setSortable(true).setFlexGrow(10);
 		Grid.Column<Record> datasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("Dataset").setSortable(true).setFlexGrow(10);
 
 		HeaderRow filterRow = recordsGrid.appendHeaderRow();

@@ -22,8 +22,8 @@ public class CurrentUserRecordSelection {
     private Aggregator aggregator;
     private Project selectedProject;
     private Dataset selectedDataSet;
-    private Set<String> selectedRecordIds = new HashSet<>();
-    private List<String> selectedRecordIdsForImport = new ArrayList<>();
+    private Set<Record> selectedRecords = new HashSet<>();
+    private List<Record> selectedRecordsForImport = new ArrayList<>();
 
     public Aggregator getAggregator() {
         return aggregator;
@@ -54,48 +54,48 @@ public class CurrentUserRecordSelection {
     }
 
     public boolean isRecordSelected(String recordId) {
-        return selectedRecordIds.contains(recordId);
+        return selectedRecords.stream().anyMatch(r -> r.getIdentifier().equals(recordId));
     }
 
     public boolean isRecordSelectedForImport(String recordId) {
-        return selectedRecordIdsForImport.contains(recordId);
+        return selectedRecordsForImport.stream().anyMatch(r -> r.getIdentifier().equals(recordId));
     }
 
-    public Set<String> getSelectedRecordIds() {
-        return selectedRecordIds;
+    public Set<Record> getSelectedRecords() {
+        return selectedRecords;
     }
 
-    public List<String> getSelectedRecordIdsForImport() {
-        return Collections.unmodifiableList(selectedRecordIdsForImport);
+    public List<Record> getSelectedRecordsForImport() {
+        return Collections.unmodifiableList(selectedRecordsForImport);
     }
 
-    public void addSelectedRecordId(String recordId) {
-        log.info("Adding new record id ({}) to selected records set", recordId);
-        selectedRecordIds.add(recordId);
+    public void addSelectedRecord(Record record) {
+        log.info("Adding new record id ({}) to selected records set", record);
+        selectedRecords.add(record);
     }
 
     public void removeSelectedRecordId(String recordId) {
         log.info("Removing record id ({}) from selected records set", recordId);
-        selectedRecordIds.remove(recordId);
+        selectedRecords.removeIf((record -> record.getIdentifier().equals(recordId)));
     }
 
     public void clearSelectedRecords() {
         log.info("Removing all records");
-        selectedRecordIds = new HashSet<>();
+        selectedRecords = new HashSet<>();
     }
 
-    public void addSelectedRecordIdForImport(String recordId) {
-        log.info("Adding new record id ({}) to import", recordId);
-        selectedRecordIdsForImport.add(recordId);
+    public void addSelectedRecordIdForImport(Record record) {
+        log.info("Adding new record id ({}) to import", record);
+        selectedRecordsForImport.add(record);
     }
 
     public void removeSelectedRecordIdForImport(String recordId) {
         log.info("Removing record id ({}) from import", recordId);
-        selectedRecordIdsForImport.remove(recordId);
+        selectedRecordsForImport.removeIf(record -> record.getIdentifier().equals(recordId));
     }
 
     public void clearSelectedRecordsForImport() {
         log.info("Removing all records from import");
-        selectedRecordIdsForImport = new ArrayList<>();
+        selectedRecordsForImport = new ArrayList<>();
     }
 }

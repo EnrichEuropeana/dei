@@ -11,6 +11,7 @@ import com.vaadin.flow.component.orderedlayout.FlexComponent;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import pl.psnc.dei.model.CurrentUserRecordSelection;
+import pl.psnc.dei.model.Record;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.util.IiifAvailability;
 
@@ -77,9 +78,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 */
 	public void setRecordSelected(boolean isSelected) {
 		searchResultCheckBox.setValue(isSelected);
-		if (isSelected) {
-			currentUserRecordSelection.addSelectedRecordId(searchResult.getId());
-		} else {
+		if (!isSelected) {
 			currentUserRecordSelection.removeSelectedRecordId(searchResult.getId());
 		}
 	}
@@ -112,8 +111,8 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		searchResultCheckBox.setValue(isSelected);
 
 		searchResultCheckBox.addValueChangeListener(event -> {
-			if (event.getValue()) {
-				currentUserRecordSelection.addSelectedRecordId(event.getSource().getId().get());
+			if (event.getValue() && !event.getOldValue()) {
+				currentUserRecordSelection.addSelectedRecord(new Record(searchResult.getId(), searchResult.getTitle()));
 			} else {
 				currentUserRecordSelection.removeSelectedRecordId(event.getSource().getId().get());
 			}

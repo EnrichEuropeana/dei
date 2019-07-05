@@ -38,7 +38,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private static final Logger logger = LoggerFactory.getLogger(CreateImportComponent.class);
 
-	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
+	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getTitle(), currentValue);
 	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private RecordsRepository recordsRepository;
@@ -282,7 +282,7 @@ public class CreateImportComponent extends VerticalLayout {
 		ListDataProvider<Record> dataProvider = new ListDataProvider<>(records);
 		recordsGrid.setDataProvider(dataProvider);
 
-		Grid.Column<Record> importIdColumn = recordsGrid.addColumn(Record::getIdentifier).setHeader("id").setSortable(true).setFlexGrow(10);
+		Grid.Column<Record> importIdColumn = recordsGrid.addColumn(Record::getTitle).setHeader("title").setSortable(true).setFlexGrow(10);
 		Grid.Column<Record> importDatasetColumn = recordsGrid.addColumn(Record::getDataset).setHeader("dataset").setSortable(true).setFlexGrow(10);
 
 		recordsGrid.setSelectionMode(Grid.SelectionMode.MULTI);
