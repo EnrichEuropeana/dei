@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 
 public class CandidatesListsComponent extends VerticalLayout {
 
-	private final CreateImportComponent.FieldFilter recordIdField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
+	private final CreateImportComponent.FieldFilter recordIdField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getTitle(), currentValue);
 	private final CreateImportComponent.FieldFilter recordDatasetField = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private final ProjectsRepository projectsRepository;

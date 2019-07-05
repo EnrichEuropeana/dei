@@ -38,7 +38,7 @@ public class CreateImportComponent extends VerticalLayout {
 
 	private static final Logger logger = LoggerFactory.getLogger(CreateImportComponent.class);
 
-	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getIdentifier(), currentValue);
+	private final CreateImportComponent.FieldFilter importIdFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(currentRecord.getTitle(), currentValue);
 	private final CreateImportComponent.FieldFilter datasetFilter = (currentRecord, currentValue) -> StringUtils.containsIgnoreCase(getDatasetValue(currentRecord), currentValue);
 
 	private RecordsRepository recordsRepository;

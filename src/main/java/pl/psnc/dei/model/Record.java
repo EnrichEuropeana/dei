@@ -52,6 +52,7 @@ public class Record {
 	private Aggregator aggregator;
 
 	@JsonIgnore
+	@Lob
 	private String title;
 
 	public Record() {
