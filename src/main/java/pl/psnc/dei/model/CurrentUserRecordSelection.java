@@ -58,7 +58,7 @@ public class CurrentUserRecordSelection {
     }
 
     public boolean isRecordSelectedForImport(String recordId) {
-        return selectedRecordsForImport.contains(recordId);
+        return selectedRecordsForImport.stream().anyMatch(r -> r.getIdentifier().equals(recordId));
     }
 
     public Set<Record> getSelectedRecords() {
@@ -91,7 +91,7 @@ public class CurrentUserRecordSelection {
 
     public void removeSelectedRecordIdForImport(String recordId) {
         log.info("Removing record id ({}) from import", recordId);
-        selectedRecordsForImport.remove(recordId);
+        selectedRecordsForImport.removeIf(record -> record.getIdentifier().equals(recordId));
     }
 
     public void clearSelectedRecordsForImport() {
