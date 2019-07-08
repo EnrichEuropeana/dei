@@ -1,14 +1,16 @@
 package pl.psnc.dei.ui.components;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+@StyleSheet("frontend://styles/styles.css")
 class PageNavigationComponent extends HorizontalLayout {
 
     private int totalPages;
-
+    private int itemsPerPage;
     private int currentPage;
 
     private SearchResultsComponent searchResultsComponent;
@@ -21,6 +23,7 @@ class PageNavigationComponent extends HorizontalLayout {
      * @param totalItems total number of results needed to calculate total number of pages
      */
     PageNavigationComponent(SearchResultsComponent searchResultsComponent, int itemsPerPage, int totalItems) {
+        this.itemsPerPage = itemsPerPage;
         calculatePages(itemsPerPage, totalItems);
         this.searchResultsComponent = searchResultsComponent;
 
@@ -88,7 +91,8 @@ class PageNavigationComponent extends HorizontalLayout {
             createDotsButton(false);
 
             // last page
-            add(createButton(totalPages));
+
+            add(createLastPageButton(currentPage, totalPages));
         }
 
         // > - button for moving to next page
@@ -99,6 +103,29 @@ class PageNavigationComponent extends HorizontalLayout {
             }
         });
         add(button);
+    }
+
+    private Button createLastPageButton(int currentPage, int totalPages) {
+        final Button lastPageButton = createButton(totalPages);
+        boolean enableLastPage = false;
+        if(itemsPerPage == 10 && totalPages - currentPage < 50) {
+            enableLastPage = true;
+        }
+        if(itemsPerPage == 20 && totalPages - currentPage < 40) {
+            enableLastPage = true;
+        }
+        if(itemsPerPage == 50 && totalPages - currentPage < 30) {
+            enableLastPage = true;
+        }
+        if(itemsPerPage == 100 && totalPages - currentPage < 20) {
+            enableLastPage = true;
+        }
+        System.err.println(totalPages - currentPage < 30);
+        lastPageButton.setEnabled(enableLastPage);
+        if (!enableLastPage) {
+            lastPageButton.addClassName("button-disabled");
+        }
+        return lastPageButton;
     }
 
     /**
