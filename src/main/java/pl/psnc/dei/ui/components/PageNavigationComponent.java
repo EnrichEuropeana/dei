@@ -40,6 +40,7 @@ class PageNavigationComponent extends HorizontalLayout {
      * @param totalItems number of results
      */
     void resetPages(int itemsPerPage, int totalItems) {
+        this.itemsPerPage = itemsPerPage;
         calculatePages(itemsPerPage, totalItems);
         updateElements();
     }
@@ -105,6 +106,11 @@ class PageNavigationComponent extends HorizontalLayout {
         add(button);
     }
 
+    /**
+     * blocking last pages if too much pages, performance restriction
+     *
+     * @return
+     */
     private Button createLastPageButton(int currentPage, int totalPages) {
         final Button lastPageButton = createButton(totalPages);
         boolean enableLastPage = false;
@@ -120,7 +126,6 @@ class PageNavigationComponent extends HorizontalLayout {
         if(itemsPerPage == 100 && totalPages - currentPage < 20) {
             enableLastPage = true;
         }
-        System.err.println(totalPages - currentPage < 30);
         lastPageButton.setEnabled(enableLastPage);
         if (!enableLastPage) {
             lastPageButton.addClassName("button-disabled");
