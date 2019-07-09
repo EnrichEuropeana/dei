@@ -1,14 +1,29 @@
 package pl.psnc.dei.ui.components;
 
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.dependency.StyleSheet;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+import java.util.HashMap;
+import java.util.Map;
+
+@StyleSheet("frontend://styles/styles.css")
 class PageNavigationComponent extends HorizontalLayout {
 
-    private int totalPages;
+	private static final Map<Integer, Integer> THRESHOLDS;
 
+	static{
+		THRESHOLDS = new HashMap<>();
+		THRESHOLDS.put(10,50);
+		THRESHOLDS.put(20,40);
+		THRESHOLDS.put(50,30);
+		THRESHOLDS.put(100,20);
+	}
+
+    private int totalPages;
+    private int itemsPerPage;
     private int currentPage;
 
     private SearchResultsComponent searchResultsComponent;
@@ -21,6 +36,7 @@ class PageNavigationComponent extends HorizontalLayout {
      * @param totalItems total number of results needed to calculate total number of pages
      */
     PageNavigationComponent(SearchResultsComponent searchResultsComponent, int itemsPerPage, int totalItems) {
+        this.itemsPerPage = itemsPerPage;
         calculatePages(itemsPerPage, totalItems);
         this.searchResultsComponent = searchResultsComponent;
 
@@ -37,6 +53,7 @@ class PageNavigationComponent extends HorizontalLayout {
      * @param totalItems number of results
      */
     void resetPages(int itemsPerPage, int totalItems) {
+        this.itemsPerPage = itemsPerPage;
         calculatePages(itemsPerPage, totalItems);
         updateElements();
     }
@@ -88,7 +105,8 @@ class PageNavigationComponent extends HorizontalLayout {
             createDotsButton(false);
 
             // last page
-            add(createButton(totalPages));
+
+            add(createLastPageButton(currentPage, totalPages));
         }
 
         // > - button for moving to next page
@@ -99,6 +117,25 @@ class PageNavigationComponent extends HorizontalLayout {
             }
         });
         add(button);
+    }
+
+    /**
+     * blocking last pages if too much pages, performance restriction
+     *
+     * @return
+     */
+    private Button createLastPageButton(int currentPage, int totalPages) {
+        final Button lastPageButton = createButton(totalPages);
+        boolean enableLastPage = shouldEnableLastPage(currentPage, totalPages);
+        lastPageButton.setEnabled(enableLastPage);
+        if (!enableLastPage) {
+            lastPageButton.addClassName("button-disabled");
+        }
+        return lastPageButton;
+    }
+
+    private boolean shouldEnableLastPage(int currentPage, int totalPages) {
+		return totalPages - currentPage < THRESHOLDS.get(itemsPerPage);
     }
 
     /**

@@ -166,3 +166,8 @@
     font-weight: bold;
     padding-left: 15px!important;
 }
+
+.button-disabled {
+    opacity: 0.5;
+    background-color: lightgray
+}
