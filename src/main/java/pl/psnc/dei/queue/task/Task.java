@@ -24,6 +24,10 @@ public abstract class Task {
 		return record;
 	}
 
+	public TaskState getTaskState() {
+		return state;
+	}
+
 	public abstract void process();
 
 	/**

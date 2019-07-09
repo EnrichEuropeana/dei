@@ -36,7 +36,7 @@ public class TasksQueue implements Runnable {
 			try {
 				Task task = tasks.take();
 				try {
-					logger.info("Processing record {} with state {}", task.getRecord().getIdentifier(), task.getRecord().getState());
+					logger.info("Processing record {} with record state {} and task state {}", task.getRecord().getIdentifier(), task.getRecord().getState(), task.getTaskState());
 					task.process();
 					processingSuccessful();
 				} catch (Exception e) {
