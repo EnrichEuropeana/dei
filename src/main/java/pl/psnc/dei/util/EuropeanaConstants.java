@@ -33,9 +33,6 @@ public final class EuropeanaConstants {
 	public static final String[] PARAM_FACETS = {"COLOURPALETTE", "LANDINGPAGE", MEDIA, REUSABILITY, "TEXT_FULLTEXT", "THUMBNAIL"};
 
 	static {
-		EUROPEANA_DEFAULT_FACETS.put(MEDIA, "true");
-		EUROPEANA_DEFAULT_FACETS.put(REUSABILITY, "open");
-
 		FACET_LABELS = new HashMap<>();
 		FACET_LABELS.put("YEAR", "Year");
 		FACET_LABELS.put("RIGHTS", "Rights");
