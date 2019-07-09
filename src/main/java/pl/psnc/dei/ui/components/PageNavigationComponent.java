@@ -113,24 +113,17 @@ class PageNavigationComponent extends HorizontalLayout {
      */
     private Button createLastPageButton(int currentPage, int totalPages) {
         final Button lastPageButton = createButton(totalPages);
-        boolean enableLastPage = false;
-        if(itemsPerPage == 10 && totalPages - currentPage < 50) {
-            enableLastPage = true;
-        }
-        if(itemsPerPage == 20 && totalPages - currentPage < 40) {
-            enableLastPage = true;
-        }
-        if(itemsPerPage == 50 && totalPages - currentPage < 30) {
-            enableLastPage = true;
-        }
-        if(itemsPerPage == 100 && totalPages - currentPage < 20) {
-            enableLastPage = true;
-        }
+        boolean enableLastPage = shouldEnableLastPage(currentPage, totalPages);
         lastPageButton.setEnabled(enableLastPage);
         if (!enableLastPage) {
             lastPageButton.addClassName("button-disabled");
         }
         return lastPageButton;
+    }
+
+    private boolean shouldEnableLastPage(int currentPage, int totalPages) {
+        final int pageDiff = totalPages - currentPage;
+        return (itemsPerPage == 10 && pageDiff < 50) || (itemsPerPage == 20 && pageDiff < 40) || (itemsPerPage == 50 && pageDiff < 30) || (itemsPerPage == 100 && pageDiff < 20);
     }
 
     /**
