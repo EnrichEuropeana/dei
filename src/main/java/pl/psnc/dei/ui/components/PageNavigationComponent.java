@@ -6,8 +6,21 @@ import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @StyleSheet("frontend://styles/styles.css")
 class PageNavigationComponent extends HorizontalLayout {
+
+	private static final Map<Integer, Integer> THRESHOLDS;
+
+	static{
+		THRESHOLDS = new HashMap<>();
+		THRESHOLDS.put(10,50);
+		THRESHOLDS.put(20,40);
+		THRESHOLDS.put(50,30);
+		THRESHOLDS.put(100,20);
+	}
 
     private int totalPages;
     private int itemsPerPage;
@@ -122,8 +135,7 @@ class PageNavigationComponent extends HorizontalLayout {
     }
 
     private boolean shouldEnableLastPage(int currentPage, int totalPages) {
-        final int pageDiff = totalPages - currentPage;
-        return (itemsPerPage == 10 && pageDiff < 50) || (itemsPerPage == 20 && pageDiff < 40) || (itemsPerPage == 50 && pageDiff < 30) || (itemsPerPage == 100 && pageDiff < 20);
+		return totalPages - currentPage < THRESHOLDS.get(itemsPerPage);
     }
 
     /**
