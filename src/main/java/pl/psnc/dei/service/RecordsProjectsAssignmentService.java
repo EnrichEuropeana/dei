@@ -6,9 +6,8 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 
 import javax.transaction.Transactional;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -129,5 +128,9 @@ public class RecordsProjectsAssignmentService {
 	 */
 	public Set<Record> getAssignedRecords(Project project) {
 		return recordsRepository.findAllByProject(project);
+	}
+
+	public Set<Record> getRecordsWhichShouldBeBlocked(List<String> identifiers) {
+		return recordsRepository.findRecordsByIdentifierInAndAnImportNotNull(identifiers);
 	}
 }

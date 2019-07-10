@@ -1,6 +1,9 @@
 package pl.psnc.dei.ui.pages;
 
-import com.vaadin.flow.component.*;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
@@ -16,10 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
-import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.RecordsProjectsAssignmentService;
@@ -41,499 +41,491 @@ import java.util.stream.Collectors;
 @Secured(Role.OPERATOR)
 public class SearchPage extends HorizontalLayout implements HasUrlParameter<String>, BeforeLeaveObserver, AfterNavigationObserver {
 
-    private static final String AGGREGATOR_PARAM_NAME = "aggregator";
-    private static final String QUERY_PARAM_NAME = "query";
-    public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
-    private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
+	public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
+	private static final String AGGREGATOR_PARAM_NAME = "aggregator";
+	private static final String QUERY_PARAM_NAME = "query";
+	private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
 
-    private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
-
-    private Select<Aggregator> aggregator;
-
-    private TextField search;
-
-    private Checkbox searchOnlyIiif;
-
-    private FacetComponent facets;
-
-    private SearchResultsComponent resultsComponent;
-
-    private SearchService searchService;
-
-    private TranscriptionPlatformService transcriptionPlatformService;
-
-    private CurrentUserRecordSelection currentUserRecordSelection;
-
-    private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
-
+	private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
+	private static boolean onlyIiif = true;
+	private Select<Aggregator> aggregator;
+	private TextField search;
+	private Checkbox searchOnlyIiif;
+	private FacetComponent facets;
+	private SearchResultsComponent resultsComponent;
+	private SearchService searchService;
+	private TranscriptionPlatformService transcriptionPlatformService;
+	private CurrentUserRecordSelection currentUserRecordSelection;
+	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 	private SearchResultProcessorService searchResultProcessorService;
+	// label used when no results were found
+	private Label noResults;
+	private Button invertSelectionButton;
+	private Button selectAllButton;
+	private Button addElementsButton;
+	private String originalLocation;
+	private String query;
 
-    // label used when no results were found
-    private Label noResults;
+	private Map<String, String> requestParams;
 
-    private Button invertSelectionButton;
+	public SearchPage(SearchService searchService,
+					  TranscriptionPlatformService transcriptionPlatformService,
+					  CurrentUserRecordSelection currentUserRecordSelection,
+					  RecordsProjectsAssignmentService recordsProjectsAssignmentService,
+					  SearchResultProcessorService searchResultProcessorService) {
+		this.searchService = searchService;
+		this.transcriptionPlatformService = transcriptionPlatformService;
+		this.currentUserRecordSelection = currentUserRecordSelection;
+		this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
+		this.searchResultProcessorService = searchResultProcessorService;
 
-    private Button selectAllButton;
+		setDefaultVerticalComponentAlignment(Alignment.START);
+		setAlignSelf(Alignment.STRETCH, this);
 
-    private Button addElementsButton;
+		Component searchResultsList = createSearchResultsList();
+		createFacetComponent();
+		add(facets, searchResultsList);
+		expand(searchResultsList);
+		UI.getCurrent().setPollInterval(1000);
+	}
 
-    private String originalLocation;
+	/**
+	 * Prepare QueryParameters
+	 *
+	 * @param aggregatorId aggregator identifier
+	 * @param query        query string
+	 * @param otherParams  request parameters e.g. media, reusability
+	 * @param rowsPerPage  number of result on result page
+	 * @return QueryParameters used by the search page
+	 */
+	public static QueryParameters prepareQueryParameters(int aggregatorId, String query, Map<String, String> otherParams, int rowsPerPage) {
+		Map<String, List<String>> parameters = new HashMap<>();
+		addParameter(AGGREGATOR_PARAM_NAME, String.valueOf(aggregatorId), parameters);
+		addParameter(QUERY_PARAM_NAME, query, parameters);
+		addParameter(ONLY_IIIF_PARAM_NAME, String.valueOf(onlyIiif), parameters);
+		addParameter(ROWS_PER_PAGE_PARAM_NAME, String.valueOf(rowsPerPage), parameters);
+		otherParams.forEach((s, s2) -> addParameter(s.toLowerCase(), s2, parameters));
+		return new QueryParameters(parameters);
+	}
 
-    private static boolean onlyIiif = true;
+	/**
+	 * Adds a parameter as a list of values. Values are retrieved from <code>value</code> by splitting it with '&' delimiter
+	 *
+	 * @param name       parameter name
+	 * @param value      value of the parameter (may be concatenation of many values val1&val2&...&valn
+	 * @param parameters map of parameters
+	 */
+	private static void addParameter(String name, String value, Map<String, List<String>> parameters) {
+		if (value == null) {
+			return;
+		}
+		String[] split = value.split("&");
+		List<String> values = new ArrayList<>();
+		Collections.addAll(values, split);
+		parameters.put(name, values);
+	}
 
-    private String query;
+	public static void setOnlyIiif(boolean onlyIiif) {
+		SearchPage.onlyIiif = onlyIiif;
+	}
 
-    private Map<String, String> requestParams;
+	/**
+	 * Creates facets component. By default it is hidden.
+	 */
+	private void createFacetComponent() {
+		facets = FacetComponentFactory.getFacetComponent(aggregator.getValue().getId(), this);
+		facets.setPadding(false);
+		showFacets(false);
+	}
 
-    public SearchPage(SearchService searchService,
-                      TranscriptionPlatformService transcriptionPlatformService,
-                      CurrentUserRecordSelection currentUserRecordSelection,
-                      RecordsProjectsAssignmentService recordsProjectsAssignmentService,
-                      SearchResultProcessorService searchResultProcessorService) {
-        this.searchService = searchService;
-        this.transcriptionPlatformService = transcriptionPlatformService;
-        this.currentUserRecordSelection = currentUserRecordSelection;
-        this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
-        this.searchResultProcessorService = searchResultProcessorService;
+	/**
+	 * Show / hide facets component using visibility css property
+	 *
+	 * @param show when true
+	 */
+	private void showFacets(boolean show) {
+		if (show) {
+			facets.removeClassName("facet-hidden");
+		} else {
+			facets.addClassName("facet-hidden");
+		}
+	}
 
-        setDefaultVerticalComponentAlignment(Alignment.START);
-        setAlignSelf(Alignment.STRETCH, this);
+	/**
+	 * Creates search results list component which consists of the query form and the search results component
+	 *
+	 * @return created component
+	 */
+	private Component createSearchResultsList() {
+		VerticalLayout searchResultsList = new VerticalLayout();
+		createAggregatorSelectionBox();
+		searchResultsList.add(aggregator);
+		searchResultsList.add(createQueryForm());
+		createSearchOnlyIiifBox();
+		searchResultsList.add(searchOnlyIiif);
+		createNoResultsLabel();
+		searchResultsList.add(noResults);
+		resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
+		searchResultsList.add(
+				createProjectSelectionBox(),
+				createSelectionProperties(),
+				resultsComponent);
+		return searchResultsList;
+	}
 
-        Component searchResultsList = createSearchResultsList();
-        createFacetComponent();
-        add(facets, searchResultsList);
-        expand(searchResultsList);
-        UI.getCurrent().setPollInterval(1000);
-    }
+	/**
+	 * Creates label to be shown when no results were found
+	 */
+	private void createNoResultsLabel() {
+		noResults = new Label("No results found! Try refining your query.");
+		noResults.addClassName("no-results-label");
+		noResults.setVisible(false);
+		add(noResults);
+	}
 
-    /**
-     * Prepare QueryParameters
-     *
-     * @param aggregatorId aggregator identifier
-     * @param query  query string
-     * @param otherParams request parameters e.g. media, reusability
-     * @param rowsPerPage number of result on result page
-     * @return QueryParameters used by the search page
-     */
-    public static QueryParameters prepareQueryParameters(int aggregatorId, String query, Map<String, String> otherParams, int rowsPerPage) {
-        Map<String, List<String>> parameters = new HashMap<>();
-        addParameter(AGGREGATOR_PARAM_NAME, String.valueOf(aggregatorId), parameters);
-        addParameter(QUERY_PARAM_NAME, query, parameters);
-        addParameter(ONLY_IIIF_PARAM_NAME, String.valueOf(onlyIiif), parameters);
-        addParameter(ROWS_PER_PAGE_PARAM_NAME, String.valueOf(rowsPerPage), parameters);
-        otherParams.forEach((s, s2) -> addParameter(s.toLowerCase(), s2, parameters));
-        return new QueryParameters(parameters);
-    }
+	private void createSearchOnlyIiifBox() {
+		searchOnlyIiif = new Checkbox();
+		searchOnlyIiif.setLabel("Search objects only available via IIIF");
+		searchOnlyIiif.addValueChangeListener(e -> setOnlyIiif(e.getValue()));
+		searchOnlyIiif.setValue(true);
+	}
 
-    /**
-     * Adds a parameter as a list of values. Values are retrieved from <code>value</code> by splitting it with '&' delimiter
-     *
-     * @param name       parameter name
-     * @param value      value of the parameter (may be concatenation of many values val1&val2&...&valn
-     * @param parameters map of parameters
-     */
-    private static void addParameter(String name, String value, Map<String, List<String>> parameters) {
-        if (value == null) {
-            return;
-        }
-        String[] split = value.split("&");
-        List<String> values = new ArrayList<>();
-        Collections.addAll(values, split);
-        parameters.put(name, values);
-    }
+	private void showOnlyIiifBox(boolean show) {
+		searchOnlyIiif.setVisible(show);
+		searchOnlyIiif.setValue(show);
+	}
 
-    /**
-     * Creates facets component. By default it is hidden.
-     */
-    private void createFacetComponent() {
-        facets = FacetComponentFactory.getFacetComponent(aggregator.getValue().getId(), this);
-        facets.setPadding(false);
-        showFacets(false);
-    }
+	private void createAggregatorSelectionBox() {
+		aggregator = new Select<>();
+		aggregator.addClassName("aggregator-selector");
+		aggregator.setItems(Arrays.stream(Aggregator.values()).filter(a -> a != Aggregator.UNKNOWN));
+		aggregator.setValue(Aggregator.getById(0));
+		currentUserRecordSelection.setAggregator(Aggregator.values()[0]);
+		aggregator.setLabel("Available aggregators");
+		aggregator.setEmptySelectionAllowed(false);
+		aggregator.addValueChangeListener(event -> {
+			if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
+				ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+						"There are " + currentUserRecordSelection.getSelectedRecords().size()
+								+ " selected but not added record(s). Record selection will be lost when aggregator is changed.",
+						e -> handleAggregatorChange(event.getValue()));
+				dialog.addContent("Are you sure you want to continue?");
+				dialog.open();
+			} else {
+				handleAggregatorChange(event.getValue());
+			}
+		});
+	}
 
-    /**
-     * Show / hide facets component using visibility css property
-     *
-     * @param show when true
-     */
-    private void showFacets(boolean show) {
-        if (show) {
-            facets.removeClassName("facet-hidden");
-        } else {
-            facets.addClassName("facet-hidden");
-        }
-    }
+	private void handleAggregatorChange(Aggregator aggregator) {
+		currentUserRecordSelection.clearSelectedRecords();
+		currentUserRecordSelection.setAggregator(aggregator);
+		resultsComponent.clear();
+		FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
+		facetComponent.addFacets(null);
+		replace(facets, facetComponent);
+		facets = facetComponent;
+		showFacets(false);
+		search.setPlaceholder("Search in " + aggregator.getFullName());
+		//for now only in Europeana we can search via iiif availability
+		showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
+	}
 
-    /**
-     * Creates search results list component which consists of the query form and the search results component
-     *
-     * @return created component
-     */
-    private Component createSearchResultsList() {
-        VerticalLayout searchResultsList = new VerticalLayout();
-        createAggregatorSelectionBox();
-        searchResultsList.add(aggregator);
-        searchResultsList.add(createQueryForm());
-        createSearchOnlyIiifBox();
-        searchResultsList.add(searchOnlyIiif);
-        createNoResultsLabel();
-        searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
-        searchResultsList.add(
-                createProjectSelectionBox(),
-                createSelectionProperties(),
-                resultsComponent);
-        return searchResultsList;
-    }
+	private Component createProjectSelectionBox() {
+		//
+		Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
+		//
+		Select<Project> projects = new Select<>();
+		Select<Dataset> datasets = new Select<>();
+		//
+		projects.setItems(transcriptionPlatformService.getProjects());
+		projects.setLabel("Available projects");
+		projects.setEmptySelectionAllowed(false);
+		projects.addValueChangeListener(event -> {
+			Project project = event.getValue();
+			datasets.setItems(project.getDatasets());
+			currentUserRecordSelection.setSelectedProject(project);
+		});
+		projects.setValue(currentProject);
+		//
+		datasets.setItems(currentProject.getDatasets());
+		datasets.setLabel("Available datasets");
+		datasets.setEmptySelectionAllowed(true);
+		datasets.addValueChangeListener(event -> {
+			Dataset selectedDataset = event.getValue();
+			currentUserRecordSelection.setSelectedDataSet(selectedDataset);
+		});
 
-    /**
-     * Creates label to be shown when no results were found
-     */
-    private void createNoResultsLabel() {
-        noResults = new Label("No results found! Try refining your query.");
-        noResults.addClassName("no-results-label");
-        noResults.setVisible(false);
-        add(noResults);
-    }
+		HorizontalLayout layout = new HorizontalLayout();
+		layout.add(projects, datasets);
+		return layout;
+	}
 
-    private void createSearchOnlyIiifBox() {
-        searchOnlyIiif = new Checkbox();
-        searchOnlyIiif.setLabel("Search objects only available via IIIF");
-        searchOnlyIiif.addValueChangeListener(e -> setOnlyIiif(e.getValue()));
-        searchOnlyIiif.setValue(true);
-    }
+	private Component createSelectionProperties() {
+		HorizontalLayout horizontalLayout = new HorizontalLayout();
+		selectAllButton = new Button("Select all");
+		selectAllButton.setVisible(false);
+		selectAllButton.addClickListener(e -> resultsComponent.selectAll());
+		invertSelectionButton = new Button("Invert selection");
+		invertSelectionButton.addClickListener(e -> resultsComponent.inverseSelection());
+		invertSelectionButton.setVisible(false);
 
-    private void showOnlyIiifBox(boolean show) {
-        searchOnlyIiif.setVisible(show);
-        searchOnlyIiif.setValue(show);
-    }
-
-    private void createAggregatorSelectionBox() {
-        aggregator = new Select<>();
-        aggregator.addClassName("aggregator-selector");
-        aggregator.setItems(Arrays.stream(Aggregator.values()).filter(a -> a != Aggregator.UNKNOWN));
-        aggregator.setValue(Aggregator.getById(0));
-        currentUserRecordSelection.setAggregator(Aggregator.values()[0]);
-        aggregator.setLabel("Available aggregators");
-        aggregator.setEmptySelectionAllowed(false);
-        aggregator.addValueChangeListener(event -> {
-            if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
-                ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
-                        "There are " + currentUserRecordSelection.getSelectedRecords().size()
-                                + " selected but not added record(s). Record selection will be lost when aggregator is changed.",
-                        e -> handleAggregatorChange(event.getValue()));
-                dialog.addContent("Are you sure you want to continue?");
-                dialog.open();
-            } else {
-                handleAggregatorChange(event.getValue());
-            }
-        });
-    }
-
-    private void handleAggregatorChange(Aggregator aggregator) {
-        currentUserRecordSelection.clearSelectedRecords();
-        currentUserRecordSelection.setAggregator(aggregator);
-        resultsComponent.clear();
-        FacetComponent facetComponent = FacetComponentFactory.getFacetComponent(aggregator.getId(), this);
-        facetComponent.addFacets(null);
-        replace(facets, facetComponent);
-        facets = facetComponent;
-        showFacets(false);
-        search.setPlaceholder("Search in " + aggregator.getFullName());
-        //for now only in Europeana we can search via iiif availability
-        showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
-    }
-
-    private Component createProjectSelectionBox() {
-        //
-        Project currentProject = transcriptionPlatformService.getProjects().iterator().next();
-        //
-        Select<Project> projects = new Select<>();
-        Select<Dataset> datasets = new Select<>();
-        //
-        projects.setItems(transcriptionPlatformService.getProjects());
-        projects.setLabel("Available projects");
-        projects.setEmptySelectionAllowed(false);
-        projects.addValueChangeListener(event -> {
-            Project project = event.getValue();
-            datasets.setItems(project.getDatasets());
-            currentUserRecordSelection.setSelectedProject(project);
-        });
-        projects.setValue(currentProject);
-        //
-        datasets.setItems(currentProject.getDatasets());
-        datasets.setLabel("Available datasets");
-        datasets.setEmptySelectionAllowed(true);
-        datasets.addValueChangeListener(event -> {
-            Dataset selectedDataset = event.getValue();
-            currentUserRecordSelection.setSelectedDataSet(selectedDataset);
-        });
-
-        HorizontalLayout layout = new HorizontalLayout();
-        layout.add(projects, datasets);
-        return layout;
-    }
-
-    private Component createSelectionProperties() {
-        HorizontalLayout horizontalLayout = new HorizontalLayout();
-        selectAllButton = new Button("Select all");
-        selectAllButton.setVisible(false);
-        selectAllButton.addClickListener(e -> resultsComponent.selectAll());
-        invertSelectionButton = new Button("Invert selection");
-        invertSelectionButton.addClickListener(e -> resultsComponent.inverseSelection());
-        invertSelectionButton.setVisible(false);
-
-        addElementsButton = new Button();
-        addElementsButton.setText("Add");
-        addElementsButton.setVisible(false);
-        addElementsButton.addClickListener(
-                e -> {
-                    recordsProjectsAssignmentService.saveSelectedRecords();
+		addElementsButton = new Button();
+		addElementsButton.setText("Add");
+		addElementsButton.setVisible(false);
+		addElementsButton.addClickListener(
+				e -> {
+					recordsProjectsAssignmentService.saveSelectedRecords();
 					Notification.show(currentUserRecordSelection.getSelectedRecords().size() + " record(s) added!",
 							3000, Notification.Position.TOP_CENTER);
 					UI ui = UI.getCurrent();
 					ui.access(() -> resultsComponent.deselectAll());
 					currentUserRecordSelection.clearSelectedRecords();
-                });
+				});
 
-        horizontalLayout.add(selectAllButton, invertSelectionButton, addElementsButton);
-        return horizontalLayout;
-    }
+		horizontalLayout.add(selectAllButton, invertSelectionButton, addElementsButton);
+		return horizontalLayout;
+	}
 
-    /**
-     * Create query form with search field and button
-     *
-     * @return created component
-     */
-    private Component createQueryForm() {
-        HorizontalLayout queryForm = new HorizontalLayout();
-        queryForm.addClassName("query-form");
-        queryForm.setPadding(false);
-        queryForm.setSizeFull();
+	/**
+	 * Create query form with search field and button
+	 *
+	 * @return created component
+	 */
+	private Component createQueryForm() {
+		HorizontalLayout queryForm = new HorizontalLayout();
+		queryForm.addClassName("query-form");
+		queryForm.setPadding(false);
+		queryForm.setSizeFull();
 
-        search = new TextField();
-        search.addClassName("search-field");
-        search.setPlaceholder("Search in " + aggregator.getValue().getFullName());
-        search.setAutofocus(true);
-        search.addKeyUpListener(Key.ENTER, keyUpEvent -> {
-            search.setEnabled(false);
-            search.getUI().ifPresent(this::navigateToSearch);
-            search.setEnabled(true);
-        });
-        Button searchButton = new Button();
-        searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
-        searchButton.addClickListener(e -> {
-            e.getSource().getUI().ifPresent(this::navigateToSearch);
-            e.getSource().setEnabled(true);
-        });
-        searchButton.setDisableOnClick(true);
-        queryForm.add(search, searchButton);
-        queryForm.expand(search);
-        queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
-        queryForm.expand();
-        return queryForm;
-    }
+		search = new TextField();
+		search.addClassName("search-field");
+		search.setPlaceholder("Search in " + aggregator.getValue().getFullName());
+		search.setAutofocus(true);
+		search.addKeyUpListener(Key.ENTER, keyUpEvent -> {
+			search.setEnabled(false);
+			search.getUI().ifPresent(this::navigateToSearch);
+			search.setEnabled(true);
+		});
+		Button searchButton = new Button();
+		searchButton.setIcon(new Icon(VaadinIcon.SEARCH));
+		searchButton.addClickListener(e -> {
+			e.getSource().getUI().ifPresent(this::navigateToSearch);
+			e.getSource().setEnabled(true);
+		});
+		searchButton.setDisableOnClick(true);
+		queryForm.add(search, searchButton);
+		queryForm.expand(search);
+		queryForm.setDefaultVerticalComponentAlignment(Alignment.START);
+		queryForm.expand();
+		return queryForm;
+	}
 
-    private void navigateToSearch(UI ui) {
-        HashMap<String, String> otherParams = new HashMap<>(facets.getDefaultFacets());
-        ui.navigate("search",
-                prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams, resultsComponent.getRowsPerPage()));
-    }
+	private void navigateToSearch(UI ui) {
+		HashMap<String, String> otherParams = new HashMap<>(facets.getDefaultFacets());
+		ui.navigate("search",
+				prepareQueryParameters(aggregator.getValue().getId(), search.getValue(), otherParams, resultsComponent.getRowsPerPage()));
+	}
 
-    private void search(int aggregatorId, String query,  Map<String, String> requestParams, int rowsPerPage) {
-        if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
-            ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
-                    "There are " + currentUserRecordSelection.getSelectedRecords().size()
-                            + " selected but not added record(s). Record selection will be lost with next search query execution.",
-                    e -> executeSearch(aggregatorId, query, requestParams, rowsPerPage));
-            dialog.addContent("Are you sure you want to continue?");
-            dialog.open();
-        } else {
-            executeSearch(aggregatorId, query, requestParams, rowsPerPage);
-        }
-    }
+	private void search(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
+		if (!currentUserRecordSelection.getSelectedRecords().isEmpty()) {
+			ConfirmationDialog dialog = new ConfirmationDialog("Not added records",
+					"There are " + currentUserRecordSelection.getSelectedRecords().size()
+							+ " selected but not added record(s). Record selection will be lost with next search query execution.",
+					e -> executeSearch(aggregatorId, query, requestParams, rowsPerPage));
+			dialog.addContent("Are you sure you want to continue?");
+			dialog.open();
+		} else {
+			executeSearch(aggregatorId, query, requestParams, rowsPerPage);
+		}
+	}
 
-    /**
-     * Execute search in the SearchResultsComponent and add facets
-     *
-     * @param aggregatorId aggregator identifier
-     * @param query  query string
-     * @param requestParams request parameters e.g. media, reusability
-     * @param rowsPerPage number of results on result page
-     */
-    private void executeSearch(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
+	/**
+	 * Execute search in the SearchResultsComponent and add facets
+	 *
+	 * @param aggregatorId  aggregator identifier
+	 * @param query         query string
+	 * @param requestParams request parameters e.g. media, reusability
+	 * @param rowsPerPage   number of results on result page
+	 */
+	private void executeSearch(int aggregatorId, String query, Map<String, String> requestParams, int rowsPerPage) {
 		currentUserRecordSelection.clearSelectedRecords();
-        if (query == null || query.isEmpty()) {
-            resultsComponent.clear();
-            facets.addFacets(null);
-            showFacets(false);
-            search.clear();
-            this.query = null;
-            this.requestParams = null;
-        } else {
-            if (search.isEmpty()) {
-                search.setValue(query);
-            }
-            this.query = query;
-            this.requestParams = requestParams;
-            SearchResults searchResults = searchService.search(aggregatorId, query, requestParams, rowsPerPage);
+		if (query == null || query.isEmpty()) {
+			resultsComponent.clear();
+			facets.addFacets(null);
+			showFacets(false);
+			search.clear();
+			this.query = null;
+			this.requestParams = null;
+		} else {
+			if (search.isEmpty()) {
+				search.setValue(query);
+			}
+			this.query = query;
+			this.requestParams = requestParams;
+			SearchResults searchResults = searchService.search(aggregatorId, query, requestParams, rowsPerPage);
 
-            if (searchResults != null) {
-                resultsComponent.handleSearchResults(searchResults);
-                fillMissingValuesAndVerifyResult(searchResults);
-                facets.addFacets(searchResults.getFacets());
-                facets.updateState(requestParams);
-                showFacets(true);
-                noResults.setVisible(searchResults.getTotalResults() == 0);
-                invertSelectionButton.setVisible(searchResults.getTotalResults() > 0);
-                selectAllButton.setVisible(searchResults.getTotalResults() > 0);
-                addElementsButton.setVisible(searchResults.getTotalResults() > 0);
-            } else {
-                Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
-            }
-        }
-    }
+			if (searchResults != null) {
+				resultsComponent.handleSearchResults(searchResults);
+				fillMissingValuesAndVerifyResult(searchResults);
+				facets.addFacets(searchResults.getFacets());
+				facets.updateState(requestParams);
+				showFacets(true);
+				noResults.setVisible(searchResults.getTotalResults() == 0);
+				invertSelectionButton.setVisible(searchResults.getTotalResults() > 0);
+				selectAllButton.setVisible(searchResults.getTotalResults() > 0);
+				addElementsButton.setVisible(searchResults.getTotalResults() > 0);
+			} else {
+				Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
+			}
+		}
+	}
 
-    /**
-     * Fills missing values from search request, validates if record can be transferred to TP, pushes values' updates
-     * to clients
-     *
-     * @param searchResults searchResults object that should be filled and verified
-     */
-    public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
-        int aggregatorId = aggregator.getValue().getId();
-        List<SearchResult> results = searchResults.getResults();
-        UI ui = UI.getCurrent();
+	/**
+	 * Fills missing values from search request, validates if record can be transferred to TP, pushes values' updates
+	 * to clients
+	 *
+	 * @param searchResults searchResults object that should be filled and verified
+	 */
+	public void fillMissingValuesAndVerifyResult(SearchResults searchResults) {
+		int aggregatorId = aggregator.getValue().getId();
+		List<SearchResult> results = searchResults.getResults();
+		UI ui = UI.getCurrent();
 
-        results.forEach(result -> {
-            if (onlyIiif) {
-                result.setIiifAvailability(IiifAvailability.AVAILABLE);
-                resultsComponent.updateSearchResult(ui, result);
-            }
-            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
-                    .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
-        });
-    }
+		Set<Record> blockedRecords = this.recordsProjectsAssignmentService.getRecordsWhichShouldBeBlocked(results.stream().map(SearchResult::getId).collect(Collectors.toList()));
 
-    /**
-     * Execute facet search after a facet was selected or deselected. The current query string is used and the pagination is
-     * set as for the first execution.
-     */
-    public void executeFacetSearch(Map<String, String> requestParams) {
-        getUI().ifPresent(ui -> ui.navigate("search",
-                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
-    }
+		final List<String> blockedIds = blockedRecords.stream()
+				.map(Record::getIdentifier)
+				.collect(Collectors.toList());
 
-    /**
-     * Execute search after result page was selected. Current query string and request parameters are used.
-     *
-     * @param paginationParams pagination request parameters
-     * @return SearchResponse object if search operation finish successfully, null otherwise.
-     */
-    public SearchResults goToPage(Map<String, String> paginationParams) {
-        if (requestParams != null) {
-            requestParams.putAll(paginationParams);
-            int rowsPerPage = resultsComponent.getRowsPerPage();
-            return searchService.search(aggregator.getValue().getId(), query, requestParams, rowsPerPage);
-        }
-        return null;
-    }
+		results.forEach(result -> {
+			if (onlyIiif) {
+				result.setIiifAvailability(IiifAvailability.AVAILABLE);
+				resultsComponent.updateSearchResult(ui, result);
+			}
+			if (blockedIds.contains(result.getId())) {
+				result.setImported(true);
+			}
+			CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
+					.thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
+		});
+	}
 
-    /**
-     * Execute search after rows per page value changed. Current query string and facet parameters are used for this
-     * search. Any existing pagination parameters are removed from parameters map.
-     *
-     * @param paginationParams Pagination parameters that should be removed from request parameters.
-     */
-    public void executeRowsPerPageChange(Map<String, String> paginationParams) {
-    	requestParams.keySet().removeAll(paginationParams.keySet());
+	/**
+	 * Execute facet search after a facet was selected or deselected. The current query string is used and the pagination is
+	 * set as for the first execution.
+	 */
+	public void executeFacetSearch(Map<String, String> requestParams) {
 		getUI().ifPresent(ui -> ui.navigate("search",
-                prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
-    }
+				prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
+	}
 
-    /**
-     * Executed before search page is displayed. Handles the query parameters from URL.
-     *
-     * @param event     event used to the current URL
-     * @param parameter not used here
-     */
-    @Override
-    public void setParameter(BeforeEvent event, @OptionalParameter String parameter) {
-        Location location = event.getLocation();
-        QueryParameters queryParameters = location.getQueryParameters();
-        if (queryParameters != null && !queryParameters.getParameters().isEmpty()) {
-            Map<String, List<String>> parametersMap = queryParameters.getParameters();
-            String aggregatorParamValue = getParameterValue(parametersMap.get(AGGREGATOR_PARAM_NAME), true);
-            boolean valid = Aggregator.isValid(aggregatorParamValue);
-            if (!valid) {
-            	if (aggregatorParamValue != null) {
+	/**
+	 * Execute search after result page was selected. Current query string and request parameters are used.
+	 *
+	 * @param paginationParams pagination request parameters
+	 * @return SearchResponse object if search operation finish successfully, null otherwise.
+	 */
+	public SearchResults goToPage(Map<String, String> paginationParams) {
+		if (requestParams != null) {
+			requestParams.putAll(paginationParams);
+			int rowsPerPage = resultsComponent.getRowsPerPage();
+			return searchService.search(aggregator.getValue().getId(), query, requestParams, rowsPerPage);
+		}
+		return null;
+	}
+
+	/**
+	 * Execute search after rows per page value changed. Current query string and facet parameters are used for this
+	 * search. Any existing pagination parameters are removed from parameters map.
+	 *
+	 * @param paginationParams Pagination parameters that should be removed from request parameters.
+	 */
+	public void executeRowsPerPageChange(Map<String, String> paginationParams) {
+		requestParams.keySet().removeAll(paginationParams.keySet());
+		getUI().ifPresent(ui -> ui.navigate("search",
+				prepareQueryParameters(aggregator.getValue().getId(), query, requestParams, resultsComponent.getRowsPerPage())));
+	}
+
+	/**
+	 * Executed before search page is displayed. Handles the query parameters from URL.
+	 *
+	 * @param event     event used to the current URL
+	 * @param parameter not used here
+	 */
+	@Override
+	public void setParameter(BeforeEvent event, @OptionalParameter String parameter) {
+		Location location = event.getLocation();
+		QueryParameters queryParameters = location.getQueryParameters();
+		if (queryParameters != null && !queryParameters.getParameters().isEmpty()) {
+			Map<String, List<String>> parametersMap = queryParameters.getParameters();
+			String aggregatorParamValue = getParameterValue(parametersMap.get(AGGREGATOR_PARAM_NAME), true);
+			boolean valid = Aggregator.isValid(aggregatorParamValue);
+			if (!valid) {
+				if (aggregatorParamValue != null) {
 					Notification.show("Unknown/Invalid aggregator!", 4000, Notification.Position.TOP_CENTER);
 				}
-                return;
-            }
-            int aggregatorId = Integer.parseInt(aggregatorParamValue);
-            aggregator.setValue(Aggregator.getById(aggregatorId));
-            currentUserRecordSelection.setAggregator(Aggregator.getById(aggregatorId));
-            handleAggregatorChange(Aggregator.getById(aggregatorId));
+				return;
+			}
+			int aggregatorId = Integer.parseInt(aggregatorParamValue);
+			aggregator.setValue(Aggregator.getById(aggregatorId));
+			currentUserRecordSelection.setAggregator(Aggregator.getById(aggregatorId));
+			handleAggregatorChange(Aggregator.getById(aggregatorId));
 
-            String queryString = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
+			String queryString = getParameterValue(parametersMap.get(QUERY_PARAM_NAME), true);
 
-            String onlyIiifParam = getParameterValue(parametersMap.get(ONLY_IIIF_PARAM_NAME), true);
-            setOnlyIiif(onlyIiifParam == null || Boolean.parseBoolean(onlyIiifParam));
-            searchOnlyIiif.setValue(onlyIiif);
+			String onlyIiifParam = getParameterValue(parametersMap.get(ONLY_IIIF_PARAM_NAME), true);
+			setOnlyIiif(onlyIiifParam == null || Boolean.parseBoolean(onlyIiifParam));
+			searchOnlyIiif.setValue(onlyIiif);
 
-            Map<String, String> requestParams = new HashMap<>();
-            parametersMap.entrySet().stream()
-                    .filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)
-                            || e.getKey().equalsIgnoreCase(ROWS_PER_PAGE_PARAM_NAME)))
-                    .forEach(e -> requestParams.put(e.getKey(), e.getValue().get(0)));
+			Map<String, String> requestParams = new HashMap<>();
+			parametersMap.entrySet().stream()
+					.filter(e -> !(e.getKey().equalsIgnoreCase(AGGREGATOR_PARAM_NAME) || e.getKey().equalsIgnoreCase(QUERY_PARAM_NAME)
+							|| e.getKey().equalsIgnoreCase(ROWS_PER_PAGE_PARAM_NAME)))
+					.forEach(e -> requestParams.put(e.getKey(), e.getValue().get(0)));
 
-            int rowsPerPage = getRowsPerPage(parametersMap);
+			int rowsPerPage = getRowsPerPage(parametersMap);
 
-            search(aggregatorId, queryString, requestParams, rowsPerPage);
-        }
-    }
+			search(aggregatorId, queryString, requestParams, rowsPerPage);
+		}
+	}
 
-    private int getRowsPerPage(Map<String, List<String>> parametersMap) {
-        int rowsPerPage = resultsComponent.getRowsPerPage();
-        String rowsPerPageParam = getParameterValue(parametersMap.get(ROWS_PER_PAGE_PARAM_NAME), true);
-        if (rowsPerPageParam != null && !rowsPerPageParam.isEmpty()) {
-            try {
-                int rowsPerPageParamValue = Integer.parseInt(rowsPerPageParam);
-                rowsPerPage = resultsComponent.setRowsPerPage(rowsPerPageParamValue);
-            } catch (NumberFormatException e) {
-                logger.warn("Cannot parse {} parameter. Will use default/currently selected value instead ({})",
-                        ROWS_PER_PAGE_PARAM_NAME, rowsPerPage, e);
-            }
-        }
-        return rowsPerPage;
-    }
+	private int getRowsPerPage(Map<String, List<String>> parametersMap) {
+		int rowsPerPage = resultsComponent.getRowsPerPage();
+		String rowsPerPageParam = getParameterValue(parametersMap.get(ROWS_PER_PAGE_PARAM_NAME), true);
+		if (rowsPerPageParam != null && !rowsPerPageParam.isEmpty()) {
+			try {
+				int rowsPerPageParamValue = Integer.parseInt(rowsPerPageParam);
+				rowsPerPage = resultsComponent.setRowsPerPage(rowsPerPageParamValue);
+			} catch (NumberFormatException e) {
+				logger.warn("Cannot parse {} parameter. Will use default/currently selected value instead ({})",
+						ROWS_PER_PAGE_PARAM_NAME, rowsPerPage, e);
+			}
+		}
+		return rowsPerPage;
+	}
 
-    /**
-     * Gets a single value for a parameter. If <code>oneValue</code> is true only the first from the list is returned
-     * otherwise values are concatenated with "AND"
-     *
-     * @param values   list of values
-     * @param oneValue one value indicator
-     * @return value
-     */
-    private String getParameterValue(List<String> values, boolean oneValue) {
-        if (values != null && !values.isEmpty()) {
-            if (oneValue || values.size() == 1) {
-                return values.get(0);
-            } else {
-                // surround with brackets and join with AND
-                return values.stream().map(s -> "(" + s + ")").collect(Collectors.joining(" AND "));
-            }
-        }
-        return null;
-    }
+	/**
+	 * Gets a single value for a parameter. If <code>oneValue</code> is true only the first from the list is returned
+	 * otherwise values are concatenated with "AND"
+	 *
+	 * @param values   list of values
+	 * @param oneValue one value indicator
+	 * @return value
+	 */
+	private String getParameterValue(List<String> values, boolean oneValue) {
+		if (values != null && !values.isEmpty()) {
+			if (oneValue || values.size() == 1) {
+				return values.get(0);
+			} else {
+				// surround with brackets and join with AND
+				return values.stream().map(s -> "(" + s + ")").collect(Collectors.joining(" AND "));
+			}
+		}
+		return null;
+	}
 
-    public static void setOnlyIiif(boolean onlyIiif) {
-        SearchPage.onlyIiif = onlyIiif;
-    }
-
-    @Override
+	@Override
 	protected void onDetach(DetachEvent detachEvent) {
 		currentUserRecordSelection.clearSelectedRecords();
 		searchResultProcessorService.clearCache();
