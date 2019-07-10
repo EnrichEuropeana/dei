@@ -54,6 +54,10 @@
     background-color: lightgray;
 }
 
+.search-result-element-imported {
+    opacity: 0.3;
+}
+
 .search-result-checkbox {
     margin-left: 30px;
 }

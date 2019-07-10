@@ -42,7 +42,7 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 	}
 
 	@Override
-	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif) {
+	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif, boolean onlyNotImported) {
 		String recordId = searchResult.getId();
 		String mimeType;
 		String author;

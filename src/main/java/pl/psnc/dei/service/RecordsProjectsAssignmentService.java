@@ -6,9 +6,7 @@ import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 
 import javax.transaction.Transactional;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 
 @Service
 @Transactional
@@ -129,5 +127,10 @@ public class RecordsProjectsAssignmentService {
 	 */
 	public Set<Record> getAssignedRecords(Project project) {
 		return recordsRepository.findAllByProject(project);
+	}
+
+	public boolean checkIsRecordInAnImport(String recordId) {
+		Optional<Record> r = recordsRepository.findByIdentifier(recordId);
+		return r.filter(record -> record.getAnImport() != null).isPresent();
 	}
 }

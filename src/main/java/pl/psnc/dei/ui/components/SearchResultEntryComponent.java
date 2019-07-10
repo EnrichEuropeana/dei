@@ -52,6 +52,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		createImage();
 		metadata = createMetadataComponent();
 		setRecordEnabled(false);
+		setIsImportedAppearance(searchResult.isImported());
 		add(metadata);
 	}
 
@@ -66,21 +67,9 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		if (searchResult.getIiifAvailability() != null) {
 			setRecordEnabled(searchResult.getIiifAvailability().isTransferPossible());
 		}
-
+		setIsImportedAppearance(searchResult.isImported());
 		replace(metadata, updatedMetadata);
 		metadata = updatedMetadata;
-	}
-
-	/**
-	 * If true selects record, otherwise deselects record
-	 *
-	 * @param isSelected value to set
-	 */
-	public void setRecordSelected(boolean isSelected) {
-		searchResultCheckBox.setValue(isSelected);
-		if (!isSelected) {
-			currentUserRecordSelection.removeSelectedRecordId(searchResult.getId());
-		}
 	}
 
 	/**
@@ -97,6 +86,18 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 */
 	public boolean isRecordSelected() {
 		return searchResultCheckBox.getValue();
+	}
+
+	/**
+	 * If true selects record, otherwise deselects record
+	 *
+	 * @param isSelected value to set
+	 */
+	public void setRecordSelected(boolean isSelected) {
+		searchResultCheckBox.setValue(isSelected);
+		if (!isSelected) {
+			currentUserRecordSelection.removeSelectedRecordId(searchResult.getId());
+		}
 	}
 
 	/**
@@ -128,7 +129,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		thumbnailContainer.addClassName("metadata-image-container");
 		thumbnailContainer.setAlignItems(Alignment.CENTER);
 
-		if(searchResult.getImageURL() != null) {
+		if (searchResult.getImageURL() != null) {
 			Image thumbnail = new Image();
 			thumbnail.setAlt(searchResult.getTitle());
 			thumbnail.setSrc(searchResult.getImageURL());
@@ -149,7 +150,7 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 	 * If possible adds link to source object to thumbnail.
 	 *
 	 * @param thumbnailContainer thumbnail container object
-	 * @param thumbnail thumbnail object, e.g. image or placeholder icon
+	 * @param thumbnail          thumbnail object, e.g. image or placeholder icon
 	 */
 	private void addSourceObjectUrl(VerticalLayout thumbnailContainer, Component thumbnail) {
 		String sourceObjectURL = searchResult.getSourceObjectURL();
@@ -280,6 +281,10 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		metadata.add(line);
 	}
 
+	public boolean isRecordEnabled() {
+		return recordEnabled;
+	}
+
 	public void setRecordEnabled(boolean isEnabled) {
 		this.recordEnabled = isEnabled;
 		searchResultCheckBox.setEnabled(isEnabled);
@@ -292,11 +297,20 @@ public class SearchResultEntryComponent extends HorizontalLayout {
 		}
 	}
 
-	public boolean isRecordEnabled() {
-		return recordEnabled;
-	}
-
 	public String getRecordId() {
 		return searchResult.getId();
+	}
+
+	private void setIsImportedAppearance(boolean isImported) {
+		if (isImported) {
+			removeClassName("search-result-element-enabled");
+			addClassName("search-result-element-imported");
+			searchResultCheckBox.setEnabled(false);
+			recordEnabled = false;
+		} else {
+			removeClassName("search-result-element-imported");
+			addClassName("search-result-element-enabled");
+			searchResultCheckBox.setEnabled(true);
+		}
 	}
 }

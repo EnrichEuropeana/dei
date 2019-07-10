@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifAvailability;
 
@@ -26,10 +27,13 @@ public class EuropeanaSearchResultProcessorTest {
 	@Mock
 	private EuropeanaSearchService europeanaSearchService;
 
+	@Mock
+	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
+
 	private RecordDataCache recordDataCache = new RecordDataCache();
 
 	@InjectMocks
-	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaSearchService, recordDataCache);
+	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaSearchService, recordDataCache, recordsProjectsAssignmentService);
 
 	private void setupWithIiif() {
 		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseIiif);
@@ -58,7 +62,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyAsIiif() {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
@@ -69,7 +73,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyAsIiifOnlyIiif() {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
@@ -80,7 +84,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyServiceUnavailable() {
 		setupServiceUnavailable();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("Data unavailable", result.getFormat());
@@ -91,7 +95,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyServiceUnavailableOnlyIiif() {
 		setupServiceUnavailable();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, true, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("Data unavailable", result.getFormat());
@@ -102,7 +106,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyAsPossibleToConvert() {
 		setupNoIiif();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
@@ -113,7 +117,7 @@ public class EuropeanaSearchResultProcessorTest {
 	public void fillMimeTypeAndVerifyAsNotPossible() {
 		setupNoIiifWrongMimeType();
 		SearchResult searchResult = getSearchResult();
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/gif", result.getFormat());
@@ -125,7 +129,7 @@ public class EuropeanaSearchResultProcessorTest {
 		setupWithIiif();
 		SearchResult searchResult = getSearchResult();
 		recordDataCache.addValidationResult(searchResult.getId(), "image/jpeg", IiifAvailability.AVAILABLE);
-		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
+		SearchResult result = europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
 
 		verifyZeroInteractions(europeanaSearchService);
 		Assert.assertEquals(searchResult, result);

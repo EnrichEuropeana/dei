@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.util.IiifAvailability;
@@ -26,16 +27,19 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 
 	private RecordDataCache recordDataCache;
 
+	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
+
 	private EuropeanaSearchService europeanaSearchService;
 
 	public EuropeanaSearchResultProcessor(EuropeanaSearchService europeanaSearchService,
-										  RecordDataCache recordDataCache) {
+										  RecordDataCache recordDataCache, RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
 		this.recordDataCache = recordDataCache;
 		this.europeanaSearchService = europeanaSearchService;
+		this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
 	}
 
 	@Override
-	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif) {
+	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif, boolean onlyNotImported) {
 		String recordId = searchResult.getId();
 		String mimeType;
 		IiifAvailability iiifAvailability;
@@ -54,6 +58,10 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		//sometimes there is no dcCreator (author)
 		if (searchResult.getAuthor() == null) {
 			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
+		}
+		if(onlyNotImported) {
+			boolean isImported = recordsProjectsAssignmentService.checkIsRecordInAnImport(searchResult.getId());
+			searchResult.setImported(isImported);
 		}
 		return searchResult;
 	}

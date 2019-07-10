@@ -29,7 +29,7 @@ public class SearchResultProcessorServiceTest {
 	private SearchResultProcessorService searchResultProcessorService = new SearchResultProcessorService(europeanaSearchResultProcessor, ddbSearchResultProcessor, recordDataCache);
 
 	private void setup() {
-		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false))).thenAnswer(a -> {
+		when(europeanaSearchResultProcessor.fillMissingDataAndValidate(any(SearchResult.class), eq(false), eq(false))).thenAnswer(a -> {
 			SearchResult argument = a.getArgument(0);
 			argument.setFormat("image/jpeg");
 			argument.setIiifAvailability(IiifAvailability.AVAILABLE);
@@ -48,9 +48,9 @@ public class SearchResultProcessorServiceTest {
 	public void fillEuropeanaResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.EUROPEANA.getId(), searchResult, false);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.EUROPEANA.getId(), searchResult, false, false);
 
-		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any(), eq(false));
+		verify(europeanaSearchResultProcessor, times(1)).fillMissingDataAndValidate(any(), eq(false), eq(false));
 		Assert.assertEquals(filledSearchResult, searchResult);
 	}
 
@@ -58,7 +58,7 @@ public class SearchResultProcessorServiceTest {
 	public void fillUnknownAggregatorResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.UNKNOWN.getId(), searchResult, false);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(Aggregator.UNKNOWN.getId(), searchResult, false, false);
 
 		verifyZeroInteractions(europeanaSearchResultProcessor);
 		Assert.assertEquals(filledSearchResult, searchResult);
@@ -70,7 +70,7 @@ public class SearchResultProcessorServiceTest {
 	public void fillInvalidAggregatorResult() {
 		setup();
 		SearchResult searchResult = getSearchResult();
-		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(123456789, searchResult, false);
+		SearchResult filledSearchResult = searchResultProcessorService.fillMissingDataAndValidate(123456789, searchResult, false, false);
 
 		verifyZeroInteractions(europeanaSearchResultProcessor);
 		Assert.assertEquals(filledSearchResult, searchResult);
