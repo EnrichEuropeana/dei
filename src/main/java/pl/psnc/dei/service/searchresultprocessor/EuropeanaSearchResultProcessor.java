@@ -25,15 +25,12 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
 	private RecordDataCache recordDataCache;
 
-	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
-
 	private EuropeanaSearchService europeanaSearchService;
 
 	public EuropeanaSearchResultProcessor(EuropeanaSearchService europeanaSearchService,
-										  RecordDataCache recordDataCache, RecordsProjectsAssignmentService recordsProjectsAssignmentService) {
+										  RecordDataCache recordDataCache) {
 		this.recordDataCache = recordDataCache;
 		this.europeanaSearchService = europeanaSearchService;
-		this.recordsProjectsAssignmentService = recordsProjectsAssignmentService;
 	}
 
 	@Override
@@ -57,8 +54,6 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		if (searchResult.getAuthor() == null) {
 			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
 		}
-		boolean isImported = recordsProjectsAssignmentService.checkIsRecordInAnImport(searchResult.getId());
-		searchResult.setImported(isImported);
 
 		return searchResult;
 	}

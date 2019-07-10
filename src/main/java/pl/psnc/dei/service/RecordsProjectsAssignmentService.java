@@ -7,6 +7,7 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 
 import javax.transaction.Transactional;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
@@ -129,8 +130,7 @@ public class RecordsProjectsAssignmentService {
 		return recordsRepository.findAllByProject(project);
 	}
 
-	public boolean checkIsRecordInAnImport(String recordId) {
-		Optional<Record> r = recordsRepository.findByIdentifier(recordId);
-		return r.filter(record -> record.getAnImport() != null).isPresent();
+	public Set<Record> getRecordsWhichShouldBeBlocked(List<String> identifiers) {
+		return recordsRepository.findRecordsByIdentifierInAndAnImportNotNull(identifiers);
 	}
 }

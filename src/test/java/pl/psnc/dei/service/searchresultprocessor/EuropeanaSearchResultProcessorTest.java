@@ -33,7 +33,7 @@ public class EuropeanaSearchResultProcessorTest {
 	private RecordDataCache recordDataCache = new RecordDataCache();
 
 	@InjectMocks
-	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaSearchService, recordDataCache, recordsProjectsAssignmentService);
+	private EuropeanaSearchResultProcessor europeanaSearchResultProcessor = new EuropeanaSearchResultProcessor(europeanaSearchService, recordDataCache);
 
 	private void setupWithIiif() {
 		when(europeanaSearchService.retrieveRecordAndConvertToJsonLd(anyString())).thenReturn(europeanaRestResponseIiif);

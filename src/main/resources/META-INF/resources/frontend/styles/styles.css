@@ -55,7 +55,8 @@
 }
 
 .search-result-element-imported {
-    opacity: 0.3;
+    background-color: lightsteelblue;
+    opacity: 0.5;
 }
 
 .search-result-checkbox {
