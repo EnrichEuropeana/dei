@@ -10,21 +10,19 @@ import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
-import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.util.IiifAvailability;
+import pl.psnc.dei.util.IiifValidator;
 
 import java.util.Optional;
 
 @Service
 public class EuropeanaSearchResultProcessor implements AggregatorSearchResultProcessor {
 
-	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
-
 	private static final String KEY_GRAPH = "@graph";
 	private static final String KEY_TYPE = "@type";
 	private static final String KEY_MIME_TYPE = "hasMimeType";
 	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
-
+	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
 	private RecordDataCache recordDataCache;
 
 	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
@@ -39,7 +37,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 	}
 
 	@Override
-	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif, boolean onlyNotImported) {
+	public SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif) {
 		String recordId = searchResult.getId();
 		String mimeType;
 		IiifAvailability iiifAvailability;
@@ -59,10 +57,9 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		if (searchResult.getAuthor() == null) {
 			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
 		}
-		if(onlyNotImported) {
-			boolean isImported = recordsProjectsAssignmentService.checkIsRecordInAnImport(searchResult.getId());
-			searchResult.setImported(isImported);
-		}
+		boolean isImported = recordsProjectsAssignmentService.checkIsRecordInAnImport(searchResult.getId());
+		searchResult.setImported(isImported);
+
 		return searchResult;
 	}
 

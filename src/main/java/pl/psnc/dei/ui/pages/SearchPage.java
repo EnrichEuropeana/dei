@@ -54,8 +54,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private Checkbox searchOnlyIiif;
 
-    private Checkbox showOnlyNotImportedRecords;
-
     private FacetComponent facets;
 
     private SearchResultsComponent resultsComponent;
@@ -82,8 +80,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     private String originalLocation;
 
     private static boolean onlyIiif = true;
-
-    private boolean onlyNotImported = true;
 
     private String query;
 
@@ -180,7 +176,6 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchResultsList.add(createQueryForm());
         createSearchOnlyIiifBox();
         searchResultsList.add(searchOnlyIiif);
-        searchResultsList.add(showOnlyNotImportedRecords);
         createNoResultsLabel();
         searchResultsList.add(noResults);
         resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
@@ -206,18 +201,11 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         searchOnlyIiif.setLabel("Search objects only available via IIIF");
         searchOnlyIiif.addValueChangeListener(e -> setOnlyIiif(e.getValue()));
         searchOnlyIiif.setValue(true);
-
-        showOnlyNotImportedRecords = new Checkbox();
-        showOnlyNotImportedRecords.setLabel("Show records that haven't been imported yet");
-        showOnlyNotImportedRecords.addValueChangeListener(e -> onlyNotImported = e.getValue());
-        showOnlyNotImportedRecords.setValue(true);
     }
 
     private void showOnlyIiifBox(boolean show) {
         searchOnlyIiif.setVisible(show);
         searchOnlyIiif.setValue(show);
-
-        showOnlyNotImportedRecords.setVisible(show);
     }
 
     private void createAggregatorSelectionBox() {
@@ -422,7 +410,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                 result.setIiifAvailability(IiifAvailability.AVAILABLE);
                 resultsComponent.updateSearchResult(ui, result);
             }
-            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif, onlyNotImported))
+            CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
                     .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
         });
     }

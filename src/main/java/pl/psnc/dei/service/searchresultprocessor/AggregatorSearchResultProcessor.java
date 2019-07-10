@@ -6,5 +6,5 @@ public interface AggregatorSearchResultProcessor {
 
 	String DATA_UNAVAILABLE_VALUE = "Data unavailable";
 
-	SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif, boolean onlyNotImported);
+	SearchResult fillMissingDataAndValidate(SearchResult searchResult, boolean onlyIiif);
 }

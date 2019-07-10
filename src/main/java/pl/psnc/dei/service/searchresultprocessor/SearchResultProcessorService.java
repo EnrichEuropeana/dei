@@ -22,14 +22,14 @@ public class SearchResultProcessorService {
 		this.recordDataCache = recordDataCache;
 	}
 
-	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult, boolean onlyIiif, boolean onlyNotImported) {
+	public SearchResult fillMissingDataAndValidate(int aggregatorId, SearchResult searchResult, boolean onlyIiif) {
 		Aggregator aggregator = Aggregator.getById(aggregatorId);
 
 		switch (aggregator) {
 			case EUROPEANA:
-				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif, onlyNotImported);
+				return europeanaSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			case DDB:
-				return ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif, onlyNotImported);
+				return ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, onlyIiif);
 			default:
 				return searchResult;
 		}

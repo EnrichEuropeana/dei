@@ -70,7 +70,7 @@ public class DDBSearchResultProcessorTest {
 		setupRestResponse();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
@@ -89,7 +89,7 @@ public class DDBSearchResultProcessorTest {
 		setupRestResponse();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals(DATA_UNAVAILABLE_VALUE, result.getFormat());
@@ -107,7 +107,7 @@ public class DDBSearchResultProcessorTest {
 		setupRestResponse();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/gif", result.getFormat());
@@ -125,7 +125,7 @@ public class DDBSearchResultProcessorTest {
 		setupRestResponse();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals(DATA_UNAVAILABLE_VALUE, result.getFormat());
@@ -143,7 +143,7 @@ public class DDBSearchResultProcessorTest {
 		setupServiceUnavailable();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals("image/jpeg", result.getFormat());
@@ -161,7 +161,7 @@ public class DDBSearchResultProcessorTest {
 		setupServiceUnavailable();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals(DATA_UNAVAILABLE_VALUE, result.getFormat());
@@ -179,7 +179,7 @@ public class DDBSearchResultProcessorTest {
 		setupServiceUnavailable();
 		SearchResult searchResult = getSearchResult();
 
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		Assert.assertEquals(searchResult, result);
 		Assert.assertEquals(DATA_UNAVAILABLE_VALUE, result.getFormat());
@@ -201,7 +201,7 @@ public class DDBSearchResultProcessorTest {
 		recordDataCache.addValue(searchResult.getId(), "provider", "Deutsche Nationalbibliothek");
 		recordDataCache.addValue(searchResult.getId(), "language", DATA_UNAVAILABLE_VALUE);
 		recordDataCache.addValue(searchResult.getId(), "license", "http://creativecommons.org/publicdomain/zero/1.0/");
-		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false, false);
+		SearchResult result = ddbSearchResultProcessor.fillMissingDataAndValidate(searchResult, false);
 
 		verifyZeroInteractions(ddbSearchService);
 		Assert.assertEquals(searchResult, result);
