@@ -88,7 +88,10 @@ public class SearchResultsComponent extends VerticalLayout {
         resultsCount = new Label(prepareResultsText(FIRST_PAGE));
         navigationBar.add(resultsCount);
 
-        if (rowsCount == null) {
+        int oldValue = getOldRowsLimit();
+        if (oldValue > 0){
+            createRowsCountSelect(oldValue);
+        } else if (rowsCount == null) {
             createRowsCountSelect(DEFAULT_PAGE_SIZE);
         }
         HorizontalLayout rowsCountLayout = new HorizontalLayout();
@@ -115,6 +118,7 @@ public class SearchResultsComponent extends VerticalLayout {
         rowsCount.setItems(ROWS_PER_PAGE_ALLOWED_VALUES);
         rowsCount.setValue(rowsPerPageToSet);
         rowsCount.addValueChangeListener(e -> {
+            setOldRowsLimit(e.getValue());
             rowsPerPage = e.getValue();
             searchPage.executeRowsPerPageChange(paginationCache.get(0).getRequestParams());
         });
@@ -264,7 +268,8 @@ public class SearchResultsComponent extends VerticalLayout {
     }
 
     public int getRowsPerPage() {
-        return rowsPerPage;
+        int oldRowsPerPage = getOldRowsLimit();
+        return oldRowsPerPage > 0? oldRowsPerPage : rowsPerPage;
     }
 
     /**
@@ -280,6 +285,15 @@ public class SearchResultsComponent extends VerticalLayout {
         } else {
             rowsCount.setValue(this.rowsPerPage);
         }
+        setOldRowsLimit(this.rowsPerPage);
         return this.rowsPerPage;
+    }
+
+    private int getOldRowsLimit() {
+        return UI.getCurrent().getSession().getAttribute("oldPageLimit") != null? (int) UI.getCurrent().getSession().getAttribute("oldPageLimit") : 0;
+    }
+
+    private void setOldRowsLimit(int oldPageCount) {
+        UI.getCurrent().getSession().setAttribute("oldPageLimit", oldPageCount);
     }
 }
