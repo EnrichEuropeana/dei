@@ -85,6 +85,8 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
 
     private Map<String, String> requestParams;
 
+    private Component selectionBar;
+
     public SearchPage(SearchService searchService,
                       TranscriptionPlatformService transcriptionPlatformService,
                       CurrentUserRecordSelection currentUserRecordSelection,
@@ -179,11 +181,12 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         createNoResultsLabel();
         searchResultsList.add(noResults);
         resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
+        selectionBar = createSelectionProperties();
         searchResultsList.add(
                 createProjectSelectionBox(),
-                createSelectionProperties(),
+                selectionBar,
                 resultsComponent);
-        return searchResultsList;
+		return searchResultsList;
     }
 
     /**
@@ -242,6 +245,7 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         search.setPlaceholder("Search in " + aggregator.getFullName());
         //for now only in Europeana we can search via iiif availability
         showOnlyIiifBox(aggregator == Aggregator.EUROPEANA);
+        selectionBar.setVisible(false);
     }
 
     private Component createProjectSelectionBox() {
@@ -388,8 +392,9 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
                 invertSelectionButton.setVisible(searchResults.getTotalResults() > 0);
                 selectAllButton.setVisible(searchResults.getTotalResults() > 0);
                 addElementsButton.setVisible(searchResults.getTotalResults() > 0);
-            } else {
-                Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
+				selectionBar.setVisible(true);
+			} else {
+				Notification.show("Search failed!", 3000, Notification.Position.MIDDLE);
             }
         }
     }
