@@ -213,7 +213,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
         Map<String, String> otherParams = new HashMap<>();
         requestParams.forEach((k, v) -> {
-            String joinValue = String.join(",", v);
+            String joinValue = String.join("---", v);
             otherParams.put(k, joinValue);
         });
         otherParams.keySet().removeAll(Arrays.asList(FIXED_API_PARAMS));
