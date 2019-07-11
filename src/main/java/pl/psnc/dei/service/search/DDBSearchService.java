@@ -179,7 +179,7 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 	private void handleRequestParams(UriBuilder uriBuilder, Map<String, String> requestParams) {
 		requestParams.entrySet().stream()
 				.filter(e -> !e.getKey().equals(ROWS_PARAM_NAME) && !e.getKey().equals(OFFSET_PARAM_NAME))
-				.forEach(e -> Arrays.stream(e.getValue().split(","))
+				.forEach(e -> Arrays.stream(e.getValue().split("---"))
 						.forEach(v -> uriBuilder.queryParam(e.getKey(), UriUtils.encode(v, UTF_8_ENCODING))));
 	}
 }
