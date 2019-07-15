@@ -390,11 +390,20 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         List<SearchResult> results = searchResults.getResults();
         UI ui = UI.getCurrent();
 
+		Set<Record> blockedRecords = this.recordsProjectsAssignmentService.getRecordsWhichShouldBeBlocked(results.stream().map(SearchResult::getId).collect(Collectors.toList()));
+
+		final List<String> blockedIds = blockedRecords.stream()
+				.map(Record::getIdentifier)
+				.collect(Collectors.toList());
+
         results.forEach(result -> {
             if (onlyIiif) {
                 result.setIiifAvailability(IiifAvailability.AVAILABLE);
                 resultsComponent.updateSearchResult(ui, result);
             }
+			if (blockedIds.contains(result.getId())) {
+				result.setImported(true);
+			}
             CompletableFuture.supplyAsync(() -> searchResultProcessorService.fillMissingDataAndValidate(aggregatorId, result, onlyIiif))
                     .thenAccept(r -> resultsComponent.updateSearchResult(ui, r));
         });
