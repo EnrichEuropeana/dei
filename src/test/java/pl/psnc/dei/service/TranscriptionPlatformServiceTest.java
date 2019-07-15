@@ -145,7 +145,7 @@ public class TranscriptionPlatformServiceTest {
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnTimeoutWhileSendingAnnotationUrl() {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(post(urlEqualTo("/enrichments/sampleIdentifierFromTP"))
+        wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withFixedDelay((TranscriptionPlatformService.READ_TIMEOUT_IN_SECONDS + 1) * 1000)));
@@ -162,7 +162,7 @@ public class TranscriptionPlatformServiceTest {
     @Test
     public void shouldSendAnnotationUrl() throws TranscriptionPlatformException {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(post(urlEqualTo("/enrichments/sampleIdentifierFromTP"))
+        wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(201)
                         .withFixedDelay(2000)));
@@ -176,7 +176,7 @@ public class TranscriptionPlatformServiceTest {
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnServerErrorWhileWhileSendingAnnotationUrl() {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(post(urlEqualTo("/enrichments/sampleIdentifierFromTP"))
+        wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withFixedDelay(1000)));
