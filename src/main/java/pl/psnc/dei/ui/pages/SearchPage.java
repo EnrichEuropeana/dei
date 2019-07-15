@@ -16,10 +16,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.annotation.Secured;
 import pl.psnc.dei.config.Role;
-import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.CurrentUserRecordSelection;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.schema.search.SearchResults;
 import pl.psnc.dei.service.RecordsProjectsAssignmentService;
@@ -46,46 +43,29 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
     private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
 
-    private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
-
-    private Select<Aggregator> aggregator;
-
-    private TextField search;
-
-    private Checkbox searchOnlyIiif;
-
-    private FacetComponent facets;
-
-    private SearchResultsComponent resultsComponent;
-
-    private SearchService searchService;
-
-    private TranscriptionPlatformService transcriptionPlatformService;
-
-    private CurrentUserRecordSelection currentUserRecordSelection;
-
-    private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
-
+	private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
+	private static boolean onlyIiif = true;
+	private Select<Aggregator> aggregator;
+	private TextField search;
+	private Checkbox searchOnlyIiif;
+	private FacetComponent facets;
+	private SearchResultsComponent resultsComponent;
+	private SearchService searchService;
+	private TranscriptionPlatformService transcriptionPlatformService;
+	private CurrentUserRecordSelection currentUserRecordSelection;
+	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 	private SearchResultProcessorService searchResultProcessorService;
+	// label used when no results were found
+	private Label noResults;
+	private Button invertSelectionButton;
+	private Button selectAllButton;
+	private Button addElementsButton;
+	private String originalLocation;
+	private String query;
 
-    // label used when no results were found
-    private Label noResults;
+	private Map<String, String> requestParams;
 
-    private Button invertSelectionButton;
-
-    private Button selectAllButton;
-
-    private Button addElementsButton;
-
-    private String originalLocation;
-
-    private static boolean onlyIiif = true;
-
-    private String query;
-
-    private Map<String, String> requestParams;
-
-    private Component selectionBar;
+	private Component selectionBar;
 
     public SearchPage(SearchService searchService,
                       TranscriptionPlatformService transcriptionPlatformService,
@@ -166,22 +146,22 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
         }
     }
 
-    /**
-     * Creates search results list component which consists of the query form and the search results component
-     *
-     * @return created component
-     */
-    private Component createSearchResultsList() {
-        VerticalLayout searchResultsList = new VerticalLayout();
-        createAggregatorSelectionBox();
-        searchResultsList.add(aggregator);
-        searchResultsList.add(createQueryForm());
-        createSearchOnlyIiifBox();
-        searchResultsList.add(searchOnlyIiif);
-        createNoResultsLabel();
-        searchResultsList.add(noResults);
-        resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
-        selectionBar = createSelectionProperties();
+	/**
+	 * Creates search results list component which consists of the query form and the search results component
+	 *
+	 * @return created component
+	 */
+	private Component createSearchResultsList() {
+		VerticalLayout searchResultsList = new VerticalLayout();
+		createAggregatorSelectionBox();
+		searchResultsList.add(aggregator);
+		searchResultsList.add(createQueryForm());
+		createSearchOnlyIiifBox();
+		searchResultsList.add(searchOnlyIiif);
+		createNoResultsLabel();
+		searchResultsList.add(noResults);
+		resultsComponent = new SearchResultsComponent(this, currentUserRecordSelection);
+		selectionBar = createSelectionProperties();
         searchResultsList.add(
                 createProjectSelectionBox(),
                 selectionBar,

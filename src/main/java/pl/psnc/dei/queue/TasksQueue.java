@@ -24,7 +24,7 @@ public class TasksQueue implements Runnable {
 	/**
 	 * Waiting time in millis
 	 */
-	private long waitingTime = 0;
+	private long waitingTime = HOUR / 4;   //15 minutes
 
 	private long failsCount = 0;
 
@@ -61,13 +61,6 @@ public class TasksQueue implements Runnable {
 		logger.error("Task processing failed...", e);
 		logQueueState();
 		if (failsCount > 5) {
-			if (waitingTime == 0) {
-				waitingTime = HOUR;
-			} else if (waitingTime == HOUR) {
-				waitingTime *= 2;
-			} else if (waitingTime < 6 * HOUR) {
-				waitingTime *= 3;
-			}
 			Thread.sleep(waitingTime);
 		}
 	}

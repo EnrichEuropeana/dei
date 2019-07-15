@@ -23,7 +23,7 @@ public class DDBFacetComponent extends FacetComponent {
 	private Map<String, String> prepareRequestParams() {
 		Map<String, String> requestParams = new HashMap<>();
 
-		facetParams.forEach((s, strings) -> requestParams.put(s, String.join(",", strings)));
+		facetParams.forEach((s, strings) -> requestParams.put(s, String.join("---", strings)));
 
 		return requestParams;
 	}
@@ -40,7 +40,7 @@ public class DDBFacetComponent extends FacetComponent {
 			requestParams.entrySet().stream()
 					.filter(e -> FACET_LABELS.keySet().contains(e.getKey()))
 					.forEach(e -> {
-						List<String> strings = Arrays.asList(e.getValue().split(","));
+						List<String> strings = Arrays.asList(e.getValue().split("---"));
 						facetParams.computeIfAbsent(e.getKey(), k -> new ArrayList<>()).addAll(strings);
 					});
 

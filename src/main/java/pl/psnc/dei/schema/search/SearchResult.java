@@ -24,6 +24,8 @@ public class SearchResult {
 
     private IiifAvailability iiifAvailability;
 
+    private boolean isImported;
+
     /**
      * URL to object on aggregator portal
      */
@@ -116,5 +118,13 @@ public class SearchResult {
 
     public void setIiifAvailability(IiifAvailability iiifAvailability) {
         this.iiifAvailability = iiifAvailability;
+    }
+
+    public boolean isImported() {
+        return isImported;
+    }
+
+    public void setImported(boolean imported) {
+        isImported = imported;
     }
 }

@@ -41,4 +41,6 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     Set<Record> findAllByProjectAndAggregatorAndAnImportNull(Project project, Aggregator aggregator);
 
+    Set<Record> findRecordsByIdentifierInAndAnImportNotNull(List<String> identifiers);
+
 }

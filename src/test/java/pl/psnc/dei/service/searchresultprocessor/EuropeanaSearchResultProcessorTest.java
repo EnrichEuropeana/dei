@@ -10,6 +10,7 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifAvailability;
 
@@ -25,6 +26,9 @@ public class EuropeanaSearchResultProcessorTest {
 
 	@Mock
 	private EuropeanaSearchService europeanaSearchService;
+
+	@Mock
+	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
 
 	private RecordDataCache recordDataCache = new RecordDataCache();
 

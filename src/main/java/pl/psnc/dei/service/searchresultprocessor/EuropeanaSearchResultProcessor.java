@@ -8,22 +8,21 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
+import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
-import pl.psnc.dei.util.IiifValidator;
 import pl.psnc.dei.util.IiifAvailability;
+import pl.psnc.dei.util.IiifValidator;
 
 import java.util.Optional;
 
 @Service
 public class EuropeanaSearchResultProcessor implements AggregatorSearchResultProcessor {
 
-	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
-
 	private static final String KEY_GRAPH = "@graph";
 	private static final String KEY_TYPE = "@type";
 	private static final String KEY_MIME_TYPE = "hasMimeType";
 	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
-
+	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
 	private RecordDataCache recordDataCache;
 
 	private EuropeanaSearchService europeanaSearchService;
@@ -55,6 +54,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		if (searchResult.getAuthor() == null) {
 			searchResult.setAuthor(DATA_UNAVAILABLE_VALUE);
 		}
+
 		return searchResult;
 	}
 
