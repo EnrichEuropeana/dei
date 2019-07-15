@@ -4,6 +4,7 @@ import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrderBuilder;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -19,6 +20,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.ui.pages.ImportPage;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -47,6 +49,8 @@ public class ImportsListGenerator {
 			Import imp = e.getItem();
 			importPage.showEditImportView(imp);
 		});
+
+		imports.sort(Comparator.comparing(Import::getCreationDate).reversed());
 
 		//
 		ListDataProvider<Import> dataProvider = new ListDataProvider<>(
@@ -87,6 +91,8 @@ public class ImportsListGenerator {
 		addDateRangeFilter(dataProvider, filterRow, creationDateColumn);
 		//
 		importsGrid.setColumnReorderingAllowed(true);
+		importsGrid.sort(new GridSortOrderBuilder<Import>().thenAsc(creationDateColumn).build());
+
 		return importsGrid;
 	}
 
