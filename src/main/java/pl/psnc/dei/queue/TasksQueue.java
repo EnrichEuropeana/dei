@@ -53,7 +53,6 @@ public class TasksQueue implements Runnable {
 	private void processingSuccessful() {
 		lastSuccessfulTask = System.currentTimeMillis();
 		failsCount = 0;
-		waitingTime = 0;
 	}
 
 	private void processingFailed(Exception e) throws InterruptedException {
