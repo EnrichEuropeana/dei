@@ -16,6 +16,7 @@ import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -69,6 +70,9 @@ public class TranscriptionPlatformService {
 	@Autowired
 	private TasksFactory tasksFactory;
 
+	@Value("${europeana.api.tp.authorization-token}")
+	private String authToken;
+
 	private List<Project> availableProjects;
 	private UrlBuilder urlBuilder;
 	private WebClient webClient;
@@ -100,7 +104,10 @@ public class TranscriptionPlatformService {
 
 	public void refreshAvailableProjects() {
 		availableProjects = new ArrayList<>();
-		Project[] projects = webClient.get().uri(urlBuilder.urlForAllProjects()).retrieve()
+		Project[] projects = webClient.get()
+				.uri(urlBuilder.urlForAllProjects())
+				.header("Authorization", authToken)
+				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
 					logger.error("Error {} while getting project. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
@@ -145,11 +152,18 @@ public class TranscriptionPlatformService {
 		Hibernate.initialize(record.getAnImport());
 		this.webClient.post()
 				.uri(urlBuilder.urlForSendingRecord(record))
+				.header("Authorization", authToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromObject(recordBody.toString()))
 				.retrieve()
-				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+					logger.info("Error while sending record {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+				})
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+					logger.info("Error while sending record {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+				})
 				.bodyToMono(String.class)
 				.doOnError(cause -> {
 					if (cause instanceof TranscriptionPlatformException) {
@@ -172,9 +186,17 @@ public class TranscriptionPlatformService {
 		String recordTranscriptions =
 				this.webClient
 						.get()
-						.uri(urlBuilder.urlForRecordEnrichments(record, null, null, null))
+						.uri(urlBuilder.urlForRecordEnrichments(record, null,  null))
+						.header("Authorization", authToken)
 						.retrieve()
-						.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+						.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+							logger.info("Error while fetching transcription {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
+						.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+							logger.info("Error while fetching transcription {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
 						.bodyToMono(String.class)
 						.doOnError(cause -> {
 							if (cause instanceof TranscriptionPlatformException) {
@@ -198,9 +220,17 @@ public class TranscriptionPlatformService {
 		this.webClient
 				.post()
 				.uri(urlBuilder.urlForTranscription(transcription))
+				.header("Authorization", authToken)
 				.body(BodyInserters.fromObject(transcription.getAnnotationId()))
 				.retrieve()
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+					logger.info("Error while sending annotation url {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new TranscriptionPlatformException());
+				})
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+					logger.info("Error while sending annotation url {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new TranscriptionPlatformException());
+				})
 				.bodyToMono(Object.class)
 				.doOnError(cause -> {
 					if (cause instanceof TranscriptionPlatformException) {
@@ -215,10 +245,17 @@ public class TranscriptionPlatformService {
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
 		String response = this.webClient
 				.get()
-				.uri(urlBuilder.urlForRecordEnrichments(transcription.getRecord(), transcription.getAnnotationId(), transcription.getTp_id(), "transcribing"))
+				.uri(urlBuilder.urlForRecordEnrichments(transcription.getRecord(), transcription.getAnnotationId(), "transcribing"))
+				.header("Authorization", authToken)
 				.retrieve()
-				.onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
-				.onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new TranscriptionPlatformException()))
+				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+					logger.info("Error while fetching transcription update {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new TranscriptionPlatformException());
+				})
+				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+					logger.info("Error while fetching transcription update {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					return Mono.error(new TranscriptionPlatformException());
+				})
 				.bodyToMono(String.class)
 				.doOnError(cause -> {
 					if (cause instanceof TranscriptionPlatformException) {

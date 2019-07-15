@@ -18,6 +18,7 @@ public class UrlBuilder {
     private static final String IMPORTS_ADD_SUFFIX = "/";
     private static final String STORIES_SUFFIX = "/stories";
     private static final String ENRICHMENTS_SUFFIX = "/enrichments";
+    private static final String TRANSCRIPTION_SUFFIX = "/transcription";
     private static final String DATASET_PARAM = "datasetId=";
     private static final String IMPORT_NAME_PARAM = "importName=";
     private static final String STORY_ID_PARAM = "storyId=";
@@ -55,7 +56,7 @@ public class UrlBuilder {
 	}
 
     public String urlForTranscription(Transcription transcription) {
-        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + "/" + transcription.getTp_id();
+        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + TRANSCRIPTION_SUFFIX + "/" + transcription.getTp_id();
     }
 
     public String urlForProjectDatasets(Project project) {
@@ -66,7 +67,7 @@ public class UrlBuilder {
         return transcriptionPlatformLocation + IMPORTS_ADD_SUFFIX;
     }
 
-    public String urlForRecordEnrichments(Record record, String europeanaAnnotationId, String annotationId, String motivation) {
+    public String urlForRecordEnrichments(Record record, String europeanaAnnotationId, String motivation) {
         String url = transcriptionPlatformLocation
                 + ENRICHMENTS_SUFFIX
                 + '?'
@@ -77,12 +78,6 @@ public class UrlBuilder {
                     + EUROPEANA_ANNOTATION_ID_PARAM
                     + europeanaAnnotationId;
         }
-
-        if (annotationId != null) {
-        	url += '&'
-					+ ANNOTATION_ID
-					+ annotationId;
-		}
 
         if (motivation != null) {
         	url += '&'
