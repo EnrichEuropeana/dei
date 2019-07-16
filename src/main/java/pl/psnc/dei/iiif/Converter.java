@@ -174,7 +174,7 @@ public class Converter {
 						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
 				} catch (ConversionException | InterruptedException | IOException e) {
-					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
 				}
 			}
 		}
