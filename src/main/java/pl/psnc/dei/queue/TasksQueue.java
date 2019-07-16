@@ -24,11 +24,9 @@ public class TasksQueue implements Runnable {
 	/**
 	 * Waiting time in millis
 	 */
-	private long waitingTime = HOUR / 4;   //15 minutes
+	private static final long WAITING_TIME = 15 * 60 * 1000;   //15 minutes
 
 	private long failsCount = 0;
-
-	private static long HOUR = 60 * 60 * 1000;
 
 	@Override
 	public void run() {
@@ -53,7 +51,6 @@ public class TasksQueue implements Runnable {
 	private void processingSuccessful() {
 		lastSuccessfulTask = System.currentTimeMillis();
 		failsCount = 0;
-		waitingTime = 0;
 	}
 
 	private void processingFailed(Exception e) throws InterruptedException {
@@ -61,7 +58,7 @@ public class TasksQueue implements Runnable {
 		logger.error("Task processing failed...", e);
 		logQueueState();
 		if (failsCount > 5) {
-			Thread.sleep(waitingTime);
+			Thread.sleep(WAITING_TIME);
 		}
 	}
 
