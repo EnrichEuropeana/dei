@@ -38,7 +38,6 @@ public class TranscribeTask extends Task {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
@@ -49,6 +48,7 @@ public class TranscribeTask extends Task {
 					} else {
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
+							record.setState(Record.RecordState.C_PENDING);
 							tqs.addTaskToQueue(tasksFactory.getTask(record));
 							return;
 						} catch (NotFoundException e) {
