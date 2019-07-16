@@ -19,15 +19,24 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		String mainFileUrl = isShownBy.json.get("@id").getAsString().value();
 		String mainFileFormat = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
 
-		if (aggregatorData.get("edm:hasView") != null)
-			fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
-					.filter(e -> e.getAsObject().get("@id").getAsString().value().endsWith(mainFileFormat))
-					.map(e -> {
-						ConversionData data = new ConversionData();
-						data.json = e.getAsObject();
-						return data;
-					})
-					.collect(Collectors.toList()));
+		if(aggregatorData.get("edm:hasView") != null) {
+			if (aggregatorData.get("edm:hasView").isArray()) {
+				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
+						.filter(e -> e.getAsObject().get("@id").getAsString().value().endsWith(mainFileFormat))
+						.map(e -> {
+							ConversionData data = new ConversionData();
+							data.json = e.getAsObject();
+							return data;
+						})
+						.collect(Collectors.toList()));
+			} else {
+				if(aggregatorData.get("edm:hasView").getAsObject().get("@id").getAsString().value().endsWith(mainFileFormat)){
+					ConversionData data = new ConversionData();
+					data.json = aggregatorData.get("edm:hasView").getAsObject();
+					fileObjects.add(data);
+				}
+			}
+		}
 
 		initFileUrls(recordId);
 	}
