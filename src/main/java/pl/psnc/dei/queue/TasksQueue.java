@@ -24,7 +24,7 @@ public class TasksQueue implements Runnable {
 	/**
 	 * Waiting time in millis
 	 */
-	private final long WAITING_TIME = 15 * 60 * 1000;   //15 minutes
+	private static final long WAITING_TIME = 15 * 60 * 1000;   //15 minutes
 
 	private long failsCount = 0;
 
