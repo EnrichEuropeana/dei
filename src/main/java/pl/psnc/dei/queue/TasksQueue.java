@@ -30,6 +30,8 @@ public class TasksQueue implements Runnable {
 
 	@Override
 	public void run() {
+		logger.info("Tasks queue started with size {}", tasks.size());
+
 		while (true) {
 			try {
 				Task task = tasks.take();

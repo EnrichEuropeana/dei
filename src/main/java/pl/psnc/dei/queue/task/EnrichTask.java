@@ -22,7 +22,6 @@ public class EnrichTask extends Task {
 
 	@Override
 	public void process() {
-		System.err.println("enrich");
 		switch (state) {
 			case E_GET_TRANSCRIPTIONS_FROM_TP:
 				getTranscriptionsFromTp();
