@@ -1,16 +1,25 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.jena.atlas.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.DDBFormatResolver;
+import pl.psnc.dei.service.QueueRecordService;
+import pl.psnc.dei.service.TasksQueueService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
+import java.io.IOException;
+
 public class ConversionTask extends Task {
+
+	Logger logger = LoggerFactory.getLogger(ConversionTask.class);
 
 	private Converter converter;
 
@@ -44,21 +53,30 @@ public class ConversionTask extends Task {
 	}
 
 	@Override
-	public void process() {
-		new Thread(() -> {
+	public void process() throws Exception {
+		try {
+			converter.convertAndGenerateManifest(record, recordJson);
+			tqs.addTaskToQueue(tasksFactory.getTask(record));
+		} catch (ConversionImpossibleException e) {
+			logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
 			try {
-				converter.convertAndGenerateManifest(record, recordJson);
-				tqs.addTaskToQueue(tasksFactory.getTask(record));
-			} catch (ConversionImpossibleException e) {
-				try {
-					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-				} catch (NotFoundException ex) {
-					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-							+ ", identifier: " + record.getIdentifier(), e);
-				}
-			} catch (ConversionException e) {
-				tqs.addTaskToQueue(this);
+				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+				tps.addFailure(record.getAnImport().getName(), record.getIdentifier(), e.getMessage());
+				tps.updateImportState(record.getAnImport());
+
+			} catch (NotFoundException ex) {
+				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+						+ ", identifier: " + record.getIdentifier(), e);
 			}
-		}).start();
+		} catch (ConversionException | InterruptedException | IOException e) {
+			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
+			try {
+				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+				throw e;
+			} catch (NotFoundException ex) {
+				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+						+ ", identifier: " + record.getIdentifier(), e);
+			}
+		}
 	}
 }

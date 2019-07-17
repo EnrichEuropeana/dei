@@ -28,7 +28,7 @@ public abstract class Task {
 		return state;
 	}
 
-	public abstract void process();
+	public abstract void process() throws Exception;
 
 	/**
 	 * Task states representing task processing progress for:
