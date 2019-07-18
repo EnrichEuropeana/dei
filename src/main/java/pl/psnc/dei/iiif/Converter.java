@@ -8,7 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
@@ -172,7 +171,7 @@ public class Converter {
 					executor.runCommand(Arrays.asList("vips",
 							"tiffsave",
 							convData.srcFile.getAbsolutePath(),
-							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile),
+							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
 							"--compression=jpeg",
 							"--Q=70",
 							"--tile",
@@ -180,13 +179,13 @@ public class Converter {
 							"--tile-height=512",
 							"--pyramid"));
 
-					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile));
+					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
 					if (convertedFile.exists()) {
 						convData.outFile = convertedFile;
 						convData.imagePath = record.getProject().getProjectId() + "/"
 								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 								+ record.getIdentifier() + "/"
-								+ getTiffFileName(convData.srcFile);
+								+ getTiffFileName(convData.srcFile.getName());
 					} else {
 						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
@@ -200,8 +199,8 @@ public class Converter {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 	}
 
-	private String getTiffFileName(File file) {
-		return file.getName().split("\\.")[0] + ".tif";
+	private String getTiffFileName(String fileName) {
+		return fileName.split("\\.")[0] + ".tif";
 	}
 
 	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
@@ -269,7 +268,7 @@ public class Converter {
 								+ record.getProject().getProjectId() + "/"
 								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 								+ record.getIdentifier() + "/"
-								+ getTiffFileName(data.srcFile) + "/full/full/0/default.jpg");
+								+ getTiffFileName(getFileName(data)) + "/full/full/0/default.jpg");
 		} catch (ConversionImpossibleException e) {
 			logger.warn("Manifest data couldn't be added!", e);
 		}
