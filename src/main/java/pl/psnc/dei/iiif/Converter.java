@@ -60,6 +60,7 @@ public class Converter {
 		try {
 			URL inputUrl = new ClassPathResource("pdf_to_pyramid_tiff.sh").getURL();
 			File dest = new File("pdf_to_pyramid_tiff.sh");
+			dest.setExecutable(true);
 			FileUtils.copyURLToFile(inputUrl, dest);
 		} catch (IOException e) {
 			logger.info("Cannot find file.. ", e);
