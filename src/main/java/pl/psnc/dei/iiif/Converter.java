@@ -52,7 +52,7 @@ public class Converter {
 
 	private File outDir;
 
-	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson) throws ConversionException {
+	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
@@ -133,7 +133,7 @@ public class Converter {
 		return filePath.substring(filePath.lastIndexOf('/') + 1);
 	}
 
-	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionImpossibleException {
+	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
 		if (dataHolder.fileObjects.get(0).srcFile != null
 				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
@@ -145,6 +145,7 @@ public class Converter {
 						outDir.getAbsolutePath()));
 			} catch (ConversionException | InterruptedException | IOException e) {
 				logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier(), e);
+				throw e;
 			}
 		} else {
 			for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
@@ -174,7 +175,8 @@ public class Converter {
 						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
 				} catch (ConversionException | InterruptedException | IOException e) {
-					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
+					throw e;
 				}
 			}
 		}
