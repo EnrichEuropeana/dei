@@ -45,6 +45,7 @@ public class Record {
 	private List<Transcription> transcriptions;
 
 	@JsonIgnore
+	@Lob
 	private String iiifManifest;
 
 	@JsonIgnore
