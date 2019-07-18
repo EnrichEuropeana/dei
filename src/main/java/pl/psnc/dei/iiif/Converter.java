@@ -8,14 +8,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +54,19 @@ public class Converter {
 	private File srcDir;
 
 	private File outDir;
+
+	@PostConstruct
+	private void copyScript() {
+		try {
+			URL inputUrl = new ClassPathResource("pdf_to_pyramid_tiff.sh").getURL();
+			File dest = new File("pdf_to_pyramid_tiff.sh");
+			dest.setExecutable(true);
+			FileUtils.copyURLToFile(inputUrl, dest);
+		} catch (IOException e) {
+			logger.info("Cannot find file.. ", e);
+		}
+
+	}
 
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
@@ -138,7 +154,7 @@ public class Converter {
 				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
-				String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
+				String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
 				executor.runCommand(Arrays.asList(
 						pdfConversionScript,
 						pdfFile.getAbsolutePath(),
