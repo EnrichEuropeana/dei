@@ -154,7 +154,7 @@ public class Converter {
 				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
-				String pdfConversionScript = "pdf_to_pyramid_tiff.sh";
+				String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
 				executor.runCommand(Arrays.asList(
 						pdfConversionScript,
 						pdfFile.getAbsolutePath(),
