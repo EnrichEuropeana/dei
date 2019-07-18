@@ -8,7 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -35,6 +35,9 @@ public class Converter {
 	private static final CommandExecutor executor = new CommandExecutor();
 
 	private Record record;
+
+	@Autowired
+	ApplicationContext applicationContext;
 
 	@Autowired
 	private RecordsRepository recordsRepository;
@@ -138,7 +141,7 @@ public class Converter {
 				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
-				String pdfConversionScript = new ClassPathResource("pdf_to_pyramid_tiff.sh").getFile().getAbsolutePath();
+				String pdfConversionScript = applicationContext.getResource("classpath:pdf_to_pyramid_tiff.sh").getURL().getPath();
 				executor.runCommand(Arrays.asList(
 						pdfConversionScript,
 						pdfFile.getAbsolutePath(),
