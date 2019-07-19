@@ -13,7 +13,7 @@ public class Transcription {
 
 	private String tp_id;
 
-	@ManyToOne
+	@ManyToOne(fetch = FetchType.LAZY)
 	private Record record;
 
 	@Transient

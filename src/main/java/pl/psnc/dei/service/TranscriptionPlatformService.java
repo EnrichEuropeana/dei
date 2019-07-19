@@ -307,7 +307,7 @@ public class TranscriptionPlatformService {
 			Record savedRecord = record.get();
 			savedRecord.setState(Record.RecordState.E_PENDING);
 			recordsRepository.save(savedRecord);
-			taskQueueService.addTaskToQueue(tasksFactory.getTask(record.get()));
+			taskQueueService.addTaskToQueue(tasksFactory.getTask(savedRecord));
 		} else {
 			throw new NotFoundException("Record not found.");
 		}
