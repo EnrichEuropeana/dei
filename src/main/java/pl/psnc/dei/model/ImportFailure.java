@@ -15,6 +15,7 @@ public class ImportFailure {
 
     private Date occurenceDate;
 
+    @Lob
     private String reason;
 
     @JsonIgnore
