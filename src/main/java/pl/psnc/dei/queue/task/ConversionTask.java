@@ -71,7 +71,7 @@ public class ConversionTask extends Task {
 		} catch (ConversionException | InterruptedException | IOException e) {
 			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 			try {
-				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
+				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
 				throw e;
 			} catch (NotFoundException ex) {
 				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
