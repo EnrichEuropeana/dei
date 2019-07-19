@@ -261,7 +261,7 @@ public class Converter {
 		try {
 			ConversionDataHolder conversionData = createDataHolder(record, jsonObject);
 			conversionData.initFileUrls(record.getIdentifier());
-			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().endsWith(".pdf"))
+			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().toLowerCase().endsWith("pdf"))
 				return;
 			for (ConversionDataHolder.ConversionData data : conversionData.fileObjects)
 				data.json.put("manifestFileId",
