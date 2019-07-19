@@ -72,6 +72,9 @@ public class ConversionTask extends Task {
 			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+				tps.addFailure(record.getAnImport().getName(), record.getIdentifier(), e.getMessage());
+				tps.updateImportState(record.getAnImport());
+
 			} catch (NotFoundException ex) {
 				throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 						+ ", identifier: " + record.getIdentifier(), e);
