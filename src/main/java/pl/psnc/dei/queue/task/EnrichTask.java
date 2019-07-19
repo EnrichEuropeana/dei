@@ -18,6 +18,7 @@ public class EnrichTask extends Task {
 
 	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess) {
 		super(record, queueRecordService, tps, ess);
+		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
 	}
 
 	@Override
