@@ -150,7 +150,7 @@ public class Converter {
 
 	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
 		if (dataHolder.fileObjects.get(0).srcFile != null
-				&& dataHolder.fileObjects.get(0).srcFile.getName().endsWith("pdf")) {
+				&& dataHolder.fileObjects.get(0).srcFile.getName().toLowerCase().endsWith("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
 				String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
