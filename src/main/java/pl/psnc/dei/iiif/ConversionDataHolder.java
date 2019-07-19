@@ -19,5 +19,6 @@ public abstract class ConversionDataHolder {
 		File outFile;
 		File srcFile;
 		String imagePath;
+		String mediaType;
 	}
 }
