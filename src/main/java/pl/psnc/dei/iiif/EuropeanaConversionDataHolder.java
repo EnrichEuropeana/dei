@@ -23,7 +23,15 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		Optional<String[]> typeRaw = record.get("@graph").getAsArray()
 				.stream()
 				.filter(e -> e.getAsObject().get("@id").getAsString().value().equals(mainFileUrl))
-				.map(e -> e.getAsObject().get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#hasMimeType"))
+				.map(e -> {
+					if(e.getAsObject().get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#hasMimeType") != null){
+						return 	e.getAsObject().get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#hasMimeType");
+						}
+					else if(e.getAsObject().get("ebucore:hasMimeType") != null){
+						return e.getAsObject().get("ebucore:hasMimeType");
+					}
+					return null;
+				})
 				.filter(Objects::nonNull)
 				.map(e -> e.getAsString().value().split("/"))
 				.findFirst();
@@ -31,10 +39,11 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		String type;
 
 		if(!typeRaw.isPresent()){
-			logger.info("Wrong file type");
+			logger.info("Missing file type");
 			type = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
 		} else {
 			String[] types = typeRaw.get();
+			logger.info("Present file type");
 			type = types[types.length-1];
 		}
 
