@@ -29,8 +29,7 @@ import java.util.List;
  */
 public class ImportsListGenerator {
 
-	private static final int MAX_FAILURE_MESSAGE_SIZE = 50;
-	private static final int MAX_FAILURES_DISPLAYED = 4;
+	private static final int MAX_FAILURES_DISPLAYED = 3;
 	private static final String MORE_MARKER = "...";
 
 	private final List<Import> imports;
@@ -56,12 +55,12 @@ public class ImportsListGenerator {
 				imports);
 		importsGrid.setDataProvider(dataProvider);
 
-		Grid.Column<Import> projectColumn = importsGrid.addColumn(this::getProjectNameFromImport).setHeader("Project").setSortable(true).setFlexGrow(15);
+		Grid.Column<Import> projectColumn = importsGrid.addColumn(this::getProjectNameFromImport).setHeader("Project").setSortable(true).setFlexGrow(5);
 		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(30);
-		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(15);
-		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
+		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
+		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(3);
 		importsGrid.addColumn(new ComponentRenderer<>(importInfo -> {
-			StringBuilder result = new StringBuilder("<div>");
+			StringBuilder result = new StringBuilder("<div style=\"overflow-x: scroll\">");
 			Iterator<ImportFailure> iterator = importInfo.getFailures().iterator();
 			int counter = 0;
 			while (iterator.hasNext()) {
@@ -72,15 +71,12 @@ public class ImportsListGenerator {
 				}
 				ImportFailure importFailure = iterator.next();
 				String reason = importFailure.getReason();
-				if (reason.length() > MAX_FAILURE_MESSAGE_SIZE) {
-					reason = reason.substring(0, MAX_FAILURE_MESSAGE_SIZE) + MORE_MARKER;
-				}
 				result.append("<p>").append(reason).append("</p>");
 
 			}
 			result.append("</div>");
 			return new Html(result.toString());
-		})).setHeader("Failures").setFlexGrow(40);
+		})).setHeader("Failures").setFlexGrow(50);
 
 		//
 		HeaderRow filterRow = importsGrid.appendHeaderRow();

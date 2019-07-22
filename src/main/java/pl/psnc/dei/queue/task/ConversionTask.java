@@ -61,7 +61,7 @@ public class ConversionTask extends Task {
 			logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-				tps.addFailure(record.getAnImport().getName(), record.getIdentifier(), e.getMessage());
+				tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
 				tps.updateImportState(record.getAnImport());
 
 			} catch (NotFoundException ex) {
@@ -72,7 +72,7 @@ public class ConversionTask extends Task {
 			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-				tps.addFailure(record.getAnImport().getName(), record.getIdentifier(), e.getMessage());
+				tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
 				tps.updateImportState(record.getAnImport());
 
 			} catch (NotFoundException ex) {
