@@ -4,6 +4,7 @@ package pl.psnc.dei.ui.components.imports;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrderBuilder;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
@@ -23,6 +24,7 @@ import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.pages.ImportPage;
 
+import java.util.Comparator;
 import java.util.List;
 
 public class ImportsListComponent extends VerticalLayout {
@@ -59,6 +61,7 @@ public class ImportsListComponent extends VerticalLayout {
 		Grid<Import> importsGrid = new Grid<>();
 		importsGrid.setMaxWidth("70%");
 		//
+		imports.sort(Comparator.comparing(Import::getCreationDate).reversed());
 		ListDataProvider<Import> dataProvider = new ListDataProvider<>(imports);
 		importsGrid.setDataProvider(dataProvider);
 
@@ -74,6 +77,8 @@ public class ImportsListComponent extends VerticalLayout {
 		addFilter(dataProvider, filterRow, creationDateColumn, dateFilter);
 		//
 		importsGrid.setColumnReorderingAllowed(true);
+		importsGrid.sort(new GridSortOrderBuilder<Import>().thenDesc(creationDateColumn).build());
+
 		return importsGrid;
 	}
 

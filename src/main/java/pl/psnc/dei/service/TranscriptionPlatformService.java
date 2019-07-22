@@ -307,7 +307,7 @@ public class TranscriptionPlatformService {
 			Record savedRecord = record.get();
 			savedRecord.setState(Record.RecordState.E_PENDING);
 			recordsRepository.save(savedRecord);
-			taskQueueService.addTaskToQueue(tasksFactory.getTask(record.get()));
+			taskQueueService.addTaskToQueue(tasksFactory.getTask(savedRecord));
 		} else {
 			throw new NotFoundException("Record not found.");
 		}
@@ -335,7 +335,7 @@ public class TranscriptionPlatformService {
 		if (ImportStatus.IN_PROGRESS.equals(anImport.get().getStatus())) {
 			// We have to start the process of sending records by setting record state to T_PENDING and creating TranscribeTask
 			// Only records in NORMAL or T_FAILED state are considered
-			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport.get(), Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED));
+			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport.get(), Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED, Record.RecordState.C_FAILED));
 			toSend.forEach(record -> {
 				record.setState(Record.RecordState.T_PENDING);
 				recordsRepository.save(record);

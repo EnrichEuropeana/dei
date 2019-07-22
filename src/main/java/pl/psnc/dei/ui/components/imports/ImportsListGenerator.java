@@ -4,6 +4,7 @@ import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.Html;
 import com.vaadin.flow.component.datepicker.DatePicker;
 import com.vaadin.flow.component.grid.Grid;
+import com.vaadin.flow.component.grid.GridSortOrderBuilder;
 import com.vaadin.flow.component.grid.HeaderRow;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.orderedlayout.FlexComponent;
@@ -19,6 +20,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.ui.pages.ImportPage;
 
 import java.time.LocalDate;
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,7 +29,7 @@ import java.util.List;
  */
 public class ImportsListGenerator {
 
-	private static final int MAX_FAILURE_MESSAGE_SIZE = 30;
+	private static final int MAX_FAILURE_MESSAGE_SIZE = 50;
 	private static final int MAX_FAILURES_DISPLAYED = 4;
 	private static final String MORE_MARKER = "...";
 
@@ -41,12 +43,13 @@ public class ImportsListGenerator {
 
 	public Grid<Import> generate() {
 		Grid<Import> importsGrid = new Grid<>();
-		importsGrid.setMaxWidth("70%");
 
 		importsGrid.addItemDoubleClickListener(e -> {
 			Import imp = e.getItem();
 			importPage.showEditImportView(imp);
 		});
+
+		imports.sort(Comparator.comparing(Import::getCreationDate).reversed());
 
 		//
 		ListDataProvider<Import> dataProvider = new ListDataProvider<>(
@@ -54,8 +57,8 @@ public class ImportsListGenerator {
 		importsGrid.setDataProvider(dataProvider);
 
 		Grid.Column<Import> projectColumn = importsGrid.addColumn(this::getProjectNameFromImport).setHeader("Project").setSortable(true).setFlexGrow(15);
-		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(15);
-		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(35);
+		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(30);
+		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(15);
 		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(5);
 		importsGrid.addColumn(new ComponentRenderer<>(importInfo -> {
 			StringBuilder result = new StringBuilder("<div>");
@@ -77,7 +80,7 @@ public class ImportsListGenerator {
 			}
 			result.append("</div>");
 			return new Html(result.toString());
-		})).setHeader("Failures").setFlexGrow(10);
+		})).setHeader("Failures").setFlexGrow(40);
 
 		//
 		HeaderRow filterRow = importsGrid.appendHeaderRow();
@@ -87,6 +90,8 @@ public class ImportsListGenerator {
 		addDateRangeFilter(dataProvider, filterRow, creationDateColumn);
 		//
 		importsGrid.setColumnReorderingAllowed(true);
+		importsGrid.sort(new GridSortOrderBuilder<Import>().thenAsc(creationDateColumn).build());
+
 		return importsGrid;
 	}
 
