@@ -62,20 +62,24 @@ public class ImportsListGenerator {
 		importsGrid.addColumn(new ComponentRenderer<>(importInfo -> {
 			StringBuilder result = new StringBuilder("<div style=\"overflow-x: scroll\">");
 			Iterator<ImportFailure> iterator = importInfo.getFailures().iterator();
-			int counter = 0;
-			while (iterator.hasNext()) {
-				counter++;
-				if (counter > MAX_FAILURES_DISPLAYED) {
-					result.append(MORE_MARKER);
-					break;
-				}
-				ImportFailure importFailure = iterator.next();
-				String reason = importFailure.getReason();
-				result.append("<p>").append(reason).append("</p>");
+			if(iterator.hasNext()) {
+				int counter = 0;
+				while (iterator.hasNext()) {
+					counter++;
+					if (counter > MAX_FAILURES_DISPLAYED) {
+						result.append(MORE_MARKER);
+						break;
+					}
+					ImportFailure importFailure = iterator.next();
+					String reason = importFailure.getReason();
+					result.append("<p>").append(reason).append("</p>");
 
+				}
+				result.append("</div>");
+				return new Html(result.toString());
+			} else {
+				return new Html("<div> </div>");
 			}
-			result.append("</div>");
-			return new Html(result.toString());
 		})).setHeader("Failures").setFlexGrow(50);
 
 		//
