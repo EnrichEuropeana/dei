@@ -111,7 +111,7 @@ public class Converter {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get());
+				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson);
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
@@ -149,8 +149,8 @@ public class Converter {
 	}
 
 	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
-		if (dataHolder.fileObjects.get(0).srcFile != null
-				&& dataHolder.fileObjects.get(0).srcFile.getName().toLowerCase().endsWith("pdf")) {
+		if (dataHolder.fileObjects.get(0).mediaType != null
+				&& dataHolder.fileObjects.get(0).mediaType.toLowerCase().equals("pdf")) {
 			File pdfFile = dataHolder.fileObjects.get(0).srcFile;
 			try {
 				String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
