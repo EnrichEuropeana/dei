@@ -235,6 +235,7 @@ public class CreateImportComponent extends VerticalLayout {
 		sendButton.addClickListener(e -> {
 			try {
 				importPackageService.sendExistingImport(anImport.getName());
+				anImport.setStatus(ImportStatus.SENT);
 				Notification.show("Sending import started", 3000, Notification.Position.TOP_CENTER);
 				updateComponents();
 			} catch (NotFoundException ex) {
