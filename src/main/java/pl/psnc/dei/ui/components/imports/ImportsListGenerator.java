@@ -29,9 +29,6 @@ import java.util.List;
  */
 public class ImportsListGenerator {
 
-	private static final int MAX_FAILURES_DISPLAYED = 3;
-	private static final String MORE_MARKER = "...";
-
 	private final List<Import> imports;
 	private final ImportPage importPage;
 
@@ -60,16 +57,10 @@ public class ImportsListGenerator {
 		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
 		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(3);
 		importsGrid.addColumn(new ComponentRenderer<>(importInfo -> {
-			StringBuilder result = new StringBuilder("<div style=\"overflow-x: scroll\">");
+			StringBuilder result = new StringBuilder("<div style=\"overflow: scroll; max-height: 100px;\">");
 			Iterator<ImportFailure> iterator = importInfo.getFailures().iterator();
 			if(iterator.hasNext()) {
-				int counter = 0;
 				while (iterator.hasNext()) {
-					counter++;
-					if (counter > MAX_FAILURES_DISPLAYED) {
-						result.append(MORE_MARKER);
-						break;
-					}
 					ImportFailure importFailure = iterator.next();
 					String reason = importFailure.getReason();
 					result.append("<p>").append(reason).append("</p>");
