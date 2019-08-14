@@ -40,7 +40,13 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		if(!typeRaw.isPresent()){
 			logger.info("Missing file type");
-			type = mainFileUrl.substring(mainFileUrl.lastIndexOf('.'));
+			int dotIndex = mainFileUrl.lastIndexOf('.');
+			if(dotIndex != -1) {
+				type = mainFileUrl.substring(dotIndex);
+			} else {
+				type = null;
+			}
+
 		} else {
 			String[] types = typeRaw.get();
 			logger.info("Present file type");
