@@ -50,6 +50,9 @@ public class Converter {
 	@Value("${application.server.url}")
 	private String serverUrl;
 
+	@Value("${server.servlet.context-path}")
+	private String serverPath;
+
 	private File srcDir;
 
 	private File outDir;
@@ -187,7 +190,7 @@ public class Converter {
 								+ record.getIdentifier() + "/"
 								+ getTiffFileName(convData.srcFile.getName());
 					} else {
-						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+						throw new ConversionException("Conversion failed for file "  + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
 				} catch (ConversionException | InterruptedException | IOException e) {
 					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
@@ -206,7 +209,7 @@ public class Converter {
 	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
-		manifest.put("@id", serverUrl + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
+		manifest.put("@id", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 		manifest.put("@type", "sc:manifest");
 
 		JsonObject sequence = new JsonObject();

@@ -35,12 +35,15 @@ public class TasksFactory {
 	@Value("${application.server.url}")
 	String serverUrl;
 
+	@Value("${server.servlet.context-path}")
+	private String serverPath;
+
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
 				return new EnrichTask(record, qrs, tps, ess);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, tqs, serverUrl, this);
+				return new TranscribeTask(record, qrs, tps, ess, tqs, serverUrl, serverPath, this);
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess);
 			case C_PENDING:

@@ -24,12 +24,15 @@ public class TranscribeTask extends Task {
 
 	private String serverUrl;
 
+	private String serverPath;
+
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, TasksQueueService tqs, String serverUrl, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
 		super(record, queueRecordService, tps, ess);
 		this.tqs = tqs;
+		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;
-		this.serverUrl = serverUrl;
+		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
 	}
 
@@ -42,7 +45,7 @@ public class TranscribeTask extends Task {
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
-						recordJson.put("iiif_url", serverUrl + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
+						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson);
 						state = T_SEND_RESULT;
 					} else {
