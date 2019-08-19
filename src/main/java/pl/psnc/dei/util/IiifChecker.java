@@ -45,7 +45,7 @@ public class IiifChecker {
 						|| (o.get(KEY_TYPE).getAsString().value().equals(TYPE_AGGREGATION)
 						&& o.get(KEY_IS_SHOWN_BY) != null
 						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu"))
-						|| (o.get(KEY_TYPE).getAsString().value().equals("http://rdfs.org/sioc/services#Service")
+						|| ((o.get(KEY_TYPE).getAsString().value().equals("http://rdfs.org/sioc/services#Service") || (o.get(KEY_TYPE).getAsString().value().equals(TYPE_SERVICE)))
 						&& o.get(KEY_DCTERMS_CONFORMS_TO) != null
 						&& o.get(KEY_DCTERMS_CONFORMS_TO).getAsObject().get("@id").getAsString().value().equals("http://iiif.io/api/image")))
 				.findFirst();
