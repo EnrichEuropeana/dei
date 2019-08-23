@@ -1,6 +1,8 @@
 package pl.psnc.dei.controllers;
 
 import org.apache.jena.atlas.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,9 +13,12 @@ import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
+
 @RestController
 @RequestMapping("/api/transcription")
 public class TranscriptionController {
+
+	private Logger logger = LoggerFactory.getLogger(TranscriptionController.class);
 
 	private TranscriptionPlatformService tps;
 
@@ -30,6 +35,8 @@ public class TranscriptionController {
 
 	@PostMapping
 	public ResponseEntity transcriptionReady(@RequestParam(value = "recordId") String recordId) {
+
+		logger.info("Transcription ready {}", recordId);
 
 		if (!EuropeanaRecordIdValidator.validate(recordId)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
@@ -48,6 +55,8 @@ public class TranscriptionController {
 			@RequestParam("annotationId") String annotationId,
 			@RequestParam("recordId") String recordId,
 			@RequestParam("transcriptionId") String transcriptionId) {
+
+		logger.info("Transcription updated {}", recordId);
 
 		if (!EuropeanaRecordIdValidator.validate(recordId)) {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
