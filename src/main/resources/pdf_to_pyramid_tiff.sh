@@ -12,21 +12,24 @@ echo pdf_to_pyramid_tiff
 # get number of pages
 nop=$(pdfinfo "$pdfFile" | grep Pages: | awk '{print $2}')
 
-for i in $(seq 0 $(($nop - 1)))
+for (( i=0; i<$nop; i++ ))
 do
-vips pdfload "$pdfFile" "$pdfFile$i.tif" --page $i
+pageNo=$(printf -v i "%04d" $i ; echo $i)
+vips pdfload "$pdfFile" "$pdfFile$pageNo.tif" --page $i
 done
 
-for i in $(seq 0 $(($nop - 1)))
+for (( i=0; i<$nop; i++ ))
 do
+pageNo=$(printf -v i "%04d" $i ; echo $i)
 name=$(basename -- "$pdfFile")
 name="${name%.*}"
-vips tiffsave "$pdfFile$i.tif" "$outFolder/${name}_$i.tif" --compression=jpeg --Q=70 --tile --tile-width=512 --tile-height=512 --pyramid
+vips tiffsave "$pdfFile$pageNo.tif" "$outFolder/${name}_$pageNo.tif" --compression=jpeg --Q=70 --tile --tile-width=512 --tile-height=512 --pyramid
 done
 
-for i in $(seq 0 $(($nop - 1)))
+for (( i=0; i<$nop; i++ ))
 do
-rm "$pdfFile$i.tif"
+pageNo=$(printf -v i "%04d" $i ; echo $i)
+rm "$pdfFile$pageNo.tif"
 done
 
 echo Done

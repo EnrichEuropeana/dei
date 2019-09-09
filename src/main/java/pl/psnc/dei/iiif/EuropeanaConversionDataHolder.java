@@ -14,19 +14,38 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 	private static final Logger logger = LoggerFactory.getLogger(EuropeanaConversionDataHolder.class);
 
-	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
-		ConversionData isShownBy = new ConversionData();
-		isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
-		fileObjects.add(isShownBy);
-		String mainFileUrl = isShownBy.json.get("@id").getAsString().value();
+	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
+		// get hasView objects and for each create ConversionData object
+		if(aggregatorData.get("edm:hasView") != null) {
+			if (aggregatorData.get("edm:hasView").isArray()) {
+				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
+						.map(e -> {
+							ConversionData data = new ConversionData();
+							data.json = e.getAsObject();
+							data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
+							return data;
+						})
+						.collect(Collectors.toList()));
+			} else {
+				ConversionData data = new ConversionData();
+				data.json = aggregatorData.get("edm:hasView").getAsObject();
+				fileObjects.add(data);
+				data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
+			}
+			initFileUrls(recordId);
+		} else {
+			logger.info("Missing edm:hasView entries...");
+		}
+	}
 
+	String detectType(String id, JsonObject record) {
 		Optional<String[]> typeRaw = record.get("@graph").getAsArray()
 				.stream()
-				.filter(e -> e.getAsObject().get("@id").getAsString().value().equals(mainFileUrl))
+				.filter(e -> e.getAsObject().get("@id").getAsString().value().equals(id))
 				.map(e -> {
 					if(e.getAsObject().get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#hasMimeType") != null){
 						return 	e.getAsObject().get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#hasMimeType");
-						}
+					}
 					else if(e.getAsObject().get("ebucore:hasMimeType") != null){
 						return e.getAsObject().get("ebucore:hasMimeType");
 					}
@@ -40,9 +59,9 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		if(!typeRaw.isPresent()){
 			logger.info("Missing file type");
-			int dotIndex = mainFileUrl.lastIndexOf('.');
+			int dotIndex = id.lastIndexOf('.');
 			if(dotIndex != -1) {
-				type = mainFileUrl.substring(dotIndex);
+				type = id.substring(dotIndex);
 			} else {
 				type = null;
 			}
@@ -52,31 +71,11 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 			logger.info("Present file type");
 			type = types[types.length-1];
 		}
+		return type;
+	}
 
-
-		if(aggregatorData.get("edm:hasView") != null) {
-			if (aggregatorData.get("edm:hasView").isArray()) {
-				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
-						.map(e -> {
-							ConversionData data = new ConversionData();
-							data.json = e.getAsObject();
-							data.mediaType = type;
-							return data;
-						})
-						.collect(Collectors.toList()));
-			} else {
-					ConversionData data = new ConversionData();
-					data.json = aggregatorData.get("edm:hasView").getAsObject();
-					fileObjects.add(data);
-					data.mediaType = type;
-			}
-		}
-
-		initFileUrls(recordId);
-
-		for (ConversionData data : fileObjects) {
-			data.mediaType = type;
-		}
+	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
+		createConversionDataHolder(recordId, aggregatorData, record);
 	}
 
 	@Override
