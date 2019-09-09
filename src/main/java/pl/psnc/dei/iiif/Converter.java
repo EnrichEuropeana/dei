@@ -16,9 +16,11 @@ import pl.psnc.dei.model.Record;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -85,9 +87,9 @@ public class Converter {
 		try {
 			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson);
 			saveFilesInTempDirectory(conversionDataHolder);
-			convertFiles(conversionDataHolder);
+			convertAllFiles(conversionDataHolder);
 			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
-					.filter(e -> e.outFile != null)
+					.filter(e -> e.outFile != null && !e.outFile.isEmpty())
 					.collect(Collectors.toList());
 
 			record.setIiifManifest(getManifest(convertedFiles).toString());
@@ -151,63 +153,83 @@ public class Converter {
 		return filePath.substring(filePath.lastIndexOf('/') + 1);
 	}
 
-	private void convertFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
-		if (dataHolder.fileObjects.get(0).mediaType != null) {
-			if (dataHolder.fileObjects.get(0).mediaType.toLowerCase().equals("pdf")) {
-				File pdfFile = dataHolder.fileObjects.get(0).srcFile;
+	private String  extractFileName(String name) {
+		int i = name.lastIndexOf('.');
+		return i != -1 ? name.substring(0, i) : name;
+	}
+
+	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
+			if (convData.srcFile == null || convData.mediaType == null)
+				continue;
+
+			if (convData.mediaType.toLowerCase().equals("pdf")) {
 				try {
 					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
 					executor.runCommand(Arrays.asList(
 							pdfConversionScript,
-							pdfFile.getAbsolutePath(),
+							convData.srcFile.getAbsolutePath(),
 							outDir.getAbsolutePath()));
+
+					prepareImagePaths(convData);
 				} catch (ConversionException | InterruptedException | IOException e) {
-					logger.error("Conversion failed for file: " + pdfFile.getName() + " from record: " + record.getIdentifier(), e);
+					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier(), e);
 					throw e;
 				}
+
 			} else {
-				for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
-					if (convData.srcFile == null)
-						continue;
+				try {
+					executor.runCommand(Arrays.asList("vips",
+							"tiffsave",
+							convData.srcFile.getAbsolutePath(),
+							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
+							"--compression=jpeg",
+							"--Q=70",
+							"--tile",
+							"--tile-width=512",
+							"--tile-height=512",
+							"--pyramid"));
 
-					try {
-						executor.runCommand(Arrays.asList("vips",
-								"tiffsave",
-								convData.srcFile.getAbsolutePath(),
-								outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
-								"--compression=jpeg",
-								"--Q=70",
-								"--tile",
-								"--tile-width=512",
-								"--tile-height=512",
-								"--pyramid"));
-
-						File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
-						if (convertedFile.exists()) {
-							convData.outFile = convertedFile;
-							convData.imagePath = record.getProject().getProjectId() + "/"
-									+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
-									+ record.getIdentifier() + "/"
-									+ getTiffFileName(convData.srcFile.getName());
-						} else {
-                            throw new ConversionException("Conversion failed for file "  + convData.srcFile.getName() + " from record: " + record.getIdentifier());
-						}
-					} catch (ConversionException | InterruptedException | IOException e) {
-						logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
-						throw e;
+					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
+					if (convertedFile.exists()) {
+						convData.outFile.add(convertedFile);
+						convData.imagePath.add(record.getProject().getProjectId() + "/"
+								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+								+ record.getIdentifier() + "/"
+								+ getTiffFileName(convData.srcFile.getName()));
+					} else {
+						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
+				} catch (ConversionException | InterruptedException | IOException e) {
+					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
+					throw e;
 				}
 			}
-			if (outDir.listFiles().length == 0) {
-				throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
-			}
-		} else {
-			throw new ConversionImpossibleException("No file type");
+		}
+		if (outDir.listFiles().length == 0) {
+			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
+		}
+	}
+
+	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {
+		String filterName = extractFileName(convData.srcFile.getName());
+
+		File[] files = outDir.listFiles((file, name) -> name.startsWith(filterName));
+		if (files != null) {
+			Arrays.sort(files);
+			Arrays.stream(files).forEach(file -> {
+				convData.outFile.add(file);
+				convData.imagePath.add(record.getProject().getProjectId() + "/"
+						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+						+ record.getIdentifier() + "/"
+						+ file.getName());
+			});
 		}
 	}
 
 	private String getTiffFileName(String fileName) {
-		return fileName.split("\\.")[0] + ".tif";
+		int i = fileName.lastIndexOf('.');
+		return (i != -1 ? fileName.substring(0, i) : fileName) + ".tif";
 	}
 
 	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
@@ -230,34 +252,36 @@ public class Converter {
 		JsonArray canvases = new JsonArray();
 
 		for (ConversionDataHolder.ConversionData data : storedFilesData) {
-			JsonObject canvas = new JsonObject();
-			canvases.add(canvas);
+			for (String imagePath : data.imagePath) {
+				JsonObject canvas = new JsonObject();
+				canvases.add(canvas);
 
-			canvas.put("@id", iiifImageServerUrl + "/canvas/" + data.imagePath);
-			canvas.put("@type", "sc:canvas");
-			canvas.put("label", data.imagePath);
-			canvas.put("width", "1000");
-			canvas.put("height", "1000");
+				canvas.put("@id", iiifImageServerUrl + "/canvas/" + imagePath);
+				canvas.put("@type", "sc:canvas");
+				canvas.put("label", imagePath);
+				canvas.put("width", "1000");
+				canvas.put("height", "1000");
 
-			JsonArray images = new JsonArray();
-			canvas.put("images", images);
-			JsonObject image = new JsonObject();
-			images.add(image);
+				JsonArray images = new JsonArray();
+				canvas.put("images", images);
+				JsonObject image = new JsonObject();
+				images.add(image);
 
-			image.put("@type", "oa:Annotation");
-			image.put("motivation", "sc:painting");
-			image.put("on", canvas.get("@id"));
-			JsonObject resource = new JsonObject();
-			image.put("resource", resource);
+				image.put("@type", "oa:Annotation");
+				image.put("motivation", "sc:painting");
+				image.put("on", canvas.get("@id"));
+				JsonObject resource = new JsonObject();
+				image.put("resource", resource);
 
-			resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath + "/full/full/0/default.jpg");
-			resource.put("@type", "dctypes:Image");
-			JsonObject service = new JsonObject();
-			resource.put("service", service);
+				resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imagePath + "/full/full/0/default.jpg");
+				resource.put("@type", "dctypes:Image");
+				JsonObject service = new JsonObject();
+				resource.put("service", service);
 
-			service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + data.imagePath);
-			service.put("@context", "http://iiif.io/api/image/2/context.json");
-			service.put("profile", "http://iiif.io/api/image/2/level1.json");
+				service.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imagePath);
+				service.put("@context", "http://iiif.io/api/image/2/context.json");
+				service.put("profile", "http://iiif.io/api/image/2/level1.json");
+			}
 		}
 
 		return canvases;
