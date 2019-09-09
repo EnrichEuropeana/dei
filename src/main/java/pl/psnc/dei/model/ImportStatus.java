@@ -9,11 +9,11 @@ package pl.psnc.dei.model;
  * SENT when an import was sent successfully
  */
 public enum ImportStatus {
-    NEW(1),
-    CREATED(2),
-    IN_PROGRESS(3),
-    FAILED(4),
-    SENT(5);
+    NEW(0),
+    CREATED(1),
+    IN_PROGRESS(2),
+    FAILED(3),
+    SENT(4);
 
     private final int status;
 
