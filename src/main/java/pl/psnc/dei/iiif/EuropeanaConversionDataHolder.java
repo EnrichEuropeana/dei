@@ -32,10 +32,13 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				fileObjects.add(data);
 				data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
 			}
-			initFileUrls(recordId);
 		} else {
-			logger.info("Missing edm:hasView entries...");
+			ConversionData isShownBy = new ConversionData();
+			isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
+			isShownBy.mediaType = detectType(isShownBy.json.getAsObject().get("@id").getAsString().value(), record);
+			fileObjects.add(isShownBy);
 		}
+		initFileUrls(recordId);
 	}
 
 	String detectType(String id, JsonObject record) {
