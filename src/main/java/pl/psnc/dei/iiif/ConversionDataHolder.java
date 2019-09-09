@@ -16,9 +16,9 @@ public abstract class ConversionDataHolder {
 	class ConversionData {
 		JsonObject json;
 		URL srcFileUrl;
-		File outFile;
+		List<File> outFile = new ArrayList<>();
 		File srcFile;
-		String imagePath;
+		List<String> imagePath = new ArrayList<>();
 		String mediaType;
 	}
 }
