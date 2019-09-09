@@ -351,6 +351,7 @@ public class TranscriptionPlatformService {
 	 */
 	public void updateImportState(Import anImport) {
 		if (ImportStatus.IN_PROGRESS.equals(anImport.getStatus())) {
+			logger.info("Updating import status from IN_PROGRESS...");
 			// if there is any record in state T_PENDING import is still IN_PROGRESS
 			Set<Record> pendingRecords = recordsRepository.findAllByAnImportAndState(anImport, Record.RecordState.T_PENDING);
 			if (pendingRecords.isEmpty()) {
@@ -362,6 +363,7 @@ public class TranscriptionPlatformService {
 				importsRepository.save(anImport);
 			}
 		}
+		logger.info("Import status updated to" + anImport.getStatus());
 	}
 
 	/**
