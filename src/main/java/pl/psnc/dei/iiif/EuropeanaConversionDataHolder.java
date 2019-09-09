@@ -15,8 +15,13 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 	private static final Logger logger = LoggerFactory.getLogger(EuropeanaConversionDataHolder.class);
 
 	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
+		ConversionData isShownBy = new ConversionData();
+		isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
+		isShownBy.mediaType = detectType(isShownBy.json.getAsObject().get("@id").getAsString().value(), record);
+		fileObjects.add(isShownBy);
+
 		// get hasView objects and for each create ConversionData object
-		if(aggregatorData.get("edm:hasView") != null) {
+		if (aggregatorData.get("edm:hasView") != null) {
 			if (aggregatorData.get("edm:hasView").isArray()) {
 				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
 						.map(e -> {
@@ -32,12 +37,8 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				fileObjects.add(data);
 				data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
 			}
-		} else {
-			ConversionData isShownBy = new ConversionData();
-			isShownBy.json = aggregatorData.get("edm:isShownBy").getAsObject();
-			isShownBy.mediaType = detectType(isShownBy.json.getAsObject().get("@id").getAsString().value(), record);
-			fileObjects.add(isShownBy);
 		}
+
 		initFileUrls(recordId);
 	}
 
