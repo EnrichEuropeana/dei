@@ -84,7 +84,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 				.csrf().disable()
 				.authorizeRequests()
 				// allow Vaadin URLs and the login URL without authentication
-				.regexMatchers("/frontend/.*", "/VAADIN/.*").permitAll()
+				.regexMatchers("/frontend/.*", "/VAADIN/.*", "/api/transcription/iiif/manifest**").permitAll()
 				.requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
 				.antMatchers("/accessdenied*", "/logout*", "/sso/login*").permitAll()
 				.and()
