@@ -24,7 +24,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		if (aggregatorData.get("edm:hasView") != null) {
 			if (aggregatorData.get("edm:hasView").isArray()) {
 				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
-						.filter(jsonValue -> fileObjects.stream().anyMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
+						.filter(jsonValue -> fileObjects.stream().noneMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
 						.map(e -> {
 							ConversionData data = new ConversionData();
 							data.json = e.getAsObject();
