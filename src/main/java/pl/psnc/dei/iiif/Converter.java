@@ -81,9 +81,11 @@ public class Converter {
 
 		srcDir = new File(conversionDirectory, "/src/" + imagePath);
 		srcDir.mkdirs();
+		logger.info("Source dir created: " + srcDir.getAbsolutePath());
 
 		outDir = new File(conversionDirectory, "/out/" + imagePath);
 		outDir.mkdirs();
+		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
 		try {
 			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson);
