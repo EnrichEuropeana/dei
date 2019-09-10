@@ -24,6 +24,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		if (aggregatorData.get("edm:hasView") != null) {
 			if (aggregatorData.get("edm:hasView").isArray()) {
 				fileObjects.addAll(aggregatorData.get("edm:hasView").getAsArray().stream()
+						.filter(jsonValue -> fileObjects.stream().anyMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
 						.map(e -> {
 							ConversionData data = new ConversionData();
 							data.json = e.getAsObject();
@@ -32,10 +33,14 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 						})
 						.collect(Collectors.toList()));
 			} else {
-				ConversionData data = new ConversionData();
-				data.json = aggregatorData.get("edm:hasView").getAsObject();
-				fileObjects.add(data);
-				data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
+				JsonObject object = aggregatorData.get("edm:hasView").getAsObject();
+				Optional<ConversionData> alreadyThere = fileObjects.stream().filter(conversionData -> conversionData.json.equals(object)).findFirst();
+				if (!alreadyThere.isPresent()) {
+					ConversionData data = new ConversionData();
+					data.json = object;
+					fileObjects.add(data);
+					data.mediaType = detectType(data.json.getAsObject().get("@id").getAsString().value(), record);
+				}
 			}
 		}
 
