@@ -10,7 +10,7 @@ function process() {
 echo pdf_to_pyramid_tiff
 
 # get number of pages
-nop=$(pdfinfo "$pdfFile" | grep Pages: | awk '{print $2}')
+nop=$(pdfinfo "$pdfFile" | grep -a Pages: | awk '{print $2}')
 
 for (( i=0; i<$nop; i++ ))
 do
