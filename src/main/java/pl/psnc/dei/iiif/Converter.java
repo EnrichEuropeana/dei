@@ -66,6 +66,7 @@ public class Converter {
 			File dest = new File("pdf_to_pyramid_tiff.sh");
 			dest.setExecutable(true);
 			FileUtils.copyURLToFile(inputUrl, dest);
+			logger.info("Conversion script located in " + dest.getAbsolutePath());
 		} catch (IOException e) {
 			logger.info("Cannot find file.. ", e);
 		}
@@ -223,6 +224,7 @@ public class Converter {
 						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 						+ record.getIdentifier() + "/"
 						+ file.getName());
+				logger.info("Output file for source " + convData.srcFile + ": " + convData.imagePath.get(convData.imagePath.size() - 1));
 			});
 		}
 	}
