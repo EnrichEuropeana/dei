@@ -16,13 +16,13 @@ import pl.psnc.dei.model.Record;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -37,6 +37,12 @@ public class Converter {
 	private static final Logger logger = LoggerFactory.getLogger(Converter.class);
 
 	private static final CommandExecutor executor = new CommandExecutor();
+
+	private static final Pattern HEIGHT_PATTERN = Pattern.compile("height=(\\d+)");
+
+	private static final Pattern WIDTH_PATTERN = Pattern.compile("width=(\\d+)");
+
+	private static final int DEFAULT_DIMENSION = 1000;
 
 	private Record record;
 
@@ -200,6 +206,7 @@ public class Converter {
 								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 								+ record.getIdentifier() + "/"
 								+ getTiffFileName(convData.srcFile.getName()));
+						convData.dimensions.add(extractDimensions(convertedFile));
 					} else {
 						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
@@ -226,11 +233,30 @@ public class Converter {
 						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 						+ record.getIdentifier() + "/"
 						+ file.getName());
+				convData.dimensions.add(extractDimensions(file));
 				logger.info("Output file for source " + convData.srcFile + ": " + convData.imagePath.get(convData.imagePath.size() - 1));
 			});
 		}
 	}
 
+	private Dimension extractDimensions(File file) {
+		try {
+			String output = executor.runCommand(Arrays.asList(
+					"file",
+					file.getAbsolutePath()));
+			return new Dimension(getDimensionFromPattern(WIDTH_PATTERN.matcher(output)), getDimensionFromPattern(HEIGHT_PATTERN.matcher(output)));
+		} catch (Exception e) {
+			logger.warn("Could not extract image dimensions. Setting default 1000x1000");
+		}
+		return new Dimension(DEFAULT_DIMENSION, DEFAULT_DIMENSION);
+	}
+
+	private int getDimensionFromPattern(Matcher matcher) {
+		if (matcher.find()) {
+			return Integer.parseInt(matcher.group(1));
+		}
+		return DEFAULT_DIMENSION;
+	}
 	private String getTiffFileName(String fileName) {
 		int i = fileName.lastIndexOf('.');
 		return (i != -1 ? fileName.substring(0, i) : fileName) + ".tif";
@@ -256,7 +282,8 @@ public class Converter {
 		JsonArray canvases = new JsonArray();
 
 		for (ConversionDataHolder.ConversionData data : storedFilesData) {
-			for (String imagePath : data.imagePath) {
+			for (int i = 0; i < data.imagePath.size(); i++) {
+				String imagePath = data.imagePath.get(i);
 				JsonObject canvas = new JsonObject();
 				canvases.add(canvas);
 
@@ -279,6 +306,8 @@ public class Converter {
 
 				resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imagePath + "/full/full/0/default.jpg");
 				resource.put("@type", "dctypes:Image");
+				resource.put("width", data.dimensions.get(i).width);
+				resource.put("height", data.dimensions.get(i).height);
 				JsonObject service = new JsonObject();
 				resource.put("service", service);
 

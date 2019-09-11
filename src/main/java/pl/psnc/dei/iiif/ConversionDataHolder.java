@@ -20,5 +20,6 @@ public abstract class ConversionDataHolder {
 		File srcFile;
 		List<String> imagePath = new ArrayList<>();
 		String mediaType;
+		List<Dimension> dimensions = new ArrayList<>();
 	}
 }

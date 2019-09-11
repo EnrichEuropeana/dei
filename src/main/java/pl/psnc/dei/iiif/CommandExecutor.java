@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 class CommandExecutor {
 
@@ -18,11 +19,13 @@ class CommandExecutor {
 
 	private ExecutorService printingThread = Executors.newSingleThreadExecutor();
 
-	public void runCommand(List<String> command) throws IOException, InterruptedException, ConversionException {
+	public String runCommand(List<String> command) throws IOException, InterruptedException, ConversionException {
+		AtomicReference<String> output = new AtomicReference<>();
 		Process process = new ProcessBuilder(command).redirectInput(ProcessBuilder.Redirect.INHERIT).redirectErrorStream(true).start();
 		printingThread.execute(() -> {
 			try (InputStream in = process.getInputStream()) {
-				logger.info("\n" + IOUtils.toString(in, Charset.defaultCharset()));
+				output.set(IOUtils.toString(in, Charset.defaultCharset()));
+				logger.info("\n" + output.get());
 			} catch (IOException e) {
 				logger.error("Error while reading script output...", e);
 			}
@@ -35,5 +38,6 @@ class CommandExecutor {
 		if (executionResult != 0) {
 			throw new ConversionException("Command execution failed for: " + command.toString());
 		}
+		return output.get();
 	}
 }
