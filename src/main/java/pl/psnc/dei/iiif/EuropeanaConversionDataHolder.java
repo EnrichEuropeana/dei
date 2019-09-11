@@ -70,7 +70,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 			logger.info("Missing file type");
 			int dotIndex = id.lastIndexOf('.');
 			if(dotIndex != -1) {
-				type = id.substring(dotIndex);
+				type = id.substring(dotIndex + 1);
 			} else {
 				type = null;
 			}
