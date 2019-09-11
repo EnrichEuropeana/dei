@@ -40,7 +40,7 @@ public class Converter {
 
 	private static final Pattern DIMENSIONS_PATTERN = Pattern.compile("Image size\\s*:\\s*(\\d*)\\s*x\\s*(\\d*)");
 
-	private static final int DEFAULT_DIMENSION = 1000;
+	private static final int DEFAULT_DIMENSION = 6000;
 
 	private Record record;
 
@@ -293,8 +293,8 @@ public class Converter {
 				canvas.put("@id", iiifImageServerUrl + "/canvas/" + imagePath);
 				canvas.put("@type", "sc:canvas");
 				canvas.put("label", imagePath);
-				canvas.put("width", "1000");
-				canvas.put("height", "1000");
+				canvas.put("width", data.dimensions.get(i).width);
+				canvas.put("height", data.dimensions.get(i).height);
 
 				JsonArray images = new JsonArray();
 				canvas.put("images", images);
