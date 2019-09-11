@@ -38,9 +38,7 @@ public class Converter {
 
 	private static final CommandExecutor executor = new CommandExecutor();
 
-	private static final Pattern HEIGHT_PATTERN = Pattern.compile("height=(\\d+)");
-
-	private static final Pattern WIDTH_PATTERN = Pattern.compile("width=(\\d+)");
+	private static final Pattern DIMENSIONS_PATTERN = Pattern.compile("Image size\\s*:\\s*(\\d*)\\s*x\\s*(\\d*)");
 
 	private static final int DEFAULT_DIMENSION = 1000;
 
@@ -242,21 +240,26 @@ public class Converter {
 	private Dimension extractDimensions(File file) {
 		try {
 			String output = executor.runCommand(Arrays.asList(
-					"file",
+					"exiv2",
 					file.getAbsolutePath()));
-			return new Dimension(getDimensionFromPattern(WIDTH_PATTERN.matcher(output)), getDimensionFromPattern(HEIGHT_PATTERN.matcher(output)));
+			return getDimensionFromPattern(DIMENSIONS_PATTERN.matcher(output));
 		} catch (Exception e) {
 			logger.warn("Could not extract image dimensions. Setting default 1000x1000");
 		}
 		return new Dimension(DEFAULT_DIMENSION, DEFAULT_DIMENSION);
 	}
 
-	private int getDimensionFromPattern(Matcher matcher) {
+	private Dimension getDimensionFromPattern(Matcher matcher) {
+		int width = DEFAULT_DIMENSION;
+		int height = DEFAULT_DIMENSION;
+
 		if (matcher.find()) {
-			return Integer.parseInt(matcher.group(1));
+			width = Integer.parseInt(matcher.group(1));
+			height = Integer.parseInt(matcher.group(2));
 		}
-		return DEFAULT_DIMENSION;
+		return new Dimension(width, height);
 	}
+
 	private String getTiffFileName(String fileName) {
 		int i = fileName.lastIndexOf('.');
 		return (i != -1 ? fileName.substring(0, i) : fileName) + ".tif";
