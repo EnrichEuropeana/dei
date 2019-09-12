@@ -25,7 +25,9 @@ class CommandExecutor {
 		printingThread.execute(() -> {
 			try (InputStream in = process.getInputStream()) {
 				output.set(IOUtils.toString(in, Charset.defaultCharset()));
-				logger.info("\n" + output.get());
+				if (logger.isDebugEnabled()) {
+					logger.debug("\n" + output.get());
+				}
 			} catch (IOException e) {
 				logger.error("Error while reading script output...", e);
 			}

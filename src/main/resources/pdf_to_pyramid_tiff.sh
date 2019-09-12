@@ -15,7 +15,7 @@ nop=$(pdfinfo "$pdfFile" | grep -a Pages: | awk '{print $2}')
 for (( i=0; i<$nop; i++ ))
 do
 pageNo=$(printf -v i "%04d" $i ; echo $i)
-vips pdfload "$pdfFile" "$pdfFile$pageNo.tif" --page $i
+vips pdfload "$pdfFile" "$pdfFile$pageNo.tif" --page $i --dpi=200
 done
 
 for (( i=0; i<$nop; i++ ))
@@ -23,7 +23,7 @@ do
 pageNo=$(printf -v i "%04d" $i ; echo $i)
 name=$(basename -- "$pdfFile")
 name="${name%.*}"
-vips tiffsave "$pdfFile$pageNo.tif" "$outFolder/${name}_$pageNo.tif" --compression=jpeg --Q=70 --tile --tile-width=512 --tile-height=512 --pyramid
+vips tiffsave "$pdfFile$pageNo.tif" "$outFolder/${name}_$pageNo.tif" --compression=jpeg --Q=75 --tile --tile-width=128 --tile-height=128 --pyramid
 done
 
 for (( i=0; i<$nop; i++ ))
