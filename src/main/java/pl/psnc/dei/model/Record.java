@@ -45,7 +45,7 @@ public class Record {
 	private List<Transcription> transcriptions;
 
 	@JsonIgnore
-	@Column(length = 2048)
+	@Lob
 	private String iiifManifest;
 
 	@JsonIgnore

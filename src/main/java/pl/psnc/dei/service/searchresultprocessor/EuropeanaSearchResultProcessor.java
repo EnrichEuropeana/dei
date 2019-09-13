@@ -5,24 +5,23 @@ import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pl.psnc.dei.iiif.EuropeanaConversionDataHolder;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
 import pl.psnc.dei.service.RecordDataCache;
-import pl.psnc.dei.service.RecordsProjectsAssignmentService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifAvailability;
 import pl.psnc.dei.util.IiifValidator;
 
 import java.util.Optional;
 
+import static pl.psnc.dei.iiif.EuropeanaConversionDataHolder.*;
+
 @Service
 public class EuropeanaSearchResultProcessor implements AggregatorSearchResultProcessor {
 
-	private static final String KEY_GRAPH = "@graph";
-	private static final String KEY_TYPE = "@type";
-	private static final String KEY_MIME_TYPE = "hasMimeType";
-	private static final String TYPE_WEB_RESOURCE = "edm:WebResource";
 	private final Logger logger = LoggerFactory.getLogger(EuropeanaSearchResultProcessor.class);
+
 	private RecordDataCache recordDataCache;
 
 	private EuropeanaSearchService europeanaSearchService;
@@ -73,39 +72,45 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 		return iiifAvailability;
 	}
 
+
 	/**
-	 * Get mimeType for given record
+	 * Get mime type from EDM record. This is based on the web resource related to either isShownBy or hasView.
+	 * IsShownBy has bigger priority. There should not be situation that none of those fields are available.
 	 *
-	 * @param record record json-ld object
-	 * @return record's mimeType
+	 * @param record json representation of the record
+	 * @return mime type of the record determined by either mime type of isShownBy or hasView web resource
 	 */
 	private String getMimeType(JsonObject record) {
-		Optional<JsonObject> mimeTypeEntry = record.get(KEY_GRAPH).getAsArray().stream()
+		Optional<JsonObject> aggregatorData = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
-				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
-						&& o.keySet().stream().anyMatch(k -> k.contains(KEY_MIME_TYPE)))
+				.filter(e -> e.get(EDM_IS_SHOWN_BY) != null)
 				.findFirst();
-		if (mimeTypeEntry.isPresent()) {
-			JsonObject object = mimeTypeEntry.get();
-			return extractMimeType(object);
-		}
-		return null;
-	}
 
-	private String extractMimeType(JsonObject mimeTypeEntryObject) {
-		JsonValue jsonValue = mimeTypeEntryObject.get("http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#" + KEY_MIME_TYPE);
-		if (jsonValue != null) {
-			return jsonValue.getAsString().value();
+		if (!aggregatorData.isPresent()) {
+			return IiifAvailability.DATA_UNAVAILABLE.getMessage();
 		}
-		jsonValue = mimeTypeEntryObject.get("ebucore:" + KEY_MIME_TYPE);
-		if (jsonValue != null) {
-			return jsonValue.getAsString().value();
+
+		Optional<String> mimeType = EuropeanaConversionDataHolder.extractMimeType(aggregatorData.get().get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record);
+		if (mimeType.isPresent()) {
+			return mimeType.get();
 		}
-		jsonValue = mimeTypeEntryObject.get(KEY_MIME_TYPE);
-		if (jsonValue != null) {
-			return jsonValue.getAsString().value();
+
+		if (aggregatorData.get().get(EDM_HAS_VIEW) != null) {
+			Optional<String> type;
+			if (aggregatorData.get().get(EDM_HAS_VIEW).isArray()) {
+				type = aggregatorData.get().get(EDM_HAS_VIEW).getAsArray().stream()
+						.map(e -> EuropeanaConversionDataHolder.extractMimeType(e.getAsObject().get(KEY_ID).getAsString().value(), record))
+						.filter(Optional::isPresent)
+						.map(Optional::get)
+						.findFirst();
+			} else {
+				JsonObject object = aggregatorData.get().get(EDM_HAS_VIEW).getAsObject();
+				type = EuropeanaConversionDataHolder.extractMimeType(object.getAsObject().get(KEY_ID).getAsString().value(), record);
+			}
+			if (type.isPresent()) {
+				return type.get();
+			}
 		}
-		logger.error("Cannot extract mimeType value from Europeana record.");
-		throw new IllegalStateException("Cannot extract mimeType value from Europeana record.");
+		return IiifAvailability.DATA_UNAVAILABLE.getMessage();
 	}
 }
