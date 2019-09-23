@@ -157,7 +157,7 @@ public class Converter {
 		if (filePath.contains("?")) {
 			return filePath.substring(filePath.lastIndexOf('/') + 1, filePath.indexOf('?'));
 		}
-		return filePath.substring(filePath.lastIndexOf('/') + 1);
+		return filePath.substring(filePath.lastIndexOf('/') + 1).replace(" ", "").replace("%20", "");
 	}
 
 	private String  extractFileName(String name) {
