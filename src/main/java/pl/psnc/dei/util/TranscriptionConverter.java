@@ -2,10 +2,14 @@ package pl.psnc.dei.util;
 
 import org.apache.jena.atlas.json.JsonObject;
 
+import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
+
 /**
  * Converts transcription received from Transcription Platform to the Europeana Annotation
  */
 public class TranscriptionConverter {
+
+    private static final String FULL_TEXT_RESOURCE = "FullTextResource";
 
     public static JsonObject convert(JsonObject transcription) {
         if (transcription == null)
@@ -13,32 +17,29 @@ public class TranscriptionConverter {
 
         JsonObject annotation = new JsonObject();
         annotation.put(AnnotationFieldsNames.MOTIVATION, transcription.get(TranscriptionFieldsNames.MOTIVATION));
-        annotation.put(AnnotationFieldsNames.GENERATOR, prepareGeneratorObject(transcription));
         annotation.put(AnnotationFieldsNames.BODY, prepareBodyObject(transcription));
         annotation.put(AnnotationFieldsNames.TARGET, prepareTargetObject(transcription));
         return annotation;
     }
 
-    private static JsonObject prepareGeneratorObject(JsonObject transcription) {
-        JsonObject bodyObject = new JsonObject();
-        bodyObject.put(AnnotationFieldsNames.GENERATOR_NAME, "sample");
-        bodyObject.put(AnnotationFieldsNames.GENERATOR_TYPE, "sample");
-        bodyObject.put(AnnotationFieldsNames.GENERATOR_HOMEPAGE, "sample");
-        return bodyObject;
-    }
-
     private static JsonObject prepareTargetObject(JsonObject transcription) {
         JsonObject bodyObject = new JsonObject();
-        bodyObject.put(AnnotationFieldsNames.TARGET_SCOPE, transcription.get(TranscriptionFieldsNames.STORY_ID));
-        bodyObject.put(AnnotationFieldsNames.TARGET_SOURCE, transcription.get(TranscriptionFieldsNames.ITEM_ID));
+        if (transcription.get(TranscriptionFieldsNames.STORY_ID) != null) {
+            bodyObject.put(AnnotationFieldsNames.TARGET_SCOPE, EUROPEANA_ITEM_URL + transcription.get(TranscriptionFieldsNames.STORY_ID).getAsString().value());
+        }
+        bodyObject.put(AnnotationFieldsNames.TARGET_SOURCE, transcription.get(TranscriptionFieldsNames.IMAGE_LINK));
         return bodyObject;
     }
 
     private static JsonObject prepareBodyObject(JsonObject transcription) {
         JsonObject bodyObject = new JsonObject();
-        bodyObject.put(AnnotationFieldsNames.BODY_ID, transcription.get(TranscriptionFieldsNames.TEXT));
-        bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE, "pl");
-        bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/html");
+        bodyObject.put(AnnotationFieldsNames.BODY_TYPE, FULL_TEXT_RESOURCE);
+        if (transcription.get(TranscriptionFieldsNames.LANGUAGES) != null) {
+            bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE, transcription.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
+        }
+        bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TEXT));
+        //TODO later we will have to use different value but for now it should always be text/plain
+        bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/plain");
         return bodyObject;
     }
 }
