@@ -105,7 +105,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				.findFirst();
 	}
 
-	private String detectType(String id, JsonObject record) {
+	String detectType(String id, JsonObject record) {
 		Optional<String> typeRaw = extractMimeType(id, record);
 
 		String type;
@@ -113,7 +113,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		if(!typeRaw.isPresent()){
 			logger.info("Missing file type");
 			int dotIndex = id.lastIndexOf('.');
-			if(dotIndex != -1) {
+			if(dotIndex != -1 && id.length() - dotIndex <= 5) {
 				type = id.substring(dotIndex + 1);
 			} else {
 				type = null;

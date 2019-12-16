@@ -10,6 +10,9 @@ public final class EuropeanaConstants {
 	private static final String MEDIA = "MEDIA";
 	private static final String REUSABILITY = "REUSABILITY";
 
+	//Europeana persistent identifier URL
+	public static final String EUROPEANA_ITEM_URL = "https://data.europeana.eu/item";
+
 	//Europeana api request's parameters names
 	public static final String API_KEY_PARAM_NAME = "wskey";
 	public static final String QUERY_PARAM_NAME = "query";

@@ -41,7 +41,7 @@ public class Record {
 	private Import anImport;
 
 	@JsonIgnore
-	@OneToMany(orphanRemoval = true, fetch = FetchType.EAGER)
+	@OneToMany(cascade = {CascadeType.PERSIST}, orphanRemoval = true, fetch = FetchType.EAGER)
 	private List<Transcription> transcriptions;
 
 	@JsonIgnore
