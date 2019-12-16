@@ -74,6 +74,8 @@ public class BatchService {
 					recordsRepository.save(record);
 					candidates.add(record);
 				}
+			} else if (record.getAnImport() == null) {
+				candidates.add(record);
 			}
 		});
 		return candidates;
