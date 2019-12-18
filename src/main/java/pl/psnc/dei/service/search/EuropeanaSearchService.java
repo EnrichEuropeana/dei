@@ -14,8 +14,8 @@ import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
-import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
@@ -106,7 +106,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      */
     public String postTranscription(Transcription transcription) {
         return webClient.post()
-                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+                .uri(b -> b.path(annotationApiEndpoint).build())
+                .header("Authorization", "Bearer " + userToken)
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
@@ -129,7 +130,8 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      */
     public String updateTranscription(Transcription transcription) {
         return webClient.put()
-                .uri(b -> b.path(annotationApiEndpoint).queryParam("wskey", apiKey).queryParam("userToken", userToken).build())
+                .uri(b -> b.path(annotationApiEndpoint).build())
+                .header("Authorization", "Bearer " + userToken)
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {

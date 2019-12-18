@@ -1,5 +1,7 @@
 package pl.psnc.dei.controllers;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -10,10 +12,13 @@ import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/batch")
 public class BatchController {
+
+	private Logger logger = LoggerFactory.getLogger(BatchController.class);
 
 	private BatchService batchService;
 
@@ -44,7 +49,17 @@ public class BatchController {
 		try {
 			Set<Record> records = batchService.uploadRecords(projectName, datasetName, recordsIds);
 			if (records.size() < recordsIds.size()) {
-				return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+				String difference = records
+						.stream()
+						.filter(record -> !recordsIds.contains(record.getIdentifier()))
+						.map(Record::getIdentifier).collect(Collectors.joining(","));
+				if (difference.isEmpty()) {
+					difference = recordsIds.stream().collect(Collectors.joining(","));
+				}
+				logger.warn("Following records will not be added to the import: {}", difference);
+			}
+			if (records.isEmpty()) {
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 			}
 			return new ResponseEntity<>(importService.createImport(name, records.iterator().next().getProject().getProjectId(), records), HttpStatus.OK);
 		} catch (NotFoundException e) {
