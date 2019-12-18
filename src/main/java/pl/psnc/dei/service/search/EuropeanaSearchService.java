@@ -14,8 +14,8 @@ import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
-import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
