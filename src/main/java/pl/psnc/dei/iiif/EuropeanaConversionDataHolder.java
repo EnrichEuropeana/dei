@@ -41,7 +41,9 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		if (aggregatorData.get(EDM_HAS_VIEW) != null) {
 			if (aggregatorData.get(EDM_HAS_VIEW).isArray()) {
 				fileObjects.addAll(aggregatorData.get(EDM_HAS_VIEW).getAsArray().stream()
-						.filter(jsonValue -> fileObjects.stream().noneMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
+						.filter(jsonValue -> isValidUrl(jsonValue.getAsObject().get(KEY_ID).getAsString().value()))
+						.filter(jsonValue ->
+								fileObjects.stream().noneMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
 						.map(e -> {
 							ConversionData data = new ConversionData();
 							data.json = e.getAsObject();
@@ -129,6 +131,15 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
 		createConversionDataHolder(recordId, aggregatorData, record);
+	}
+
+	boolean isValidUrl(String url) {
+		try {
+			new URL(url);
+		} catch (MalformedURLException e) {
+			return false;
+		}
+		return true;
 	}
 
 	@Override
