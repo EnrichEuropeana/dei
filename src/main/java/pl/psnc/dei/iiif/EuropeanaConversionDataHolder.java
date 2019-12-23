@@ -4,6 +4,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import pl.psnc.dei.util.IiifValidator;
 
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -32,16 +33,23 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 	private static final String EDM_IS_NEXT_IN_SEQUENCE = "edm:isNextInSequence";
 
 	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
-		ConversionData isShownBy = new ConversionData();
-		isShownBy.json = aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject();
-		isShownBy.mediaType = detectType(isShownBy.json.getAsObject().get(KEY_ID).getAsString().value(), record);
-		fileObjects.add(isShownBy);
+		Optional<String> isShownByMimeType = extractMimeType(aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record);
+		if (isShownByMimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent()) {
+			ConversionData isShownBy = new ConversionData();
+			isShownBy.json = aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject();
+			isShownBy.mediaType = detectType(isShownBy.json.getAsObject().get(KEY_ID).getAsString().value(), record);
+			fileObjects.add(isShownBy);
+		}
 
 		// get hasView objects and for each create ConversionData object
 		if (aggregatorData.get(EDM_HAS_VIEW) != null) {
 			if (aggregatorData.get(EDM_HAS_VIEW).isArray()) {
 				fileObjects.addAll(aggregatorData.get(EDM_HAS_VIEW).getAsArray().stream()
 						.filter(jsonValue -> isValidUrl(jsonValue.getAsObject().get(KEY_ID).getAsString().value()))
+						.filter(jsonValue -> {
+							Optional<String> mimeType = extractMimeType(jsonValue.getAsObject().get(KEY_ID).getAsString().value(), record);
+							return mimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent();
+						})
 						.filter(jsonValue ->
 								fileObjects.stream().noneMatch(conversionData -> conversionData.json.equals(jsonValue.getAsObject())))
 						.map(e -> {
