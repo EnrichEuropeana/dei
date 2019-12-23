@@ -41,4 +41,8 @@ public class IiifValidator {
 		}
 		return IiifAvailability.CONVERSION_IMPOSSIBLE;
 	}
+
+	public static boolean isMimeTypeAllowed(String mimeType) {
+		return ALLOWED_TYPES.contains(mimeType);
+	}
 }
