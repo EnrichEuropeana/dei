@@ -33,7 +33,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 	private static final String EDM_IS_NEXT_IN_SEQUENCE = "edm:isNextInSequence";
 
 	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
-		Optional<String> isShownByMimeType = extractMimeType(aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record);
+		Optional<String> isShownByMimeType = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(detectType(aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record)));
 		if (isShownByMimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent()) {
 			ConversionData isShownBy = new ConversionData();
 			isShownBy.json = aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject();
@@ -47,7 +47,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				fileObjects.addAll(aggregatorData.get(EDM_HAS_VIEW).getAsArray().stream()
 						.filter(jsonValue -> isValidUrl(jsonValue.getAsObject().get(KEY_ID).getAsString().value()))
 						.filter(jsonValue -> {
-							Optional<String> mimeType = extractMimeType(jsonValue.getAsObject().get(KEY_ID).getAsString().value(), record);
+							Optional<String> mimeType = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(detectType(jsonValue.getAsObject().get(KEY_ID).getAsString().value(), record)));
 							return mimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent();
 						})
 						.filter(jsonValue ->
@@ -81,23 +81,21 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
 						&& fileObjects.stream().anyMatch(conversionData -> conversionData.json.getAsObject().get(KEY_ID).getAsString().value().equals(o.get(KEY_ID).getAsString().value())))
 				.collect(Collectors.toList());
-		if (webResources != null) {
-			List<ConversionData> ordered = new ArrayList<>();
-			// find first
-			Optional<JsonObject> element = webResources.stream().filter(jsonObject -> jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE) == null).findFirst();
-			while (element.isPresent()) {
-				JsonObject url = element.get();
-				ordered.add(fileObjects.stream().filter(conversionData -> conversionData.json.getAsObject().get(KEY_ID).getAsString().value().equals(url.get(KEY_ID).getAsString().value())).findFirst().get());
-				element = webResources.stream().filter(jsonObject -> jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE) != null && jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE).getAsObject().get(KEY_ID).getAsString().value().equals(url.get(KEY_ID).getAsString().value())).findFirst();
-			}
-			if (!ordered.isEmpty() && ordered.size() == fileObjects.size()) {
-				fileObjects.clear();
-				fileObjects.addAll(ordered);
-			}
+		List<ConversionData> ordered = new ArrayList<>();
+		// find first
+		Optional<JsonObject> element = webResources.stream().filter(jsonObject -> jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE) == null).findFirst();
+		while (element.isPresent()) {
+			JsonObject url = element.get();
+			ordered.add(fileObjects.stream().filter(conversionData -> conversionData.json.getAsObject().get(KEY_ID).getAsString().value().equals(url.get(KEY_ID).getAsString().value())).findFirst().get());
+			element = webResources.stream().filter(jsonObject -> jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE) != null && jsonObject.get(EDM_IS_NEXT_IN_SEQUENCE).getAsObject().get(KEY_ID).getAsString().value().equals(url.get(KEY_ID).getAsString().value())).findFirst();
+		}
+		if (!ordered.isEmpty() && ordered.size() == fileObjects.size()) {
+			fileObjects.clear();
+			fileObjects.addAll(ordered);
 		}
 	}
 
-	public static Optional<String> extractMimeType(String id, JsonObject record) {
+	private static Optional<String> extractMimeType(String id, JsonObject record) {
 		return record.get(KEY_GRAPH).getAsArray()
 				.stream()
 				.filter(e -> e.getAsObject().get(KEY_ID).getAsString().value().equals(id))
@@ -115,7 +113,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 				.findFirst();
 	}
 
-	String detectType(String id, JsonObject record) {
+	public static String detectType(String id, JsonObject record) {
 		Optional<String> typeRaw = extractMimeType(id, record);
 
 		String type;
@@ -141,7 +139,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		createConversionDataHolder(recordId, aggregatorData, record);
 	}
 
-	boolean isValidUrl(String url) {
+	private boolean isValidUrl(String url) {
 		try {
 			new URL(url);
 		} catch (MalformedURLException e) {

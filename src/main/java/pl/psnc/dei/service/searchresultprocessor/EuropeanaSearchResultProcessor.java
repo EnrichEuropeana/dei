@@ -90,7 +90,7 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 			return IiifAvailability.DATA_UNAVAILABLE.getMessage();
 		}
 
-		Optional<String> mimeType = EuropeanaConversionDataHolder.extractMimeType(aggregatorData.get().get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record);
+		Optional<String> mimeType = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(EuropeanaConversionDataHolder.detectType(aggregatorData.get().get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record)));
 		if (mimeType.isPresent()) {
 			return mimeType.get();
 		}
@@ -99,13 +99,13 @@ public class EuropeanaSearchResultProcessor implements AggregatorSearchResultPro
 			Optional<String> type;
 			if (aggregatorData.get().get(EDM_HAS_VIEW).isArray()) {
 				type = aggregatorData.get().get(EDM_HAS_VIEW).getAsArray().stream()
-						.map(e -> EuropeanaConversionDataHolder.extractMimeType(e.getAsObject().get(KEY_ID).getAsString().value(), record))
+						.map(e -> Optional.ofNullable(IiifValidator.getMimeTypeFromShort(EuropeanaConversionDataHolder.detectType(e.getAsObject().get(KEY_ID).getAsString().value(), record))))
 						.filter(Optional::isPresent)
 						.map(Optional::get)
 						.findFirst();
 			} else {
 				JsonObject object = aggregatorData.get().get(EDM_HAS_VIEW).getAsObject();
-				type = EuropeanaConversionDataHolder.extractMimeType(object.getAsObject().get(KEY_ID).getAsString().value(), record);
+				type = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(EuropeanaConversionDataHolder.detectType(object.getAsObject().get(KEY_ID).getAsString().value(), record)));
 			}
 			if (type.isPresent()) {
 				return type.get();
