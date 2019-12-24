@@ -40,6 +40,8 @@ public class TranscriptionConverter {
         bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TEXT));
         //TODO later we will have to use different value but for now it should always be text/plain
         bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/plain");
+        //TODO later we will fill this field with a value retrieved from TP
+        bodyObject.put(AnnotationFieldsNames.BODY_RIGHTS, "http://creativecommons.org/publicdomain/zero/1.0/");
         return bodyObject;
     }
 }
