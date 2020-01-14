@@ -83,7 +83,7 @@ public class TranscriptionConverterTest {
         Assert.assertEquals("transcribing", converted.get(MOTIVATION).getAsString().value());
         Assert.assertEquals("FullTextResource", converted.get(BODY).getAsObject().get(BODY_TYPE).getAsString().value());
         Assert.assertEquals("de", converted.get(BODY).getAsObject().get(BODY_LANGUAGE).getAsString().value());
-        Assert.assertEquals("<p class=\"center\"><span class=\"bold\">B&Uuml;NDNIS&nbsp; 90</span></p>\n<p class=\"center\">B&uuml;rger f&uuml;r B&uuml;rger</p>\n<p class=\"center\">Initiative Frieden<br />und&nbsp; Menschenrechte</p>", converted.get(BODY).getAsObject().get(BODY_VALUE).getAsString().value());
+        Assert.assertEquals("BÜNDNIS  90\n\n\nBürger für Bürger\n\n\nInitiative Frieden\nund  Menschenrechte\n", converted.get(BODY).getAsObject().get(BODY_VALUE).getAsString().value());
         Assert.assertEquals(EUROPEANA_ITEM_URL + "/135/_nnVvTdx", converted.get(TARGET).getAsObject().get(TARGET_SCOPE).getAsString().value());
         Assert.assertEquals("rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg", converted.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
     }
