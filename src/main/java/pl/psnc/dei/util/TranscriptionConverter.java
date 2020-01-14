@@ -37,7 +37,7 @@ public class TranscriptionConverter {
         if (transcription.get(TranscriptionFieldsNames.LANGUAGES) != null) {
             bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE, transcription.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
         }
-        bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TEXT));
+        bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TEXT_NO_TAGS));
         //TODO later we will have to use different value but for now it should always be text/plain
         bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/plain");
         //TODO later we will fill this field with a value retrieved from TP
