@@ -30,7 +30,7 @@ public class TranscriptionConverterTest {
     @Test
     public void shouldProperlyPrepareAnnotation() {
         JsonObject transformation = new JsonObject();
-        transformation.put(TranscriptionFieldsNames.TEXT, "sample text");
+        transformation.put(TranscriptionFieldsNames.TEXT_NO_TAGS, "sample text");
 
         transformation.put(TranscriptionFieldsNames.MOTIVATION, " sample motivation");
         transformation.put(TranscriptionFieldsNames.IMAGE_LINK, "sample item id");

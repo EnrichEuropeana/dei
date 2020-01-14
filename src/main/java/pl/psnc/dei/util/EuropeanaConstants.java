@@ -11,7 +11,7 @@ public final class EuropeanaConstants {
 	private static final String REUSABILITY = "REUSABILITY";
 
 	//Europeana persistent identifier URL
-	public static final String EUROPEANA_ITEM_URL = "https://data.europeana.eu/item";
+	public static final String EUROPEANA_ITEM_URL = "http://data.europeana.eu/item";
 
 	//Europeana api request's parameters names
 	public static final String API_KEY_PARAM_NAME = "wskey";

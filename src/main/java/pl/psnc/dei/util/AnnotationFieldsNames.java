@@ -7,7 +7,7 @@ class AnnotationFieldsNames extends JsonFieldsNames {
     static final String BODY_VALUE = "value";
     static final String BODY_LANGUAGE = "language";
     static final String BODY_FORMAT = "format";
-    static final String BODY_RIGHTS = "rights";
+    static final String BODY_RIGHTS = "edmRights";
 
     static final String TARGET = "target";
     static final String TARGET_SCOPE = "scope";
