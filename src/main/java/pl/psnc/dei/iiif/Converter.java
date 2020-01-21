@@ -77,7 +77,7 @@ public class Converter {
 
 	}
 
-	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson) throws ConversionException, IOException, InterruptedException {
+	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
@@ -92,7 +92,7 @@ public class Converter {
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
 		try {
-			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson);
+			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
 			saveFilesInTempDirectory(conversionDataHolder);
 			convertAllFiles(conversionDataHolder);
 			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
@@ -110,7 +110,7 @@ public class Converter {
 		}
 	}
 
-	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson) throws ConversionImpossibleException {
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
@@ -123,7 +123,7 @@ public class Converter {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson);
+				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
@@ -323,9 +323,9 @@ public class Converter {
 		return canvases;
 	}
 
-	public void fillJsonData(Record record, JsonObject jsonObject) {
+	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
-			ConversionDataHolder conversionData = createDataHolder(record, jsonObject);
+			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);
 			conversionData.initFileUrls(record.getIdentifier());
 			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().toLowerCase().endsWith("pdf"))
 				return;

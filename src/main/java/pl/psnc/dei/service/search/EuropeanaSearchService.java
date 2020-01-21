@@ -170,6 +170,30 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         return JSON.parse(record);
     }
 
+    /**
+     * Retrieves Europeana record from recordsApiEndpoint and transfers is to the JSON format.
+     *
+     * @param recordId record identifier that will be used for retrieval
+     * @return Retrieved record in JSON format
+     */
+    public JsonObject retrieveRecordInJson(String recordId) {
+        logger.info("Retrieving record from europeana {}", recordId);
+        String record = webClient.get()
+                .uri(recordApiEndpoint + "/" + recordId + ".json?wskey=" + apiKey)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    logger.error("Error {} while retrieving record. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while retrieving record. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                })
+                .bodyToMono(String.class)
+                .block();
+        return JSON.parse(record);
+    }
+
     private void checkParameters(String query, String cursor) {
         if (StringUtils.isEmpty(query)) {
             throw new IllegalStateException("Mandatory parameter (query) is missing");
