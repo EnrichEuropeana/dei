@@ -62,7 +62,7 @@ public class QueueRecordService {
 		transcriptionRepository.save(transcription);
 	}
 
-	public void fillRecordJsonData(Record record, JsonObject json) {
-		converter.fillJsonData(record, json);
+	public void fillRecordJsonData(Record record, JsonObject json, JsonObject jsonRaw) {
+		converter.fillJsonData(record, json, jsonRaw);
 	}
 }

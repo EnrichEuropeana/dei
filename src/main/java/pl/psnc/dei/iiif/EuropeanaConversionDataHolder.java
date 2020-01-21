@@ -1,5 +1,6 @@
 package pl.psnc.dei.iiif;
 
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
@@ -8,11 +9,9 @@ import pl.psnc.dei.util.IiifValidator;
 
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
@@ -32,7 +31,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 	private static final String EDM_IS_NEXT_IN_SEQUENCE = "edm:isNextInSequence";
 
-	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
+	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
 		Optional<String> isShownByMimeType = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(detectType(aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record)));
 		if (isShownByMimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent()) {
 			ConversionData isShownBy = new ConversionData();
@@ -43,6 +42,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		// get hasView objects and for each create ConversionData object
 		if (aggregatorData.get(EDM_HAS_VIEW) != null) {
+			final Map<String, Integer> urlPositions = prepareUrlPositions(recordRaw);
 			if (aggregatorData.get(EDM_HAS_VIEW).isArray()) {
 				fileObjects.addAll(aggregatorData.get(EDM_HAS_VIEW).getAsArray().stream()
 						.filter(jsonValue -> isValidUrl(jsonValue.getAsObject().get(KEY_ID).getAsString().value()))
@@ -57,7 +57,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 							data.json = e.getAsObject();
 							data.mediaType = detectType(data.json.getAsObject().get(KEY_ID).getAsString().value(), record);
 							return data;
-						})
+						}).sorted(Comparator.comparing(conversionData -> urlPositions.get(conversionData.json.getAsObject().get(KEY_ID).getAsString().value())))
 						.collect(Collectors.toList()));
 			} else {
 				JsonObject object = aggregatorData.get(EDM_HAS_VIEW).getAsObject();
@@ -73,6 +73,19 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		reorderFileUrls(record);
 		initFileUrls(recordId);
+	}
+
+	private Map<String, Integer> prepareUrlPositions(JsonObject recordRaw) {
+		Map<String, Integer> urlPositions = new HashMap<>();
+		JsonValue jsonValue = recordRaw.get("object").getAsObject().get("aggregations").getAsArray().get(0).getAsObject().get("hasView");
+		if (jsonValue != null && jsonValue.isArray()) {
+			JsonArray array = jsonValue.getAsArray();
+			IntStream.range(0, array.size()).forEach(i -> urlPositions.put(array.get(i).getAsString().value(), i));
+		} else {
+			assert jsonValue != null;
+			urlPositions.put(jsonValue.getAsString().toString(), 0);
+		}
+		return urlPositions;
 	}
 
 	private void reorderFileUrls(JsonObject record) {
@@ -135,8 +148,8 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		return type;
 	}
 
-	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record) {
-		createConversionDataHolder(recordId, aggregatorData, record);
+	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
+		createConversionDataHolder(recordId, aggregatorData, record, recordRaw);
 	}
 
 	private boolean isValidUrl(String url) {

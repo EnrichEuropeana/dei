@@ -20,7 +20,11 @@ public class TranscribeTask extends Task {
 
 	private TasksQueueService tqs;
 
+	// Record in JSON-LD
 	private JsonObject recordJson;
+
+	// Record in JSON
+	private JsonObject recordJsonRaw;
 
 	private String serverUrl;
 
@@ -41,12 +45,13 @@ public class TranscribeTask extends Task {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
-						queueRecordService.fillRecordJsonData(record, recordJson);
+						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
 						state = T_SEND_RESULT;
 					} else {
 						try {

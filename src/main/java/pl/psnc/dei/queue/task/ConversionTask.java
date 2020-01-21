@@ -25,7 +25,11 @@ public class ConversionTask extends Task {
 
 	private TasksQueueService tqs;
 
+	// Record in JSON-LD
 	private JsonObject recordJson;
+
+	// Record in JSON
+	private JsonObject recordJsonRaw;
 
 	private TasksFactory tasksFactory;
 
@@ -43,6 +47,7 @@ public class ConversionTask extends Task {
 		switch (aggregator) {
 			case EUROPEANA:
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
 				break;
 			case DDB:
 				recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());
@@ -55,7 +60,7 @@ public class ConversionTask extends Task {
 	@Override
 	public void process() throws Exception {
 		try {
-			converter.convertAndGenerateManifest(record, recordJson);
+			converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
 		} catch (ConversionImpossibleException e) {
 			logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
