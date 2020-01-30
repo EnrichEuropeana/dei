@@ -191,7 +191,7 @@ public class Converter {
 							convData.srcFile.getAbsolutePath(),
 							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
 							"--compression=jpeg",
-							"--Q=77",
+							"--Q=75",
 							"--tile",
 							"--tile-width=128",
 							"--tile-height=128",
