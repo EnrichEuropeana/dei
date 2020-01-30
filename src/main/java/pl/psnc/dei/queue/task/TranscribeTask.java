@@ -6,6 +6,7 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -27,8 +28,8 @@ public class TranscribeTask extends Task {
 	private String serverPath;
 
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
-		super(record, queueRecordService, tps, ess);
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
+		super(record, queueRecordService, tps, ess, eas);
 		this.tqs = tqs;
 		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;

@@ -1,6 +1,7 @@
 package pl.psnc.dei.queue.task;
 
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
@@ -12,12 +13,14 @@ public abstract class Task {
 	QueueRecordService queueRecordService;
 	TranscriptionPlatformService tps;
 	EuropeanaSearchService ess;
+	EuropeanaAnnotationsService eas;
 
-	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess) {
+	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
 		this.record = record;
 		this.queueRecordService = queueRecordService;
 		this.tps = tps;
 		this.ess = ess;
+		this.eas = eas;
 	}
 
 	public Record getRecord() {
