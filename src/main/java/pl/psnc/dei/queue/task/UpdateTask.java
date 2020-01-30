@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
@@ -24,10 +25,8 @@ public class UpdateTask extends Task {
 	private List<Transcription> transcriptions;
 
 	UpdateTask(Record record, QueueRecordService queueRecordService,
-			   TranscriptionPlatformService tps, EuropeanaSearchService ess) {
-		super(record, queueRecordService, tps, ess);
-		this.tps = tps;
-		this.ess = ess;
+			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+		super(record, queueRecordService, tps, ess, eas);
 
 		if (record.getTranscriptions().isEmpty()) {
 			try {
@@ -44,8 +43,8 @@ public class UpdateTask extends Task {
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess) throws NotFoundException {
-		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess);
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
+		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
@@ -67,7 +66,7 @@ public class UpdateTask extends Task {
 				state = TaskState.U_HANDLE_TRANSCRIPTION;
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
-					ess.updateTranscription(t);
+					eas.updateTranscription(t);
 					record.getTranscriptions().remove(t);
 					queueRecordService.saveRecord(record);
 				}

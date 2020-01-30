@@ -23,6 +23,9 @@ public class TasksFactory {
 	private EuropeanaSearchService ess;
 
 	@Autowired
+	private EuropeanaAnnotationsService eas;
+
+	@Autowired
 	private DDBFormatResolver ddbfr;
 
 	@Autowired
@@ -41,13 +44,13 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess);
+				return new EnrichTask(record, qrs, tps, ess, eas);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, tqs, serverUrl, serverPath, this);
+				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this);
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ess);
+				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, ddbfr, tqs, converter, this);
+				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
@@ -55,7 +58,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas);
 	}
 
 	public void setTasksQueueService(TasksQueueService tasksQueueService) {

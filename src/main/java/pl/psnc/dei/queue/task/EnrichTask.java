@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonValue;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
@@ -16,8 +17,8 @@ public class EnrichTask extends Task {
 
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess) {
-		super(record, queueRecordService, tps, ess);
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+		super(record, queueRecordService, tps, ess, eas);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
 	}
 
@@ -43,6 +44,7 @@ public class EnrichTask extends Task {
 			transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
 			transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
 			transcriptions.put(transcription.getTp_id(), transcription);
+			queueRecordService.saveTranscription(transcription);
 		}
 		if (record.getTranscriptions().isEmpty()) {
 			record.getTranscriptions().addAll(transcriptions.values());
@@ -65,7 +67,7 @@ public class EnrichTask extends Task {
 	private void handleTranscriptions() {
 		while (!notAnnotatedTranscriptions.isEmpty()) {
 			Transcription transcription = notAnnotatedTranscriptions.peek();
-			String annotationId = ess.postTranscription(transcription);
+			String annotationId = eas.postTranscription(transcription);
 			transcription.setAnnotationId(annotationId);
 			queueRecordService.saveTranscription(transcription);
 			notAnnotatedTranscriptions.remove(transcription);

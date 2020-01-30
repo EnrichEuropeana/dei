@@ -9,10 +9,7 @@ import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.DDBFormatResolver;
-import pl.psnc.dei.service.QueueRecordService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.io.IOException;
@@ -36,8 +33,8 @@ public class ConversionTask extends Task {
 	private DDBFormatResolver ddbFormatResolver;
 
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
-		super(record, queueRecordService, tps, ess);
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
+		super(record, queueRecordService, tps, ess, eas);
 		this.tqs = tqs;
 		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
