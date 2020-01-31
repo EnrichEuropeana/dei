@@ -3,7 +3,6 @@ package pl.psnc.dei.service;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.jena.atlas.json.JsonArray;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,7 +14,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
-import pl.psnc.dei.model.DAO.DatasetsReposotory;
+import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -49,7 +48,7 @@ public class TranscriptionPlatformServiceTest {
     private ProjectsRepository projectsRepository;
 
     @MockBean
-    private DatasetsReposotory datasetsReposotory;
+    private DatasetsRepository datasetsReposotory;
 
     @MockBean
     private RecordsRepository recordsRepository;

@@ -5,7 +5,7 @@ import org.apache.jena.atlas.json.JsonValue;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.DAO.DatasetsReposotory;
+import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Dataset;
@@ -24,13 +24,13 @@ public class BatchService {
 
 	private final RecordsRepository recordsRepository;
 
-	private final DatasetsReposotory datasetsReposotory;
+	private final DatasetsRepository datasetsReposotory;
 
 	private final ProjectsRepository projectsRepository;
 
 	private final EuropeanaSearchService europeanaSearchService;
 
-	public BatchService(RecordsRepository recordsRepository, DatasetsReposotory datasetsReposotory, ProjectsRepository projectsRepository, EuropeanaSearchService europeanaSearchService) {
+	public BatchService(RecordsRepository recordsRepository, DatasetsRepository datasetsReposotory, ProjectsRepository projectsRepository, EuropeanaSearchService europeanaSearchService) {
 		this.recordsRepository = recordsRepository;
 		this.datasetsReposotory = datasetsReposotory;
 		this.projectsRepository = projectsRepository;
