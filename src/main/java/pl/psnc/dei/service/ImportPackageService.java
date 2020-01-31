@@ -5,18 +5,15 @@ import io.netty.util.internal.StringUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.*;
-import pl.psnc.dei.model.DAO.DatasetsReposotory;
+import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.request.RestRequestExecutor;
-import reactor.core.publisher.Mono;
 
 import javax.transaction.Transactional;
 import java.util.*;
@@ -37,7 +34,7 @@ public class ImportPackageService extends RestRequestExecutor {
 	@Autowired
 	private ProjectsRepository projectsRepository;
 	@Autowired
-	private DatasetsReposotory datasetsReposotory;
+	private DatasetsRepository datasetsReposotory;
 	@Autowired
 	private UrlBuilder urlBuilder;
 	@Autowired

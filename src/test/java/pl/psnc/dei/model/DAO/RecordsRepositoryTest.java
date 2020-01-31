@@ -28,7 +28,7 @@ public class RecordsRepositoryTest {
     RecordsRepository recordsRepository;
 
     @Autowired
-    DatasetsReposotory datasetsReposotory;
+	DatasetsRepository datasetsReposotory;
 
     private Record record;
 

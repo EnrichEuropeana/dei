@@ -9,7 +9,7 @@ import pl.psnc.dei.model.Project;
  * Created by pwozniak on 3/29/19
  */
 @Repository
-public interface DatasetsReposotory extends JpaRepository<Dataset, Long> {
+public interface DatasetsRepository extends JpaRepository<Dataset, Long> {
 
     Dataset findDatasetByDatasetId(String datasetID);
 }

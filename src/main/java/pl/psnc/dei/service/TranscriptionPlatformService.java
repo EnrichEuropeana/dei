@@ -26,6 +26,7 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -56,6 +57,9 @@ public class TranscriptionPlatformService {
 
 	@Autowired
 	private ProjectsRepository projectsRepository;
+
+	@Autowired
+	private DatasetsRepository datasetsRepository;
 
 	@Autowired
 	private RecordsRepository recordsRepository;
@@ -135,8 +139,13 @@ public class TranscriptionPlatformService {
 		Dataset[] projectDatasets = this.webClient.get().uri(urlBuilder.urlForProjectDatasets(project)).retrieve().bodyToMono(Dataset[].class).block();
 		if (projectDatasets != null) {
 			for (Dataset projectDataset : projectDatasets) {
-				projectDataset.setProject(project);
-				project.getDatasets().add(projectDataset);
+				Dataset dataset = datasetsRepository.findDatasetByDatasetId(projectDataset.getDatasetId());
+				if (dataset == null) {
+					dataset = projectDataset;
+				}
+				dataset.setProject(project);
+				datasetsRepository.save(dataset);
+				project.getDatasets().add(dataset);
 			}
 		}
 	}
