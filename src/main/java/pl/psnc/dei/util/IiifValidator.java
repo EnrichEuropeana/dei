@@ -16,6 +16,7 @@ public class IiifValidator {
 		ALLOWED_TYPES.add("image/jpeg");
 		ALLOWED_TYPES.add("image/tiff");
 		ALLOWED_TYPES.add("image/png");
+		ALLOWED_TYPES.add("image/bmp");
 		ALLOWED_TYPES.add("application/pdf");
 	}
 
