@@ -50,10 +50,10 @@ import java.util.*;
 @Transactional
 public class TranscriptionPlatformService {
 
-	public static final int READ_TIMEOUT_IN_SECONDS = 30;
+	public static final int READ_TIMEOUT_IN_SECONDS = 15;
 	private static final Logger logger = LoggerFactory.getLogger(TranscriptionPlatformService.class);
 	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
-	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 5;
+	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 2;
 
 	@Autowired
 	private ProjectsRepository projectsRepository;
