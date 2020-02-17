@@ -131,7 +131,7 @@ public class TranscriptionPlatformServiceTest {
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withHeader("Content-Type", "application/json")
-                        .withFixedDelay(2000)
+                        .withFixedDelay(3000)
                         .withBody("[{\"transcription\":\"test123\",\"target\":\"test321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"},{\"transcription\":\"test12345\",\"target\":\"test54321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"}]")));
         //
         Record testRecord = new Record();
@@ -164,7 +164,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(201)
-                        .withFixedDelay(2000)));
+                        .withFixedDelay(3000)));
         //
         Transcription testTranscription = new Transcription();
         testTranscription.setTp_id("sampleIdentifierFromTP");
@@ -178,7 +178,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(500)
-                        .withFixedDelay(1000)));
+                        .withFixedDelay(2000)));
         //
         Transcription testTranscription = new Transcription();
         testTranscription.setTp_id("sampleIdentifierFromTP");
