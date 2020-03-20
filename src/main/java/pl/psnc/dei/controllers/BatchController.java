@@ -3,14 +3,20 @@ package pl.psnc.dei.controllers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -47,17 +53,7 @@ public class BatchController {
 															   @RequestParam(value = "name", required = false) String name,
 															   @RequestBody Set<String> recordsIds) {
 		try {
-			Set<Record> records = batchService.uploadRecords(projectName, datasetName, recordsIds);
-			if (records.size() < recordsIds.size()) {
-				String difference = records
-						.stream()
-						.filter(record -> !recordsIds.contains(record.getIdentifier()))
-						.map(Record::getIdentifier).collect(Collectors.joining(","));
-				if (difference.isEmpty()) {
-					difference = recordsIds.stream().collect(Collectors.joining(","));
-				}
-				logger.warn("Following records will not be added to the import: {}", difference);
-			}
+			Set<Record> records = uploadRecordsToProject(projectName, datasetName, recordsIds);
 			if (records.isEmpty()) {
 				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
 			}
@@ -66,4 +62,45 @@ public class BatchController {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
+
+	private Set<Record> uploadRecordsToProject(String projectName,
+											   String datasetName,
+											   Set<String> recordsIds)
+			throws NotFoundException {
+		Set<Record> records = batchService.uploadRecords(projectName, datasetName, recordsIds);
+		if (records.size() < recordsIds.size()) {
+			String difference = records
+					.stream()
+					.filter(record -> !recordsIds.contains(record.getIdentifier()))
+					.map(Record::getIdentifier).collect(Collectors.joining(","));
+			if (difference.isEmpty()) {
+				difference = recordsIds.stream().collect(Collectors.joining(","));
+			}
+			logger.warn("Following records will not be added to the import: {}", difference);
+		}
+		return records;
+	}
+
+	@PostMapping(path = "/complex-imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Import>> splitImport(@RequestParam(value = "projectName") String projectName,
+											  		@RequestParam(value = "datasetName", required = false) String datasetName,
+											  		@RequestParam(value = "name", required = false) String name,
+											  		@RequestBody @RequestParam("file") MultipartFile file) throws IOException {
+		List<Set<String>> records = batchService.splitImport(file);
+		List<Import> imports = new ArrayList<>();
+
+		try {
+			for(Set<String> identifiers : records) {
+				Set<Record> uploadedRecords = uploadRecordsToProject(projectName, datasetName, identifiers);
+				if (uploadedRecords.isEmpty()) {
+					return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+				}
+				imports.add(importService.createImport(name, uploadedRecords.iterator().next().getProject().getProjectId(), uploadedRecords));
+			}
+		} catch (NotFoundException e) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		return ResponseEntity.ok(imports);
+	}
+
 }

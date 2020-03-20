@@ -3,6 +3,7 @@ package pl.psnc.dei.service;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
@@ -14,9 +15,12 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import javax.transaction.Transactional;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.*;
+
+import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
 @Service
 @Transactional
@@ -98,5 +102,57 @@ public class BatchService {
 			}
 		}
 		return recordId;
+	}
+
+	public List<Set<String>> splitImport(MultipartFile file) throws IOException {
+		Map<String, List<String>> records = readRecordsFromFile(file);
+		List<Set<String>> result = new ArrayList<>();
+
+		final List<String> singleRecords = new ArrayList<>();
+		final List<String> complexRecords = new ArrayList<>();
+
+		records
+				.values().forEach(identifiers -> {
+					if (identifiers.size() == 1) {
+						if (singleRecords.size() == 1000) {
+							result.add(new HashSet<>(singleRecords));
+							singleRecords.clear();
+						}
+						identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(singleRecords::add);
+					} else {
+						if (complexRecords.size() + identifiers.size() >= 1000) {
+							result.add(new HashSet<>(complexRecords));
+							complexRecords.clear();
+						}
+						identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(complexRecords::add);
+					}
+		});
+		if (!singleRecords.isEmpty()) {
+			result.add(new HashSet<>(singleRecords));
+		}
+		if (!complexRecords.isEmpty()) {
+			result.add(new HashSet<>(complexRecords));
+		}
+
+		return result;
+	}
+
+	private Map<String, List<String>> readRecordsFromFile(MultipartFile file) throws IOException {
+		if (file.isEmpty()) {
+			throw new IllegalArgumentException("Empty file");
+		}
+
+		Map<String, List<String>> records = new HashMap<>();
+
+		BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+		while (reader.ready()) {
+			String line = reader.readLine();
+			String[] parts = line.split(",");
+			if (parts.length >= 3) {
+				records.computeIfAbsent(parts[0], k -> new ArrayList<>());
+				records.get(parts[0]).add(parts[2]);
+			}
+		}
+		return records;
 	}
 }
