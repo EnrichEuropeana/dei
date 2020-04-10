@@ -1,5 +1,6 @@
 package pl.psnc.dei.controllers;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -90,12 +91,19 @@ public class BatchController {
 		List<Import> imports = new ArrayList<>();
 
 		try {
+			int counter = 0;
+			String importName;
+
 			for(Set<String> identifiers : records) {
 				Set<Record> uploadedRecords = uploadRecordsToProject(projectName, datasetName, identifiers);
-				if (uploadedRecords.isEmpty()) {
-					return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+				if (!uploadedRecords.isEmpty()) {
+					if (StringUtils.isBlank(name)) {
+						importName = name;
+					} else {
+						importName = name + "_" + counter++;
+					}
+					imports.add(importService.createImport(importName, uploadedRecords.iterator().next().getProject().getProjectId(), uploadedRecords));
 				}
-				imports.add(importService.createImport(name, uploadedRecords.iterator().next().getProject().getProjectId(), uploadedRecords));
 			}
 		} catch (NotFoundException e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
