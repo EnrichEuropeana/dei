@@ -192,7 +192,6 @@ public class ImportPackageService extends RestRequestExecutor {
 		records.forEach(record -> {
 			record.setAnImport(anImport);
 			recordsRepository.findById(record.getId()).ifPresent(r -> {
-				recordsRepository.findByIdentifier(r.getIdentifier());
 				r.setAnImport(anImport);
 				recordsRepository.save(r);
 			});
