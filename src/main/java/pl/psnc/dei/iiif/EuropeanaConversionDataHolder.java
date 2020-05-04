@@ -91,7 +91,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 	private void reorderFileUrls(JsonObject record) {
 		List<JsonObject> webResources = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
-				.filter(o -> o.get(KEY_TYPE).getAsString().value().equals(TYPE_WEB_RESOURCE)
+				.filter(o -> anyTypeInArrayEquals(o.get(KEY_TYPE), TYPE_WEB_RESOURCE)
 						&& fileObjects.stream().anyMatch(conversionData -> conversionData.json.getAsObject().get(KEY_ID).getAsString().value().equals(o.get(KEY_ID).getAsString().value())))
 				.collect(Collectors.toList());
 		List<ConversionData> ordered = new ArrayList<>();
@@ -106,6 +106,13 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 			fileObjects.clear();
 			fileObjects.addAll(ordered);
 		}
+	}
+
+	private static boolean anyTypeInArrayEquals(JsonValue jsonValue, String typeToCheck) {
+		if (jsonValue.isArray()) {
+			return jsonValue.getAsArray().stream().anyMatch(value -> value.getAsString().value().equals(typeToCheck));
+		}
+		return jsonValue.getAsString().value().equals(typeToCheck);
 	}
 
 	private static Optional<String> extractMimeType(String id, JsonObject record) {
