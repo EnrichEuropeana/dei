@@ -52,6 +52,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
+        logger.info("Sending transcription to Annotations API. Transcription: " + transcription.getTranscriptionContent().toString());
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
                 .header("Authorization", "Bearer " + userToken)
