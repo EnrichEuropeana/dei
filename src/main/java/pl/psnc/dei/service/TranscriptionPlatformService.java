@@ -226,7 +226,9 @@ public class TranscriptionPlatformService {
 	 * @throws TranscriptionPlatformException
 	 */
 	public void sendAnnotationUrl(Transcription transcription) throws TranscriptionPlatformException {
-		logger.info("Sending annotation id to TP: \nRecord id: " + transcription.getRecord().getIdentifier() + "\nAnnotation id: " + transcription.getAnnotationId());
+		logger.info("Sending annotation id to TP: \n" +
+				"Record id: " + (transcription.getRecord() != null ? transcription.getRecord().getIdentifier() : "missing") +
+				"\nAnnotation id: " + transcription.getAnnotationId());
 		this.webClient
 				.post()
 				.uri(urlBuilder.urlForTranscription(transcription))
