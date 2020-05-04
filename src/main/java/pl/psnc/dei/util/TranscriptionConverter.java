@@ -34,7 +34,7 @@ public class TranscriptionConverter {
     private static JsonObject prepareBodyObject(JsonObject transcription) {
         JsonObject bodyObject = new JsonObject();
         bodyObject.put(AnnotationFieldsNames.BODY_TYPE, FULL_TEXT_RESOURCE);
-        if (transcription.get(TranscriptionFieldsNames.LANGUAGES) != null) {
+        if (transcription.get(TranscriptionFieldsNames.LANGUAGES) != null && !transcription.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().isEmpty()) {
             bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE, transcription.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
         }
         bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TEXT_NO_TAGS));
