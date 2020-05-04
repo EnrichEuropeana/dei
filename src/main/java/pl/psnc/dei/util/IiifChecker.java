@@ -39,17 +39,24 @@ public class IiifChecker {
 	private static boolean checkIfEuropeanaIiif(JsonObject record) {
 		Optional<JsonObject> iiifEntry = record.get(KEY_GRAPH).getAsArray().stream()
 				.map(JsonValue::getAsObject)
-				.filter(o -> (o.get(KEY_TYPE).getAsString().value().equals(TYPE_SERVICE)
+				.filter(o -> (anyTypeInArrayEquals(o.get(KEY_TYPE), TYPE_SERVICE)
 						&& o.get(KEY_CONFORMS_TO) != null
 						&& o.get(KEY_CONFORMS_TO).getAsString().value().equals("http://iiif.io/api/image"))
-						|| (o.get(KEY_TYPE).getAsString().value().equals(TYPE_AGGREGATION)
+						|| (anyTypeInArrayEquals(o.get(KEY_TYPE), TYPE_AGGREGATION)
 						&& o.get(KEY_IS_SHOWN_BY) != null
 						&& o.get(KEY_IS_SHOWN_BY).getAsString().value().contains("iiif.europeana.eu"))
-						|| ((o.get(KEY_TYPE).getAsString().value().equals("http://rdfs.org/sioc/services#Service") || (o.get(KEY_TYPE).getAsString().value().equals(TYPE_SERVICE)))
+						|| ((anyTypeInArrayEquals(o.get(KEY_TYPE), "http://rdfs.org/sioc/services#Service") || (anyTypeInArrayEquals(o.get(KEY_TYPE), TYPE_SERVICE)))
 						&& o.get(KEY_DCTERMS_CONFORMS_TO) != null
 						&& o.get(KEY_DCTERMS_CONFORMS_TO).getAsObject().get("@id").getAsString().value().equals("http://iiif.io/api/image")))
 				.findFirst();
 		return iiifEntry.isPresent();
+	}
+
+	private static boolean anyTypeInArrayEquals(JsonValue jsonValue, String typeToCheck) {
+		if (jsonValue.isArray()) {
+			return jsonValue.getAsArray().stream().anyMatch(value -> value.getAsString().value().equals(typeToCheck));
+		}
+		return jsonValue.getAsString().value().equals(typeToCheck);
 	}
 
 	private static boolean checkIfDDBIiif(JsonObject record) {
