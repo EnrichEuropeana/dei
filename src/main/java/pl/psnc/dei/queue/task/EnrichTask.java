@@ -2,6 +2,8 @@ package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
@@ -14,6 +16,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 public class EnrichTask extends Task {
+
+	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
 
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
@@ -39,12 +43,16 @@ public class EnrichTask extends Task {
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
 		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
-			Transcription transcription = new Transcription();
-			transcription.setRecord(record);
-			transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
-			transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
-			transcriptions.put(transcription.getTp_id(), transcription);
-			queueRecordService.saveTranscription(transcription);
+			try {
+				Transcription transcription = new Transcription();
+				transcription.setRecord(record);
+				transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
+				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+				transcriptions.put(transcription.getTp_id(), transcription);
+				queueRecordService.saveTranscription(transcription);
+			} catch (IllegalArgumentException e) {
+				logger.error("Transcription was corrupted: " + val.getAsString().value());
+			}
 		}
 		if (record.getTranscriptions().isEmpty()) {
 			record.getTranscriptions().addAll(transcriptions.values());

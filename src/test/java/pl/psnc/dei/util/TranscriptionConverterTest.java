@@ -16,15 +16,10 @@ public class TranscriptionConverterTest {
         TranscriptionConverter.convert(null);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForEmptyTranscription() {
-        JsonObject result = TranscriptionConverter.convert(new JsonObject());
-        Assert.assertNull(result.get(MOTIVATION));
-        Assert.assertNull(result.get(BODY).getAsObject().get(BODY_VALUE));
-        Assert.assertEquals("text/plain", result.get(BODY).getAsObject().get(BODY_FORMAT).getAsString().value());
-        Assert.assertNull(result.get(BODY).getAsObject().get(BODY_LANGUAGE));
-        Assert.assertNull(result.get(TARGET).getAsObject().get(TARGET_SCOPE));
-        Assert.assertNull(result.get(TARGET).getAsObject().get(TARGET_SOURCE));
+        TranscriptionConverter.convert(new JsonObject());
+        Assert.fail();
     }
 
     @Test
@@ -86,5 +81,34 @@ public class TranscriptionConverterTest {
         Assert.assertEquals("BÜNDNIS  90\n\n\nBürger für Bürger\n\n\nInitiative Frieden\nund  Menschenrechte\n", converted.get(BODY).getAsObject().get(BODY_VALUE).getAsString().value());
         Assert.assertEquals(EUROPEANA_ITEM_URL + "/135/_nnVvTdx", converted.get(TARGET).getAsObject().get(TARGET_SCOPE).getAsString().value());
         Assert.assertEquals("rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg", converted.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void shouldThrowExceptionWhenNoText() {
+        JsonBuilder jsonBuilder = new JsonBuilder();
+        JsonObject transcription = jsonBuilder
+                .startObject()
+                .pair("EuropeanaAnnotationId", 0)
+                .pair("AnnotationId", 507)
+                .pair("Text", "")
+                .pair("TextNoTags", "")
+                .pair("Timestamp", "Oct 14, 2019 2:25:50 PM")
+                .pair("X_Coord", 0.0)
+                .pair("Y_Coord", 0.0)
+                .pair("Width", 0.0)
+                .pair("Height", 0.0)
+                .pair("Motivation", "transcribing")
+                .pair("OrderIndex", 2)
+                .pair("TranscribathonItemId", 435038)
+                .pair("TranscribathonStoryId", 12856)
+                .pair("StoryUrl", "https://www.europeana.eu/portal/record/135/_nnVvTdx.html")
+                .pair("StoryId", "/135/_nnVvTdx")
+                .pair("ImageLink", "rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg")
+                .key("Languages").startArray().startObject().pair("Name", "Deutsch").pair("Code", "de").finishObject().finishArray()
+                .finishObject()
+                .build().getAsObject();
+
+        TranscriptionConverter.convert(transcription);
+        Assert.fail();
     }
 }
