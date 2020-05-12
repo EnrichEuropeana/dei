@@ -1,8 +1,6 @@
 package pl.psnc.dei.util;
 
 import org.apache.jena.atlas.json.JsonObject;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ObjectUtils;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
