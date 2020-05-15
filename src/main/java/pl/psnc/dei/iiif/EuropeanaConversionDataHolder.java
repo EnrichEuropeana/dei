@@ -31,6 +31,10 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 	private static final String EDM_IS_NEXT_IN_SEQUENCE = "edm:isNextInSequence";
 
+	private static final String FILES_ORIGINAL_MISSING_PNG = "/files/original/missing.png";
+
+	private static final String FULL_FILES_ORIGINAL_MISSING_PNG = "file:///files/original/missing.png";
+
 	void createConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
 		Optional<String> isShownByMimeType = Optional.ofNullable(IiifValidator.getMimeTypeFromShort(detectType(aggregatorData.get(EDM_IS_SHOWN_BY).getAsObject().get(KEY_ID).getAsString().value(), record)));
 		if (isShownByMimeType.filter(IiifValidator::isMimeTypeAllowed).isPresent()) {
@@ -80,10 +84,22 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		JsonValue jsonValue = recordRaw.get("object").getAsObject().get("aggregations").getAsArray().get(0).getAsObject().get("hasView");
 		if (jsonValue != null && jsonValue.isArray()) {
 			JsonArray array = jsonValue.getAsArray();
-			IntStream.range(0, array.size()).forEach(i -> urlPositions.put(array.get(i).getAsString().value(), i));
+			IntStream.range(0, array.size()).forEach(i -> {
+				// Special case for records where an entry contains URL to missing file, it's because JSON and JSONLD contain different data
+				if (array.get(i).getAsString().value().endsWith(FILES_ORIGINAL_MISSING_PNG)) {
+					urlPositions.put(FULL_FILES_ORIGINAL_MISSING_PNG, i);
+				} else {
+					urlPositions.put(array.get(i).getAsString().value(), i);
+				}
+			});
 		} else {
 			assert jsonValue != null;
-			urlPositions.put(jsonValue.getAsString().toString(), 0);
+			// Special case for records where an entry contains URL to missing file, it's because JSON and JSONLD contain different data
+			if (jsonValue.getAsString().toString().endsWith(FILES_ORIGINAL_MISSING_PNG)) {
+				urlPositions.put(FULL_FILES_ORIGINAL_MISSING_PNG, 0);
+			} else {
+				urlPositions.put(jsonValue.getAsString().toString(), 0);
+			}
 		}
 		return urlPositions;
 	}
