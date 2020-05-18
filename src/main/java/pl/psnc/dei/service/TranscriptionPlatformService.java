@@ -233,7 +233,8 @@ public class TranscriptionPlatformService {
 				.post()
 				.uri(urlBuilder.urlForTranscription(transcription))
 				.header("Authorization", authToken)
-				.body(BodyInserters.fromObject(transcription.getAnnotationId()))
+				.contentType(MediaType.APPLICATION_JSON)
+				.body(BodyInserters.fromObject(convertToJson(transcription.getAnnotationId())))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
 					logger.info("Error while sending annotation url {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
@@ -252,6 +253,12 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
+	}
+
+	private String convertToJson(String annotationId) {
+		JsonObject annotation = new JsonObject();
+		annotation.put("EuropeanaAnnotationId", annotationId);
+		return annotation.toString();
 	}
 
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
