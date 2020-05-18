@@ -244,7 +244,7 @@ public class TranscriptionPlatformService {
 					logger.info("Error while sending annotation url {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
 					return Mono.error(new TranscriptionPlatformException());
 				})
-				.bodyToMono(Object.class)
+				.bodyToMono(String.class)
 				.doOnError(cause -> {
 					if (cause instanceof TranscriptionPlatformException) {
 						throw new TranscriptionPlatformException("Error while communicating with Transcription Platform");
