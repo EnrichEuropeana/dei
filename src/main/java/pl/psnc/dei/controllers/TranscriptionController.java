@@ -13,6 +13,8 @@ import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
+import java.util.Set;
+
 
 @RestController
 @RequestMapping("/api/transcription")
@@ -47,6 +49,22 @@ public class TranscriptionController {
 			return new ResponseEntity<>(HttpStatus.OK);
 		} catch (Exception e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+	}
+
+	@PostMapping("/batch")
+	public ResponseEntity<String> transcriptionsReady(@RequestBody Set<String> recordsIds) {
+		if (!recordsIds.stream().allMatch(EuropeanaRecordIdValidator::validate)) {
+			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+		}
+
+		try {
+			for (String recordId : recordsIds) {
+				tps.createNewEnrichTask(recordId);
+			}
+			return new ResponseEntity<>(HttpStatus.OK);
+		} catch (NotFoundException e) {
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
 		}
 	}
 
