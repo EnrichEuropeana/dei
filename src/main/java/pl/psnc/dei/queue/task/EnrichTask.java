@@ -51,7 +51,7 @@ public class EnrichTask extends Task {
 				transcriptions.put(transcription.getTp_id(), transcription);
 				queueRecordService.saveTranscription(transcription);
 			} catch (IllegalArgumentException e) {
-				logger.error("Transcription was corrupted: " + val.getAsString().value());
+				logger.error("Transcription was corrupted: " + val.toString());
 			}
 		}
 		if (record.getTranscriptions().isEmpty()) {
