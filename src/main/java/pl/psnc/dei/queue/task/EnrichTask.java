@@ -60,8 +60,11 @@ public class EnrichTask extends Task {
 			fillQueue();
 		} else {
 			fillQueue();
-			for (Transcription transcription : notAnnotatedTranscriptions)
-				transcription.setTranscriptionContent(transcriptions.get(transcription.getTp_id()).getTranscriptionContent());
+			for (Transcription transcription : notAnnotatedTranscriptions) {
+				Transcription prepared = transcriptions.get(transcription.getTp_id());
+				if (prepared != null)
+					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
+			}
 		}
 	}
 
