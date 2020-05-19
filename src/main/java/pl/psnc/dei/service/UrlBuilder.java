@@ -78,10 +78,6 @@ public class UrlBuilder {
             url += '&'
                     + EUROPEANA_ANNOTATION_ID_PARAM
                     + europeanaAnnotationId;
-            // we have to include this to retrieve already exported transcriptions
-            url += '&'
-					+ INCLUDE_EXPORTED_PARAM
-					+ "1";
         }
 
         if (motivation != null) {
@@ -89,6 +85,11 @@ public class UrlBuilder {
 					+ MOTIVATION
 					+ motivation;
         }
+
+		// we have to include this to retrieve already exported transcriptions
+		url += '&'
+				+ INCLUDE_EXPORTED_PARAM
+				+ "1";
 
         return url;
     }
