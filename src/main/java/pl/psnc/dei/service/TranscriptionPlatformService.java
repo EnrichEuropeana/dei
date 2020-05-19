@@ -328,7 +328,7 @@ public class TranscriptionPlatformService {
 			recordsRepository.save(savedRecord);
 			taskQueueService.addTaskToQueue(tasksFactory.getTask(savedRecord));
 		} else {
-			throw new NotFoundException("Record not found.");
+			throw new NotFoundException("Record not found + " + recordId);
 		}
 	}
 

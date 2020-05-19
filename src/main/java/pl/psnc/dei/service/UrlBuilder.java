@@ -13,18 +13,19 @@ import pl.psnc.dei.model.Transcription;
  */
 @Service
 public class UrlBuilder {
-    private static final String PROJECTS_SUFFIX = "/projects";
-    private static final String DATASETS_SUFFIX = "/datasets";
-    private static final String IMPORTS_ADD_SUFFIX = "/";
-    private static final String STORIES_SUFFIX = "/stories";
-    private static final String ENRICHMENTS_SUFFIX = "/enrichments";
-    private static final String TRANSCRIPTION_SUFFIX = "/transcription";
-    private static final String DATASET_PARAM = "datasetId=";
-    private static final String IMPORT_NAME_PARAM = "importName=";
-    private static final String STORY_ID_PARAM = "storyId=";
-    private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
-    private static final String ANNOTATION_ID = "annotationId=";
-    private static final String MOTIVATION = "motivation=";
+	private static final String PROJECTS_SUFFIX = "/projects";
+	private static final String DATASETS_SUFFIX = "/datasets";
+	private static final String IMPORTS_ADD_SUFFIX = "/";
+	private static final String STORIES_SUFFIX = "/stories";
+	private static final String ENRICHMENTS_SUFFIX = "/enrichments";
+	private static final String TRANSCRIPTION_SUFFIX = "/transcription";
+	private static final String DATASET_PARAM = "datasetId=";
+	private static final String IMPORT_NAME_PARAM = "importName=";
+	private static final String STORY_ID_PARAM = "storyId=";
+	private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
+	private static final String ANNOTATION_ID = "annotationId=";
+	private static final String MOTIVATION = "motivation=";
+	private static final String INCLUDE_EXPORTED_PARAM = "includeExported=";
 
 
 	@Value("${transcription.api.url}")
@@ -77,6 +78,10 @@ public class UrlBuilder {
             url += '&'
                     + EUROPEANA_ANNOTATION_ID_PARAM
                     + europeanaAnnotationId;
+            // we have to include this to retrieve already exported transcriptions
+            url += '&'
+					+ INCLUDE_EXPORTED_PARAM
+					+ "1";
         }
 
         if (motivation != null) {
