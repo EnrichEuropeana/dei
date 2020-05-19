@@ -84,7 +84,7 @@ public class TranscriptionPlatformServiceTest {
     @Test
     public void shouldFetchListOfTranscriptions() throws TranscriptionPlatformException {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123"))
+        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123&includeExported=1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -105,7 +105,7 @@ public class TranscriptionPlatformServiceTest {
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnTimeoutWhileFetchingTranscriptions() {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123"))
+        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123&includeExported=1"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -127,7 +127,7 @@ public class TranscriptionPlatformServiceTest {
     @Test(expected = TranscriptionPlatformException.class)
     public void shouldFailOnServerErrorWhileFetchingTranscriptions() {
         wireMockRule.resetAll();
-        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123"))
+        wireMockRule.stubFor(get(urlEqualTo("/enrichments?storyId=123&includeExported=1"))
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withHeader("Content-Type", "application/json")
