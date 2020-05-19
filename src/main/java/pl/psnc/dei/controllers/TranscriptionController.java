@@ -60,6 +60,7 @@ public class TranscriptionController {
 
 		try {
 			for (String recordId : recordsIds) {
+				logger.info("Creating enrich task for record {}", recordId);
 				tps.createNewEnrichTask(recordId);
 			}
 			return new ResponseEntity<>(HttpStatus.OK);

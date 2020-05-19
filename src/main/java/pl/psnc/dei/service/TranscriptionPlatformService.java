@@ -192,6 +192,7 @@ public class TranscriptionPlatformService {
 	 * @throws TranscriptionPlatformException
 	 */
 	public JsonArray fetchTranscriptionsFor(Record record) throws TranscriptionPlatformException {
+		logger.info("Retrieving transcriptions from TP for record {}", record.getIdentifier());
 		String recordTranscriptions =
 				this.webClient
 						.get()
