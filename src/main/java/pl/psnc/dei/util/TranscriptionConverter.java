@@ -1,5 +1,6 @@
 package pl.psnc.dei.util;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonObject;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
@@ -14,7 +15,7 @@ public class TranscriptionConverter {
     public static JsonObject convert(JsonObject transcription) {
         if (transcription == null ||
                 transcription.get(TranscriptionFieldsNames.TEXT_NO_TAGS) == null ||
-                transcription.get(TranscriptionFieldsNames.TEXT_NO_TAGS).getAsString().value().isEmpty())
+                StringUtils.isBlank(transcription.get(TranscriptionFieldsNames.TEXT_NO_TAGS).getAsString().value()))
             throw new IllegalArgumentException("Transcription object cannot be null");
 
         JsonObject annotation = new JsonObject();
