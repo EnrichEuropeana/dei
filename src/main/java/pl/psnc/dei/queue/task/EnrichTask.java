@@ -48,6 +48,10 @@ public class EnrichTask extends Task {
 				transcription.setRecord(record);
 				transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
 				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+				JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
+				if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+					transcription.setAnnotationId(europeanaAnnotationId.toString());
+				}
 				transcriptions.put(transcription.getTp_id(), transcription);
 				queueRecordService.saveTranscription(transcription);
 			} catch (IllegalArgumentException e) {
