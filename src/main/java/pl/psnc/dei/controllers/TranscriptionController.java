@@ -13,7 +13,9 @@ import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
+import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 @RestController
@@ -58,15 +60,20 @@ public class TranscriptionController {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 
-		try {
-			for (String recordId : recordsIds) {
-				logger.info("Creating enrich task for record {}", recordId);
+		Set<String> notFound = new HashSet<>();
+
+		for (String recordId : recordsIds) {
+			logger.info("Creating enrich task for record {}", recordId);
+			try {
 				tps.createNewEnrichTask(recordId);
+			} catch (NotFoundException e) {
+				notFound.add(e.getMessage());
 			}
-			return new ResponseEntity<>(HttpStatus.OK);
-		} catch (NotFoundException e) {
-			return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
 		}
+		if (!notFound.isEmpty()) {
+			return new ResponseEntity<>(String.join(",", notFound), HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
 	@PutMapping
