@@ -30,12 +30,15 @@ public class EnrichTask extends Task {
 	public void process() {
 		switch (state) {
 			case E_GET_TRANSCRIPTIONS_FROM_TP:
+				logger.info("Task state: E_GET_TRANSCRIPTIONS_FROM_TP");
 				getTranscriptionsFromTp();
 				state = TaskState.E_HANDLE_TRANSCRIPTIONS;
 			case E_HANDLE_TRANSCRIPTIONS:
+				logger.info("Task state: E_HANDLE_TRANSCRIPTIONS");
 				handleTranscriptions();
 				state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
 			case E_SEND_ANNOTATION_IDS_TO_TP:
+				logger.info("Task state: E_SEND_ANNOTATION_IDS_TO_TP");
 				sendAnnotationIdsAndFinalizeTask();
 		}
 	}
@@ -59,10 +62,12 @@ public class EnrichTask extends Task {
 			}
 		}
 		if (record.getTranscriptions().isEmpty()) {
+			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
 			queueRecordService.saveRecord(record);
 			fillQueue();
 		} else {
+			logger.info("Record already has transcriptions. Processing not annotated.");
 			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions) {
 				Transcription prepared = transcriptions.get(transcription.getTp_id());
