@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
@@ -17,6 +18,7 @@ import pl.psnc.dei.model.Record;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
@@ -142,13 +144,27 @@ public class Converter {
 			try {
 				String fileName = getFileName(data);
 				File tempFile = new File(srcDir, fileName);
-				FileUtils.copyURLToFile(data.srcFileUrl, tempFile);
+
+				copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
 			} catch (IOException e) {
 				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
 			}
 		}
+	}
+
+	private void copyURLToFile(URL url, File file) throws IOException {
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		connection.setConnectTimeout(500);
+		connection.setReadTimeout(5000);
+		connection.setInstanceFollowRedirects(true);
+		int code = connection.getResponseCode();
+		if (code == HttpStatus.MOVED_PERMANENTLY.value() ||
+				code == HttpStatus.SEE_OTHER.value()) {
+			connection = (HttpURLConnection) new URL(connection.getHeaderField("Location")).openConnection();
+		}
+		FileUtils.copyInputStreamToFile(connection.getInputStream(), file);
 	}
 
 	private String getFileName(ConversionDataHolder.ConversionData data) {
