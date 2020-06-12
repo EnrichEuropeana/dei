@@ -33,7 +33,7 @@ class CommandExecutor {
 			}
 		});
 
-		if(!process.waitFor(2, TimeUnit.HOURS))
+		if(!process.waitFor(24, TimeUnit.HOURS))
 			throw new ConversionException("Conversion process timeout!");
 		int executionResult = process.exitValue();
 
