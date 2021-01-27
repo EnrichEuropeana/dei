@@ -1,0 +1,124 @@
+package pl.psnc.dei.service;
+
+import com.github.tomakehurst.wiremock.junit.WireMockRule;
+import com.github.tomakehurst.wiremock.stubbing.Scenario;
+import org.junit.Assert;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.web.reactive.function.client.WebClient;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+
+@RunWith(SpringRunner.class)
+@ContextConfiguration
+@TestPropertySource(properties = {
+		"api.tokenEndpoint=http://127.0.0.1:5656/auth/realms/europeana/protocol/openid-connect/token",
+		"api.clientId=client",
+		"api.clientSecret=secret",
+		"api.username=user",
+		"api.password=pass"
+})
+public class AccessTokenManagerTest {
+
+	@Rule
+	public WireMockRule wireMockRule = new WireMockRule(wireMockConfig().port(5656));
+
+	@TestConfiguration
+	static class AccessTokenManagerContextConfiguration {
+
+		@Bean
+		public WebClient.Builder builder() {
+			return WebClient.builder();
+		}
+
+		@Bean
+		public AccessTokenManager accessTokenManager(WebClient.Builder builder) {
+			return new AccessTokenManager(builder);
+		}
+	}
+
+	@Autowired
+	private AccessTokenManager accessTokenManager;
+
+	@Test
+	public void getAccessToken() {
+		wireMockRule.resetAll();
+		wireMockRule.stubFor(post(urlEqualTo("/auth/realms/europeana/protocol/openid-connect/token"))
+				.willReturn(aResponse()
+						.withStatus(200)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{\n" +
+								"    \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2NDYxOTYsImlhdCI6MTYxMTY0MjU5NiwianRpIjoiOTEwNDFmZDUtYmYzNy00YjY1LWFjNmQtYzZmZjFjNTcxMzQ1IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJmMWUwZjRmYi0yNjQ3LTQ4MDUtYWE0My1jMGRhMDUzMzIyMGIiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.cXMlPMdIRCHu7NQ7Vy_bVDvqViZ7jbTrI-tPDP7tCTg8gHbWRnxQDcqAtPCjXJ1xFLiOrSgnG85gmdxSur4ecT8cbhtoZ4iyJ7G-o2qMTvYaBSGoCQQ-xJircSv0EoeF7IRvb9p2Y6yr2VAQt0Uen0c_dHRRUshMoigTl5HhAfESk_8vi-YUuVnva0Q2kpD2uBlbeMsooVj5siUu_M8rVzOBBbc4hWB_g6g8_L4xnYTqVYKP0s7x8tVCYST8f5U_6qcbddDfM21xdt1wYxu1AT77nNHYF1XmoWYkAYQAmwrqTrJw41ku1Yp-tFU_G5oLYeknCQkr6gyDKTRmXqgWaQ\",\n" +
+								"    \"expires_in\": 3600,\n" +
+								"    \"refresh_expires_in\": 604800,\n" +
+								"    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJiMTQxNGQxZS1lNzQ0LTRiOGQtYjZjMS1kZWZkNGFlZDRjYTEifQ.eyJleHAiOjE2MTIyNDczOTYsImlhdCI6MTYxMTY0MjU5NiwianRpIjoiZTNjYWEyODAtMWY1My00OTRiLWJmM2YtOTAwZDZjYjJkYmIxIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOiJodHRwczovL2F1dGguZXVyb3BlYW5hLmV1L2F1dGgvcmVhbG1zL2V1cm9wZWFuYSIsInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFuc2NyaWJhdGhvbi1kZWkiLCJzZXNzaW9uX3N0YXRlIjoiZjFlMGY0ZmItMjY0Ny00ODA1LWFhNDMtYzBkYTA1MzMyMjBiIiwic2NvcGUiOiJhbm5vdGF0aW9ucyBjbGllbnRfaW5mbyBwcm9maWxlIGVtYWlsIn0.xgkOMG5LGhpi5QMpbQ4-wiKPmtgMBO3QFuaHwsiUwj4\",\n" +
+								"    \"token_type\": \"bearer\",\n" +
+								"    \"not-before-policy\": 0,\n" +
+								"    \"session_state\": \"f1e0f4fb-2647-4805-aa43-c0da0533220b\",\n" +
+								"    \"scope\": \"annotations client_info profile email\"\n" +
+								"}")));
+		String token = accessTokenManager.getAccessToken();
+		Assert.assertEquals("eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2NDYxOTYsImlhdCI6MTYxMTY0MjU5NiwianRpIjoiOTEwNDFmZDUtYmYzNy00YjY1LWFjNmQtYzZmZjFjNTcxMzQ1IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJmMWUwZjRmYi0yNjQ3LTQ4MDUtYWE0My1jMGRhMDUzMzIyMGIiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.cXMlPMdIRCHu7NQ7Vy_bVDvqViZ7jbTrI-tPDP7tCTg8gHbWRnxQDcqAtPCjXJ1xFLiOrSgnG85gmdxSur4ecT8cbhtoZ4iyJ7G-o2qMTvYaBSGoCQQ-xJircSv0EoeF7IRvb9p2Y6yr2VAQt0Uen0c_dHRRUshMoigTl5HhAfESk_8vi-YUuVnva0Q2kpD2uBlbeMsooVj5siUu_M8rVzOBBbc4hWB_g6g8_L4xnYTqVYKP0s7x8tVCYST8f5U_6qcbddDfM21xdt1wYxu1AT77nNHYF1XmoWYkAYQAmwrqTrJw41ku1Yp-tFU_G5oLYeknCQkr6gyDKTRmXqgWaQ", token);
+	}
+
+	@Test
+	public void getAccessTokenWithRefreshToken() {
+		wireMockRule.resetAll();
+		wireMockRule.stubFor(post(urlEqualTo("/auth/realms/europeana/protocol/openid-connect/token")).withBasicAuth("client", "secret")
+				.willReturn(aResponse()
+						.withStatus(200)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{\n" +
+								"    \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2NjY5MjAsImlhdCI6MTYxMTY2MzMyMCwianRpIjoiZmI3YjE3ZDItZjZlMC00YmE4LTg5NzUtZDgzNjJjNWM2ZDIzIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJlYzQ0NjA1MS1lMGIzLTRkYWYtOTQxZC0zYmRhYzhlM2I0MDAiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.EZTMQPrp8u6aRwdLEzDve1doVaXPgp3b5EmNUWqQ9Xq3VID8Z6Ujtc9_r40dZo-K6c2-IknPwlNdUvvV7q9inOUx5lvr_WZqfVkY56MqWMW7JwsuxXgNuFO9a8RZFa8usIeUJjZ5cgNSRe5k05jodY_UChQrtWBzWRXUSyme4hlnXiy4VBUw28FVyvGoROxyF8Hf4LH2L2uZDrGZAf4vnukNG4kuJ2RBlVAosxiBVvVIIOXRlcBsIht9uEjAOaLdp-HyenIeOavKA3fWAVEWHKcsrh3MZZZbvM6U3Ry-rZGnTcFmKfsFPc4TqjgUxcFqcf9coQ6R_kFMEKtoMv2wlg\",\n" +
+								"    \"expires_in\": 3600,\n" +
+								"    \"refresh_expires_in\": 604800,\n" +
+								"    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJiMTQxNGQxZS1lNzQ0LTRiOGQtYjZjMS1kZWZkNGFlZDRjYTEifQ.eyJleHAiOjE2MTIyNjgxMjAsImlhdCI6MTYxMTY2MzMyMCwianRpIjoiNjAzNmJlOTUtMzcyMS00ZjFiLTk5OTMtNzU0YmQ3MGQ2NDA2IiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOiJodHRwczovL2F1dGguZXVyb3BlYW5hLmV1L2F1dGgvcmVhbG1zL2V1cm9wZWFuYSIsInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFuc2NyaWJhdGhvbi1kZWkiLCJzZXNzaW9uX3N0YXRlIjoiZWM0NDYwNTEtZTBiMy00ZGFmLTk0MWQtM2JkYWM4ZTNiNDAwIiwic2NvcGUiOiJhbm5vdGF0aW9ucyBjbGllbnRfaW5mbyBwcm9maWxlIGVtYWlsIn0.76In2Qh1EYcAPZih_g0OXKTbWG4GBe_wFdCGsO3u7C0\",\n" +
+								"    \"token_type\": \"bearer\",\n" +
+								"    \"not-before-policy\": 0,\n" +
+								"    \"session_state\": \"ec446051-e0b3-4daf-941d-3bdac8e3b400\",\n" +
+								"    \"scope\": \"annotations client_info profile email\"\n" +
+								"}")));
+		String accessToken = accessTokenManager.getAccessTokenWithRefreshToken();
+		Assert.assertEquals("eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2NjY5MjAsImlhdCI6MTYxMTY2MzMyMCwianRpIjoiZmI3YjE3ZDItZjZlMC00YmE4LTg5NzUtZDgzNjJjNWM2ZDIzIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJlYzQ0NjA1MS1lMGIzLTRkYWYtOTQxZC0zYmRhYzhlM2I0MDAiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.EZTMQPrp8u6aRwdLEzDve1doVaXPgp3b5EmNUWqQ9Xq3VID8Z6Ujtc9_r40dZo-K6c2-IknPwlNdUvvV7q9inOUx5lvr_WZqfVkY56MqWMW7JwsuxXgNuFO9a8RZFa8usIeUJjZ5cgNSRe5k05jodY_UChQrtWBzWRXUSyme4hlnXiy4VBUw28FVyvGoROxyF8Hf4LH2L2uZDrGZAf4vnukNG4kuJ2RBlVAosxiBVvVIIOXRlcBsIht9uEjAOaLdp-HyenIeOavKA3fWAVEWHKcsrh3MZZZbvM6U3Ry-rZGnTcFmKfsFPc4TqjgUxcFqcf9coQ6R_kFMEKtoMv2wlg", accessToken);
+	}
+
+
+	@Test
+	public void getAccessTokenWithRefreshTokenExpired() {
+		wireMockRule.resetAll();
+		wireMockRule.stubFor(post(urlEqualTo("/auth/realms/europeana/protocol/openid-connect/token")).withBasicAuth("client", "secret")
+				.inScenario("Expired scenario")
+				.whenScenarioStateIs(Scenario.STARTED)
+				.willSetStateTo("Next state")
+				.willReturn(aResponse()
+						.withStatus(401)
+				.withBody("{}")));
+		wireMockRule.stubFor(post(urlEqualTo("/auth/realms/europeana/protocol/openid-connect/token"))
+				.inScenario("Expired scenario")
+				.whenScenarioStateIs("Next state")
+				.willReturn(aResponse()
+						.withStatus(200)
+						.withHeader("Content-Type", "application/json")
+						.withBody("{\n" +
+								"    \"access_token\": \"eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2Njg0NDksImlhdCI6MTYxMTY2NDg0OSwianRpIjoiYzY3MGNiNWMtMDgyYS00NjU5LWIwZGMtMGNhMzZmZGZiZjVkIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJkYjY2MDU0Yi1hODcwLTQ4ZDUtODVmNi1lMGRhOWVhNTFmYWQiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.AyWKBgot_FXMhiFWvFIGd0YI0T7iIy4KxcGxi1UpH9quK2P0eU5kWhWttcSRV4yrBXPbd77kib-PGZ6W3Ed9k3L760PRvJtKNqUneB7kmUsOLY_UdOwVwUfC-4iCNzUS2ZvsyCmjSuVw_-Ww7jc4gKjSc3QcdKnRtr7rZCkpATDIoV45mn3wr8M7XWdcu4iS_pTa57qYv9wFYmerMRwRRNMsHFpop1DRyz8CgVoZQbbXvX9V4gT4O4RU2_GRk0qa4Yj7sQ2TO9XOw5-WnnXyyOMg_aJnJOCIhmcXn8MED9CBu9S-YOgjcw3cH4GyT87-LOhPhX7Gjjh6p8KEmyoTww\",\n" +
+								"    \"expires_in\": 3600,\n" +
+								"    \"refresh_expires_in\": 604800,\n" +
+								"    \"refresh_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICJiMTQxNGQxZS1lNzQ0LTRiOGQtYjZjMS1kZWZkNGFlZDRjYTEifQ.eyJleHAiOjE2MTIyNjk2NDksImlhdCI6MTYxMTY2NDg0OSwianRpIjoiNDlkYWU3OTYtZjNmYi00ZDQ0LWFlNTQtMDAyNjQyYTFiZjBmIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOiJodHRwczovL2F1dGguZXVyb3BlYW5hLmV1L2F1dGgvcmVhbG1zL2V1cm9wZWFuYSIsInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IlJlZnJlc2giLCJhenAiOiJ0cmFuc2NyaWJhdGhvbi1kZWkiLCJzZXNzaW9uX3N0YXRlIjoiZGI2NjA1NGItYTg3MC00OGQ1LTg1ZjYtZTBkYTllYTUxZmFkIiwic2NvcGUiOiJhbm5vdGF0aW9ucyBjbGllbnRfaW5mbyBwcm9maWxlIGVtYWlsIn0.RmhhBvx61rShG_CEw08XLx43NzqlgHHDenCJTboBkQ0\",\n" +
+								"    \"token_type\": \"bearer\",\n" +
+								"    \"not-before-policy\": 0,\n" +
+								"    \"session_state\": \"db66054b-a870-48d5-85f6-e0da9ea51fad\",\n" +
+								"    \"scope\": \"annotations client_info profile email\"\n" +
+								"}")));
+		String accessToken = accessTokenManager.getAccessTokenWithRefreshToken();
+		Assert.assertEquals("eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIiwia2lkIiA6ICI1SW55MldXRkhZQ1YxcFNNc0NKXzl2LVhaUUgwUk84c05KNUxLd2JHcmk0In0.eyJleHAiOjE2MTE2Njg0NDksImlhdCI6MTYxMTY2NDg0OSwianRpIjoiYzY3MGNiNWMtMDgyYS00NjU5LWIwZGMtMGNhMzZmZGZiZjVkIiwiaXNzIjoiaHR0cHM6Ly9hdXRoLmV1cm9wZWFuYS5ldS9hdXRoL3JlYWxtcy9ldXJvcGVhbmEiLCJhdWQiOlsiYW5ub3RhdGlvbnMiLCJhY2NvdW50Il0sInN1YiI6IjU4OGVlYzI2LTBjYjktNGEwOS05MGI1LTc0MzY1ZTFlN2I0MyIsInR5cCI6IkJlYXJlciIsImF6cCI6InRyYW5zY3JpYmF0aG9uLWRlaSIsInNlc3Npb25fc3RhdGUiOiJkYjY2MDU0Yi1hODcwLTQ4ZDUtODVmNi1lMGRhOWVhNTFmYWQiLCJhY3IiOiIxIiwicmVhbG1fYWNjZXNzIjp7InJvbGVzIjpbIm9mZmxpbmVfYWNjZXNzIiwidW1hX2F1dGhvcml6YXRpb24iXX0sInJlc291cmNlX2FjY2VzcyI6eyJhbm5vdGF0aW9ucyI6eyJyb2xlcyI6WyJ1c2VyIl19LCJhY2NvdW50Ijp7InJvbGVzIjpbIm1hbmFnZS1hY2NvdW50IiwibWFuYWdlLWFjY291bnQtbGlua3MiLCJ2aWV3LXByb2ZpbGUiXX19LCJzY29wZSI6ImFubm90YXRpb25zIGNsaWVudF9pbmZvIHByb2ZpbGUgZW1haWwiLCJlbWFpbF92ZXJpZmllZCI6dHJ1ZSwiY2xpZW50X3B1YmxpY19pZCI6ImQ4N2RkYzNkLTcxMWUtNDg3MS1iM2Q4LTY0YjFlMWI5NzQ3NiIsIm5hbWUiOiJNYXJjaW4gSGVsacWEc2tpIiwicHJlZmVycmVkX3VzZXJuYW1lIjoiaGVsaW4iLCJnaXZlbl9uYW1lIjoiTWFyY2luIiwiZmFtaWx5X25hbWUiOiJIZWxpxYRza2kiLCJjbGllbnRfbmFtZSI6IkRhdGEgRXhjaGFuZ2UgSW5mcmFzdHJ1Y3R1cmUgQCBUcmFuc2NyaWJhdGhvbiIsImVtYWlsIjoiaGVsaW5AbWFuLnBvem5hbi5wbCJ9.AyWKBgot_FXMhiFWvFIGd0YI0T7iIy4KxcGxi1UpH9quK2P0eU5kWhWttcSRV4yrBXPbd77kib-PGZ6W3Ed9k3L760PRvJtKNqUneB7kmUsOLY_UdOwVwUfC-4iCNzUS2ZvsyCmjSuVw_-Ww7jc4gKjSc3QcdKnRtr7rZCkpATDIoV45mn3wr8M7XWdcu4iS_pTa57qYv9wFYmerMRwRRNMsHFpop1DRyz8CgVoZQbbXvX9V4gT4O4RU2_GRk0qa4Yj7sQ2TO9XOw5-WnnXyyOMg_aJnJOCIhmcXn8MED9CBu9S-YOgjcw3cH4GyT87-LOhPhX7Gjjh6p8KEmyoTww", accessToken);
+	}
+}

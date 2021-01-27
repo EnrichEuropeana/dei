@@ -16,6 +16,7 @@ import pl.psnc.dei.request.RestRequestExecutor;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,13 +29,16 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     private static final String ID = "id";
 
+    private final AccessTokenManager accessTokenManager;
+
     @Value("${europeana.api.annotations.endpoint}")
     private String annotationApiEndpoint;
 
     @Value("${api.userToken}")
     private String userToken;
 
-    public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder) {
+    public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder, AccessTokenManager accessTokenManager) {
+        this.accessTokenManager = accessTokenManager;
         configure(webClientBuilder);
     }
 
@@ -42,6 +46,9 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
     private void configure() {
         setRootUri(annotationApiEndpoint);
         logger.info("Will use {} url.", annotationApiEndpoint);
+        if (userToken == null || userToken.isEmpty()) {
+            userToken = accessTokenManager.getAccessToken();
+        }
     }
 
 
@@ -60,8 +67,13 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
+                        logger.warn("Access token expired. Requesting new one.");
+                        return Mono.empty();
+                    } else {
+                        logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    }
                 })
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
@@ -70,6 +82,10 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .bodyToMono(String.class)
                 .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
+        if (annotationResponse == null || annotationResponse.isEmpty()) {
+            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
+            return postTranscription(transcription);
+        }
         return extractAnnotationId(annotationResponse);
     }
 
@@ -86,8 +102,13 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
+                        logger.warn("Access token expired. Requesting new one.");
+                        return Mono.empty();
+                    } else {
+                        logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    }
                 })
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
@@ -95,6 +116,10 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 })
                 .bodyToMono(String.class)
                 .block();
+        if (annotationResponse == null || annotationResponse.isEmpty()) {
+            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
+            return updateTranscription(transcription);
+        }
         return extractAnnotationId(annotationResponse);
     }
 
