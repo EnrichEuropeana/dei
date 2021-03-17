@@ -17,7 +17,6 @@ import pl.psnc.dei.service.ImportPackageService;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -111,4 +110,10 @@ public class BatchController {
 		return ResponseEntity.ok(imports);
 	}
 
+	@PostMapping(path = "/fix-dimensions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Set<String>> fixDimensions(@RequestParam(required = false, defaultValue = "false") boolean fix,
+													  @RequestBody @RequestParam("file") MultipartFile file) throws IOException {
+		Set<String> fileToDimension = batchService.fixDimensions(fix, file);
+		return ResponseEntity.ok(fileToDimension);
+	}
 }

@@ -1,7 +1,11 @@
 package pl.psnc.dei.service;
 
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.exception.NotFoundException;
@@ -25,6 +29,7 @@ import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 @Service
 @Transactional
 public class BatchService {
+	private final static Logger log = LoggerFactory.getLogger(BatchService.class);
 
 	private final RecordsRepository recordsRepository;
 
@@ -154,5 +159,90 @@ public class BatchService {
 			}
 		}
 		return records;
+	}
+
+	public Set<String> fixDimensions(boolean fix, MultipartFile file) throws IOException {
+		Set<String> manifests = new HashSet<>();
+
+		Map<String, Map<String, String>> dimensions = readDimensionsFromFile(file);
+
+		dimensions.forEach((key, value) -> {
+			recordsRepository.findByIdentifier(key).ifPresent(record -> {
+				String manifest = fixDimensions(key, value, record.getIiifManifest());
+				if (fix) {
+					record.setIiifManifest(manifest);
+					recordsRepository.save(record);
+				}
+				manifests.add(manifest);
+			});
+		});
+		return manifests;
+	}
+
+	private String fixDimensions(String identifier, Map<String, String> dimensions, String iiifManifest) {
+		JsonObject jsonObject = JSON.parse(iiifManifest);
+		JsonArray canvas = jsonObject.get("sequences").getAsArray().get(0).getAsObject().get("canvases").getAsArray();
+		canvas.stream().iterator().forEachRemaining(canva -> {
+			final JsonValue label = canva.getAsObject().get("label");
+			String key = label.getAsString().value();
+			if (key.contains(identifier)) {
+				key = key.substring(key.indexOf(identifier));
+				String[] size = dimensions.get(key).split("x");
+				int width = Integer.parseInt(size[0].trim());
+				int height = Integer.parseInt(size[1].trim());
+				log.debug(String.format("Updating width for %s", key));
+				updateDimension(canva, width, "width");
+				log.debug(String.format("Updating height for %s", key));
+				updateDimension(canva, height, "height");
+				JsonArray images = canva.getAsObject().get("images").getAsArray();
+				images.stream().iterator().forEachRemaining(image -> {
+					JsonValue on = image.getAsObject().get("on");
+					if (on.getAsString().value().endsWith(label.getAsString().value())) {
+						log.debug(String.format("Updating width for %s", on.getAsString().value()));
+						updateDimension(image.getAsObject().get("resource"), width, "width");
+						log.debug(String.format("Updating height for %s", on.getAsString().value()));
+						updateDimension(image.getAsObject().get("resource"), height, "height");
+					}
+				});
+			}
+		});
+		return jsonObject.toString();
+	}
+
+	private void updateDimension(JsonValue parent, int dimension, String label) {
+		JsonValue dimensionObject = parent.getAsObject().get(label);
+		if (dimensionObject.getAsNumber().value().intValue() != dimension) {
+			log.debug(String.format("Changing %s from %d to %d", label, dimensionObject.getAsNumber().value().intValue(), dimension));
+			parent.getAsObject().put(label, dimension);
+		}
+	}
+
+	private String extractIdentifier(String key) {
+		int index = key.indexOf('/', 1);
+		if (index != -1) {
+			index = key.indexOf('/', index + 1);
+		}
+		if (index != -1) {
+			return key.substring(0, index);
+		}
+		return key;
+	}
+
+	private Map<String, Map<String, String>> readDimensionsFromFile(MultipartFile file) throws IOException {
+		if (file.isEmpty()) {
+			throw new IllegalArgumentException("Empty file");
+		}
+		Map<String, Map<String, String>> allDimensions = new HashMap<>();
+
+		BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+		while (reader.ready()) {
+			String line = reader.readLine();
+			String[] parts = line.split(":");
+			if (parts.length == 2) {
+				String identifier = extractIdentifier(parts[0]);
+				allDimensions.computeIfAbsent(identifier, s -> new HashMap<>()).put(parts[0].trim(), parts[1].trim());
+			}
+		}
+		return allDimensions;
 	}
 }
