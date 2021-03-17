@@ -44,6 +44,8 @@ public class Converter {
 
 	private static final int DEFAULT_DIMENSION = 6000;
 
+	private static final int MAX_RETRY_COUNT = 3;
+
 	private Record record;
 
 	@Autowired
@@ -220,7 +222,7 @@ public class Converter {
 								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 								+ record.getIdentifier() + "/"
 								+ getTiffFileName(convData.srcFile.getName()));
-						convData.dimensions.add(extractDimensions(convertedFile));
+						convData.dimensions.add(extractDimensions(convertedFile, MAX_RETRY_COUNT));
 					} else {
 						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
@@ -247,20 +249,23 @@ public class Converter {
 						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 						+ record.getIdentifier() + "/"
 						+ file.getName());
-				convData.dimensions.add(extractDimensions(file));
+				convData.dimensions.add(extractDimensions(file, MAX_RETRY_COUNT));
 				logger.info("Output file for source " + convData.srcFile + ": " + convData.imagePath.get(convData.imagePath.size() - 1));
 			});
 		}
 	}
 
-	private Dimension extractDimensions(File file) {
-		try {
-			String output = executor.runCommand(Arrays.asList(
-					"exiv2",
-					file.getAbsolutePath()));
-			return getDimensionFromPattern(DIMENSIONS_PATTERN.matcher(output));
-		} catch (Exception e) {
-			logger.warn("Could not extract image dimensions. Setting default 1000x1000");
+	private Dimension extractDimensions(File file, int retryCount) {
+		if (retryCount > 0) {
+			try {
+				String output = executor.runCommand(Arrays.asList(
+						"exiv2",
+						file.getAbsolutePath()));
+				return getDimensionFromPattern(DIMENSIONS_PATTERN.matcher(output));
+			} catch (Exception e) {
+				logger.warn("Could not extract image dimensions. Setting default 6000x6000");
+				return extractDimensions(file, --retryCount);
+			}
 		}
 		return new Dimension(DEFAULT_DIMENSION, DEFAULT_DIMENSION);
 	}
