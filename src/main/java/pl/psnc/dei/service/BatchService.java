@@ -4,7 +4,6 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
-import org.apache.jena.ext.com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -171,16 +170,14 @@ public class BatchService {
 
 		Map<String, Map<String, String>> dimensions = readDimensionsFromFile(file);
 
-		dimensions.forEach((key, value) -> {
-			recordsRepository.findByIdentifier(key).ifPresent(record -> {
-				String manifest = fixDimensions(key, value, record.getIiifManifest());
-				if (fix) {
-					record.setIiifManifest(manifest);
-					recordsRepository.save(record);
-				}
-				manifests.add(manifest);
-			});
-		});
+		dimensions.forEach((key, value) -> recordsRepository.findByIdentifier(key).ifPresent(record -> {
+			String manifest = fixDimensions(key, value, record.getIiifManifest());
+			if (fix) {
+				record.setIiifManifest(manifest);
+				recordsRepository.save(record);
+			}
+			manifests.add(manifest);
+		}));
 		return manifests;
 	}
 
