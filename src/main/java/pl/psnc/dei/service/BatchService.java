@@ -192,10 +192,10 @@ public class BatchService {
 			String key = label.getAsString().value();
 			if (key.contains(identifier)) {
 				key = key.substring(key.indexOf(identifier));
+				log.info(String.format(UPDATING_DIMENSIONS_MSG, key));
 				String[] size = dimensions.get(key).split("x");
 				int width = Integer.parseInt(size[0].trim());
 				int height = Integer.parseInt(size[1].trim());
-				log.info(String.format(UPDATING_DIMENSIONS_MSG, key));
 				boolean updated = updateDimension(canva, width, "width");
 				updated |= updateDimension(canva, height, "height");
 				if (updated) {
@@ -239,7 +239,7 @@ public class BatchService {
 		if (index != -1) {
 			return key.substring(0, index);
 		}
-		return key;
+		return null;
 	}
 
 	private Map<String, Map<String, String>> readDimensionsFromFile(MultipartFile file) throws IOException {
@@ -254,7 +254,11 @@ public class BatchService {
 			String[] parts = line.split(":");
 			if (parts.length == 2) {
 				String identifier = extractIdentifier(parts[0]);
-				allDimensions.computeIfAbsent(identifier, s -> new HashMap<>()).put(parts[0].trim(), parts[1].trim());
+				if (identifier == null) {
+					log.warn("Could not extract identifier from " + parts[0]);
+				} else {
+					allDimensions.computeIfAbsent(identifier, s -> new HashMap<>()).put(parts[0].trim(), parts[1].trim());
+				}
 			}
 		}
 		return allDimensions;
