@@ -166,22 +166,25 @@ public class BatchService {
 	}
 
 	public Set<String> fixDimensions(boolean fix, MultipartFile file) throws IOException {
-		Set<String> manifests = new HashSet<>();
+		Set<String> images = new HashSet<>();
 
 		Map<String, Map<String, String>> dimensions = readDimensionsFromFile(file);
 
 		dimensions.forEach((key, value) -> recordsRepository.findByIdentifier(key).ifPresent(record -> {
-			String manifest = fixDimensions(key, value, record.getIiifManifest());
-			if (fix) {
-				record.setIiifManifest(manifest);
-				recordsRepository.save(record);
+			Map<String, List<String>> manifest = fixDimensions(key, value, record.getIiifManifest());
+			if (!manifest.isEmpty()) {
+				if (fix) {
+					record.setIiifManifest(manifest.keySet().iterator().next());
+					recordsRepository.save(record);
+				}
+				images.addAll(manifest.values().iterator().next());
 			}
-			manifests.add(manifest);
 		}));
-		return manifests;
+		return images;
 	}
 
-	private String fixDimensions(String identifier, Map<String, String> dimensions, String iiifManifest) {
+	private Map<String, List<String>> fixDimensions(String identifier, Map<String, String> dimensions, String iiifManifest) {
+		List<String> updatedImages = new ArrayList<>();
 		JsonObject jsonObject = JSON.parse(iiifManifest);
 		JsonArray canvas = jsonObject.get("sequences").getAsArray().get(0).getAsObject().get("canvases").getAsArray();
 		canvas.stream().iterator().forEachRemaining(canva -> {
@@ -193,8 +196,11 @@ public class BatchService {
 				int width = Integer.parseInt(size[0].trim());
 				int height = Integer.parseInt(size[1].trim());
 				log.info(String.format(UPDATING_DIMENSIONS_MSG, key));
-				updateDimension(canva, width, "width");
-				updateDimension(canva, height, "height");
+				boolean updated = updateDimension(canva, width, "width");
+				updated |= updateDimension(canva, height, "height");
+				if (updated) {
+					updatedImages.add(key);
+				}
 				JsonArray images = canva.getAsObject().get("images").getAsArray();
 				images.stream().iterator().forEachRemaining(image -> {
 					JsonValue on = image.getAsObject().get("on");
@@ -206,16 +212,23 @@ public class BatchService {
 				});
 			}
 		});
-		return jsonObject.toString();
+		if (updatedImages.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		Map<String, List<String>> updatedManifest = new HashMap<>();
+		updatedManifest.put(jsonObject.toString(), updatedImages);
+		return updatedManifest;
 	}
 
-	private void updateDimension(JsonValue parent, int dimension, String label) {
+	private boolean updateDimension(JsonValue parent, int dimension, String label) {
 		JsonValue dimensionObject = parent.getAsObject().get(label);
 		int current = dimensionObject.getAsNumber().value().intValue();
 		if (current != dimension) {
 			log.info(String.format(CHANGING_DIMENSION_MSG, label, current, dimension));
 			parent.getAsObject().put(label, dimension);
+			return true;
 		}
+		return false;
 	}
 
 	private String extractIdentifier(String key) {
