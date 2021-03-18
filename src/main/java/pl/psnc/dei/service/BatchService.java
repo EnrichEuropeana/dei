@@ -4,6 +4,7 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.ext.com.google.common.base.Preconditions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -30,6 +31,10 @@ import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 @Transactional
 public class BatchService {
 	private final static Logger log = LoggerFactory.getLogger(BatchService.class);
+
+	private static final String CHANGING_DIMENSION_MSG = "Changing %s from %d to %d";
+
+	private static final String UPDATING_DIMENSIONS_MSG = "Updating dimensions for %s";
 
 	private final RecordsRepository recordsRepository;
 
@@ -190,17 +195,15 @@ public class BatchService {
 				String[] size = dimensions.get(key).split("x");
 				int width = Integer.parseInt(size[0].trim());
 				int height = Integer.parseInt(size[1].trim());
-				log.debug(String.format("Updating width for %s", key));
+				log.info(String.format(UPDATING_DIMENSIONS_MSG, key));
 				updateDimension(canva, width, "width");
-				log.debug(String.format("Updating height for %s", key));
 				updateDimension(canva, height, "height");
 				JsonArray images = canva.getAsObject().get("images").getAsArray();
 				images.stream().iterator().forEachRemaining(image -> {
 					JsonValue on = image.getAsObject().get("on");
 					if (on.getAsString().value().endsWith(label.getAsString().value())) {
-						log.debug(String.format("Updating width for %s", on.getAsString().value()));
+						log.info(String.format(UPDATING_DIMENSIONS_MSG, on.getAsString().value()));
 						updateDimension(image.getAsObject().get("resource"), width, "width");
-						log.debug(String.format("Updating height for %s", on.getAsString().value()));
 						updateDimension(image.getAsObject().get("resource"), height, "height");
 					}
 				});
@@ -211,8 +214,9 @@ public class BatchService {
 
 	private void updateDimension(JsonValue parent, int dimension, String label) {
 		JsonValue dimensionObject = parent.getAsObject().get(label);
-		if (dimensionObject.getAsNumber().value().intValue() != dimension) {
-			log.debug(String.format("Changing %s from %d to %d", label, dimensionObject.getAsNumber().value().intValue(), dimension));
+		int current = dimensionObject.getAsNumber().value().intValue();
+		if (current != dimension) {
+			log.info(String.format(CHANGING_DIMENSION_MSG, label, current, dimension));
 			parent.getAsObject().put(label, dimension);
 		}
 	}
