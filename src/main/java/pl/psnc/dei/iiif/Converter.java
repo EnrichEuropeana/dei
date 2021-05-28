@@ -19,9 +19,11 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -53,6 +55,9 @@ public class Converter {
 
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
+
+	@Value("#{${conversion.url.replacements}}")
+	private Map<String,String> urlReplacements;
 
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
@@ -147,11 +152,23 @@ public class Converter {
 				String fileName = getFileName(data);
 				File tempFile = new File(srcDir, fileName);
 
+				// temporary solution for records from Portugal
+				replaceUrl(data);
+
 				copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
 			} catch (IOException e) {
 				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
+			}
+		}
+	}
+
+	private void replaceUrl(ConversionDataHolder.ConversionData data) throws MalformedURLException {
+		for (Map.Entry<String, String> entry: urlReplacements.entrySet()) {
+			if (data.srcFileUrl.toString().contains(entry.getKey())) {
+				data.srcFileUrl = new URL(data.srcFileUrl.toString().replace(entry.getKey(), entry.getValue()));
+				break;
 			}
 		}
 	}
