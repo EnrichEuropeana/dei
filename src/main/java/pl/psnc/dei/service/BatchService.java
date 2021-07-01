@@ -1,7 +1,11 @@
 package pl.psnc.dei.service;
 
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.exception.NotFoundException;
@@ -25,6 +29,11 @@ import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 @Service
 @Transactional
 public class BatchService {
+	private final static Logger log = LoggerFactory.getLogger(BatchService.class);
+
+	private static final String CHANGING_DIMENSION_MSG = "Changing %s from %d to %d";
+
+	private static final String UPDATING_DIMENSIONS_MSG = "Updating dimensions for %s";
 
 	private final RecordsRepository recordsRepository;
 
@@ -154,5 +163,104 @@ public class BatchService {
 			}
 		}
 		return records;
+	}
+
+	public Set<String> fixDimensions(boolean fix, MultipartFile file) throws IOException {
+		Set<String> images = new HashSet<>();
+
+		Map<String, Map<String, String>> dimensions = readDimensionsFromFile(file);
+
+		dimensions.forEach((key, value) -> recordsRepository.findByIdentifier(key).ifPresent(record -> {
+			Map<String, List<String>> manifest = fixDimensions(key, value, record.getIiifManifest());
+			if (!manifest.isEmpty()) {
+				if (fix) {
+					record.setIiifManifest(manifest.keySet().iterator().next());
+					recordsRepository.save(record);
+				}
+				images.addAll(manifest.values().iterator().next());
+			}
+		}));
+		return images;
+	}
+
+	private Map<String, List<String>> fixDimensions(String identifier, Map<String, String> dimensions, String iiifManifest) {
+		List<String> updatedImages = new ArrayList<>();
+		JsonObject jsonObject = JSON.parse(iiifManifest);
+		JsonArray canvas = jsonObject.get("sequences").getAsArray().get(0).getAsObject().get("canvases").getAsArray();
+		canvas.stream().iterator().forEachRemaining(canva -> {
+			final JsonValue label = canva.getAsObject().get("label");
+			String key = label.getAsString().value();
+			if (key.contains(identifier)) {
+				key = key.substring(key.indexOf(identifier));
+				log.info(String.format(UPDATING_DIMENSIONS_MSG, key));
+				String[] size = dimensions.get(key).split("x");
+				int width = Integer.parseInt(size[0].trim());
+				int height = Integer.parseInt(size[1].trim());
+				boolean updated = updateDimension(canva, width, "width");
+				updated |= updateDimension(canva, height, "height");
+				if (updated) {
+					updatedImages.add(key);
+				}
+				JsonArray images = canva.getAsObject().get("images").getAsArray();
+				images.stream().iterator().forEachRemaining(image -> {
+					JsonValue on = image.getAsObject().get("on");
+					if (on.getAsString().value().endsWith(label.getAsString().value())) {
+						log.info(String.format(UPDATING_DIMENSIONS_MSG, on.getAsString().value()));
+						updateDimension(image.getAsObject().get("resource"), width, "width");
+						updateDimension(image.getAsObject().get("resource"), height, "height");
+					}
+				});
+			}
+		});
+		if (updatedImages.isEmpty()) {
+			return Collections.emptyMap();
+		}
+		Map<String, List<String>> updatedManifest = new HashMap<>();
+		updatedManifest.put(jsonObject.toString(), updatedImages);
+		return updatedManifest;
+	}
+
+	private boolean updateDimension(JsonValue parent, int dimension, String label) {
+		JsonValue dimensionObject = parent.getAsObject().get(label);
+		int current = dimensionObject.getAsNumber().value().intValue();
+		if (current != dimension) {
+			log.info(String.format(CHANGING_DIMENSION_MSG, label, current, dimension));
+			parent.getAsObject().put(label, dimension);
+			return true;
+		}
+		return false;
+	}
+
+	private String extractIdentifier(String key) {
+		int index = key.indexOf('/', 1);
+		if (index != -1) {
+			index = key.indexOf('/', index + 1);
+		}
+		if (index != -1) {
+			return key.substring(0, index);
+		}
+		return null;
+	}
+
+	private Map<String, Map<String, String>> readDimensionsFromFile(MultipartFile file) throws IOException {
+		if (file.isEmpty()) {
+			throw new IllegalArgumentException("Empty file");
+		}
+		Map<String, Map<String, String>> allDimensions = new HashMap<>();
+
+		BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+		while (reader.ready()) {
+			String line = reader.readLine();
+			String[] parts = line.split(":");
+			if (parts.length == 2) {
+				String identifier = extractIdentifier(parts[0]);
+				if (identifier == null) {
+					log.warn("Could not extract identifier from " + parts[0]);
+				} else {
+					allDimensions.computeIfAbsent(identifier, s -> new HashMap<>()).put(parts[0].trim(), parts[1].trim());
+				}
+			}
+		}
+		return allDimensions;
 	}
 }

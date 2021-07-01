@@ -19,9 +19,11 @@ import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -44,6 +46,8 @@ public class Converter {
 
 	private static final int DEFAULT_DIMENSION = 6000;
 
+	private static final int MAX_RETRY_COUNT = 3;
+
 	private Record record;
 
 	@Autowired
@@ -51,6 +55,9 @@ public class Converter {
 
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
+
+	@Value("#{${conversion.url.replacements}}")
+	private Map<String,String> urlReplacements;
 
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
@@ -145,11 +152,23 @@ public class Converter {
 				String fileName = getFileName(data);
 				File tempFile = new File(srcDir, fileName);
 
+				// temporary solution for records from Portugal
+				replaceUrl(data);
+
 				copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
 			} catch (IOException e) {
 				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
+			}
+		}
+	}
+
+	private void replaceUrl(ConversionDataHolder.ConversionData data) throws MalformedURLException {
+		for (Map.Entry<String, String> entry: urlReplacements.entrySet()) {
+			if (data.srcFileUrl.toString().contains(entry.getKey())) {
+				data.srcFileUrl = new URL(data.srcFileUrl.toString().replace(entry.getKey(), entry.getValue()));
+				break;
 			}
 		}
 	}
@@ -220,7 +239,7 @@ public class Converter {
 								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 								+ record.getIdentifier() + "/"
 								+ getTiffFileName(convData.srcFile.getName()));
-						convData.dimensions.add(extractDimensions(convertedFile));
+						convData.dimensions.add(extractDimensions(convertedFile, MAX_RETRY_COUNT));
 					} else {
 						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
@@ -247,20 +266,23 @@ public class Converter {
 						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
 						+ record.getIdentifier() + "/"
 						+ file.getName());
-				convData.dimensions.add(extractDimensions(file));
+				convData.dimensions.add(extractDimensions(file, MAX_RETRY_COUNT));
 				logger.info("Output file for source " + convData.srcFile + ": " + convData.imagePath.get(convData.imagePath.size() - 1));
 			});
 		}
 	}
 
-	private Dimension extractDimensions(File file) {
-		try {
-			String output = executor.runCommand(Arrays.asList(
-					"exiv2",
-					file.getAbsolutePath()));
-			return getDimensionFromPattern(DIMENSIONS_PATTERN.matcher(output));
-		} catch (Exception e) {
-			logger.warn("Could not extract image dimensions. Setting default 1000x1000");
+	private Dimension extractDimensions(File file, int retryCount) {
+		if (retryCount > 0) {
+			try {
+				String output = executor.runCommand(Arrays.asList(
+						"exiv2",
+						file.getAbsolutePath()));
+				return getDimensionFromPattern(DIMENSIONS_PATTERN.matcher(output));
+			} catch (Exception e) {
+				logger.warn("Could not extract image dimensions. Setting default 6000x6000");
+				return extractDimensions(file, --retryCount);
+			}
 		}
 		return new Dimension(DEFAULT_DIMENSION, DEFAULT_DIMENSION);
 	}

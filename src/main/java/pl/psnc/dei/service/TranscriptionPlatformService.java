@@ -145,8 +145,17 @@ public class TranscriptionPlatformService {
 				}
 				dataset.setProject(project);
 				datasetsRepository.save(dataset);
-				project.getDatasets().add(dataset);
+				addDatasetToProject(project, dataset);
 			}
+		}
+	}
+
+	private void addDatasetToProject(Project project, Dataset dataset) {
+		if (project
+				.getDatasets()
+				.stream()
+				.noneMatch(existing -> existing.getDatasetId().equals(dataset.getDatasetId()))) {
+			project.getDatasets().add(dataset);
 		}
 	}
 
