@@ -418,6 +418,12 @@ public class Converter {
 		return canvases;
 	}
 
+	/**
+	 * Adds manifest to json representation of data fetched from european
+	 * @param record record for which changes will be made
+	 * @param jsonObject json to which changes will be made
+	 * @param jsonObjectRaw
+	 */
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
 			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);

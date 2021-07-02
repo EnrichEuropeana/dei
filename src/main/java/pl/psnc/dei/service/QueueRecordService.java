@@ -78,6 +78,12 @@ public class QueueRecordService {
 		transcriptionRepository.save(transcription);
 	}
 
+	/**
+	 * Adds to json information about newly generated IIIF as manifest
+	 * @param record record to which data should be add
+	 * @param json json to which data shoudl be add
+	 * @param jsonRaw raw json to which data should be add
+	 */
 	public void fillRecordJsonData(Record record, JsonObject json, JsonObject jsonRaw) {
 		converter.fillJsonData(record, json, jsonRaw);
 	}
