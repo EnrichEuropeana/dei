@@ -135,9 +135,10 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
-	 * Send import to TP
-	 *
-	 * @param importName name of the import which should be send
+	 * Send import to Transcription Platform
+	 * Sending is possible for imports that have previously failed or have not been sent already
+	 * Empty imports are not send too
+	 * @param importName name of the import which should be send, import with given name must exist
 	 */
 	public void sendExistingImport(String importName) throws NotFoundException {
 		log.info("Sending existing import {}", importName);
@@ -145,6 +146,7 @@ public class ImportPackageService extends RestRequestExecutor {
 		if (!anImport.isPresent()) {
 			throw new NotFoundException("Import not found");
 		}
+		// mentioned checks
 		// sending is possible only for created (first attempt) or failed (another attempt) imports with non empty records list
 		if ((ImportStatus.CREATED.equals(anImport.get().getStatus()) || ImportStatus.FAILED.equals(anImport.get().getStatus()))
 			&& !anImport.get().getRecords().isEmpty()) {
