@@ -172,6 +172,11 @@ public class TranscriptionPlatformService {
 		}
 	}
 
+	/**
+	 * Creates bidirectional link for HB
+	 * @param project project to which dataset should be added
+	 * @param dataset dataset which should be added to after mentioned project
+	 */
 	private void addDatasetToProject(Project project, Dataset dataset) {
 		if (project
 				.getDatasets()
