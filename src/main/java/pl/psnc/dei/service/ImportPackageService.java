@@ -165,6 +165,7 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
+	 * Checks and returns failures if any occurred
 	 * @param importName name of the import which status and failure should be returned
 	 * @return import status and import failure information
 	 */
