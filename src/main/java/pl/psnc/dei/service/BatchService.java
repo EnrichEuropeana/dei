@@ -50,7 +50,14 @@ public class BatchService {
 		this.europeanaSearchService = europeanaSearchService;
 	}
 
-
+	/**
+	 * Add multiple records. If dataset is missing then it is added.
+	 * @param projectId id of project to which records should belong
+	 * @param datasetId (optional) dataset to which records should belong
+	 * @param recordIds record identifier for aggregator
+	 * @return candaidates, that are not in import
+	 * @throws NotFoundException if some information is missing
+	 */
 	public Set<Record> uploadRecords(String projectId, String datasetId, Set<String> recordIds) throws NotFoundException {
 		Project project = projectsRepository.findByName(projectId);
 		if (project == null) {

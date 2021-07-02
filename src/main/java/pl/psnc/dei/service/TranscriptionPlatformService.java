@@ -298,6 +298,11 @@ public class TranscriptionPlatformService {
 		return annotation.toString();
 	}
 
+	/**
+	 * Fetch content of updated transcription
+	 * @param transcription transcription to fetch content for
+	 * @return content of transcription
+	 */
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
 		String response = this.webClient
 				.get()
