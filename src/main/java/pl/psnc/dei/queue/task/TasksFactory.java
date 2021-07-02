@@ -10,6 +10,9 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
+/**
+ * Factory used to convert records into tasks based on state they are in
+ */
 @Service
 public class TasksFactory {
 
