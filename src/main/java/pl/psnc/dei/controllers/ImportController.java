@@ -34,6 +34,12 @@ public class ImportController {
 		return new ResponseEntity<>(importService.createImport(name, projectId, records), HttpStatus.OK);
 	}
 
+	/**
+	 * Lists candidating records for new import
+	 * @param projectId project from wich records should be shown
+	 * @param datasetId optional filtering of records to only match given dataset - data set is filed of record then
+	 * @return
+	 */
 	@GetMapping("/import/candidates")
 	public ResponseEntity<Set<Record>> getCandidates(@RequestParam(value = "projectId") String projectId, @RequestParam(value = "datasetId", required = false) String datasetId) {
 		return new ResponseEntity<>(importService.getCandidates(projectId, datasetId), HttpStatus.OK);
