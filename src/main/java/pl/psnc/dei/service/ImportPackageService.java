@@ -188,6 +188,11 @@ public class ImportPackageService extends RestRequestExecutor {
 		return anImport.get();
 	}
 
+	/**
+	 * saves relation on records back to newly created import
+	 * @param records records which was added to import
+	 * @param anImport import on its own
+	 */
 	private void updateRecords(Set<Record> records, Import anImport) {
 		records.forEach(record -> {
 			record.setAnImport(anImport);

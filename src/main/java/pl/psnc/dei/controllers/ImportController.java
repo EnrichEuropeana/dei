@@ -22,6 +22,13 @@ public class ImportController {
 		this.importService = importService;
 	}
 
+	/**
+	 * creates import (single?)
+	 * @param projectId id of project from which records was taken
+	 * @param name name of new import
+	 * @param records records to submit into import
+	 * @return REST response with created import
+	 */
 	@PostMapping("/import")
 	public ResponseEntity<Import> createImport(@RequestParam(value = "projectId") String projectId, @RequestParam(value = "name", required = false) String name, @RequestBody Set<Record> records) {
 		return new ResponseEntity<>(importService.createImport(name, projectId, records), HttpStatus.OK);
