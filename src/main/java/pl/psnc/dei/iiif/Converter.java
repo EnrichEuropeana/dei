@@ -86,6 +86,15 @@ public class Converter {
 
 	}
 
+	/**
+	 * Create IIIF image for further processing in ConversionTask
+	 * @param record record for witch we create IIIF
+	 * @param recordJson record data imported from europeana
+	 * @param recordJsonRaw record data imported from europeana
+	 * @throws ConversionException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
@@ -119,6 +128,14 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Combines record data and data fetched from europeana into Dataholder
+	 * @param record record to be combined
+	 * @param recordJson data fetched from europeana to be combined
+	 * @param recordJsonRaw raw data fetched from europeana to be combined
+	 * @return combined data in form of dataholder
+	 * @throws ConversionImpossibleException if some of data are missing
+	 */
 	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
