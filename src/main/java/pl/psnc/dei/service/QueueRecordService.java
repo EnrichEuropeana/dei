@@ -54,6 +54,12 @@ public class QueueRecordService {
 		}
 	}
 
+	/**
+	 * return record with given name
+	 * @param identifier record identifier
+	 * @return found identifier
+	 * @throws NotFoundException if none matching record exist
+	 */
 	public Record getRecord(String identifier) throws NotFoundException {
 		Optional<Record> record = recordsRepository.findByIdentifier(identifier);
 		if (record.isPresent()) {
