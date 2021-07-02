@@ -59,6 +59,10 @@ public class ImportController {
 		}
 	}
 
+	/**
+	 * Send import to transcription platform
+	 * @param importName import name to be send
+	 */
 	@PostMapping("/import/send")
 	public ResponseEntity sendImport(@RequestParam(value = "importName") String importName) {
 		try {
