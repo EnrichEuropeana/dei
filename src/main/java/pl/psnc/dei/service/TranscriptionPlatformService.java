@@ -382,7 +382,11 @@ public class TranscriptionPlatformService {
 		throw new NotFoundException("Record " + recordId + " not found!");
 	}
 
-
+	/**
+	 * Start sending procedure of import in which import goes through consecutive states
+	 * @param importName name of import to send
+	 * @throws NotFoundException thrown if import was not found
+	 */
 	public void sendImport(String importName) throws NotFoundException {
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
 		if (!anImport.isPresent()) {

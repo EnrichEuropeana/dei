@@ -45,8 +45,10 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
+				// fetch data from europeana
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				// check if fetched data already contains iiif
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
