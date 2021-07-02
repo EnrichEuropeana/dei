@@ -81,12 +81,18 @@ public class TranscriptionPlatformService {
 	private UrlBuilder urlBuilder;
 	private WebClient webClient;
 
+
 	public TranscriptionPlatformService(UrlBuilder urlBuilder,
 										WebClient.Builder webClientBuilder) {
 		this.urlBuilder = urlBuilder;
 		configureWebClient(urlBuilder, webClientBuilder);
 	}
 
+	/**
+	 * Creates and configures web client, uses url builder as service for link building
+	 * @param urlBuilder service for assemblation of links
+	 * @param webClientBuilder web client builder
+	 */
 	private void configureWebClient(UrlBuilder urlBuilder, WebClient.Builder webClientBuilder) {
 		TcpClient tcpClient = TcpClient.create()
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_IN_SECONDS * 1000)
