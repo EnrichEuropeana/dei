@@ -241,6 +241,7 @@ public class Converter {
 				continue;
 
 			if (convData.mediaType.toLowerCase().equals("pdf")) {
+				// PDF
 				try {
 					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
 					executor.runCommand(Arrays.asList(
@@ -255,6 +256,7 @@ public class Converter {
 				}
 
 			} else {
+				// just images
 				try {
 					executor.runCommand(Arrays.asList("vips",
 							"tiffsave",
@@ -289,6 +291,10 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Create paths for images contained in conversion Data
+	 * @param convData data for which paths should be created
+	 */
 	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {
 		String filterName = extractFileName(convData.srcFile.getName());
 
@@ -307,6 +313,12 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Extract dimensions from file, if retryCount exceeded 6k by 6k is returned
+	 * @param file file to analyze
+	 * @param retryCount times to try read file for dimensions
+	 * @return Dimensions of object
+	 */
 	private Dimension extractDimensions(File file, int retryCount) {
 		if (retryCount > 0) {
 			try {
@@ -338,6 +350,11 @@ public class Converter {
 		return (i != -1 ? fileName.substring(0, i) : fileName) + ".tif";
 	}
 
+	/**
+	 * Creates manifest pointing to our server with IIIF
+	 * @param storedFilesData data holder with populated IIIF
+	 * @return IIIF Manifest
+	 */
 	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
