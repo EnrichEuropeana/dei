@@ -36,15 +36,20 @@ public class ImportController {
 
 	/**
 	 * Lists candidating records for new import
-	 * @param projectId project from wich records should be shown
+	 * @param projectId project from which records should be shown
 	 * @param datasetId optional filtering of records to only match given dataset - data set is filed of record then
-	 * @return
+	 * @return REST response with all matching candidates
 	 */
 	@GetMapping("/import/candidates")
 	public ResponseEntity<Set<Record>> getCandidates(@RequestParam(value = "projectId") String projectId, @RequestParam(value = "datasetId", required = false) String datasetId) {
 		return new ResponseEntity<>(importService.getCandidates(projectId, datasetId), HttpStatus.OK);
 	}
 
+	/**
+	 * Check status of an import
+	 * @param importName import name of which status ought to be checked
+	 * @return REST response with status
+	 */
 	@GetMapping("/import/status")
 	public ResponseEntity getImportReport(@RequestParam(value = "importName") String importName) {
 		try {
