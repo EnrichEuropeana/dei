@@ -371,6 +371,11 @@ public class Converter {
 		return manifest;
 	}
 
+	/**
+	 * Add information about generated IIIF to manifest
+	 * @param storedFilesData data holder with populated information
+	 * @return
+	 */
 	private JsonArray getSequenceJson(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
 
