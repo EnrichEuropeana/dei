@@ -357,6 +357,11 @@ public class TranscriptionPlatformService {
 		return null;
 	}
 
+	/**
+	 * Fetch and create task to enrich record
+	 * @param recordId id of record to be enriched
+	 * @throws NotFoundException if record was not found
+	 */
 	public void createNewEnrichTask(String recordId) throws NotFoundException {
 		Optional<Record> record = recordsRepository.findByIdentifier(recordId);
 		if (record.isPresent()) {
