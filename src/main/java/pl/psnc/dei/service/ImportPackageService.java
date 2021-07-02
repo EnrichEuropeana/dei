@@ -70,6 +70,7 @@ public class ImportPackageService extends RestRequestExecutor {
 
 
 	/**
+	 * Returns candidates selected earlier on from given project and dataset
 	 * @param projectId project id for searching candidates
 	 * @param datasetId dataset id (optional)
 	 * @return list of records which are candidates
