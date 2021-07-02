@@ -73,6 +73,12 @@ public class ImportController {
 		}
 	}
 
+	/**
+	 * Add new records to existing import
+	 * @param importName import name to be appended
+	 * @param records records to be appended
+	 * @return REST response of modified import
+	 */
 	@PutMapping("/import")
 	public ResponseEntity addRecordsToAlreadyCreatedImport(@RequestParam(value = "importName") String importName, @RequestBody Set<Record> records) {
 		try {
