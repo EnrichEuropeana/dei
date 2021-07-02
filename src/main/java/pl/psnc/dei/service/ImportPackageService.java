@@ -48,6 +48,11 @@ public class ImportPackageService extends RestRequestExecutor {
 		return StringUtil.isNullOrEmpty(name) ? generateImportName(projectName) : name;
 	}
 
+	/**
+	 * Remove or Add new records to existing import so it have same records as record set
+	 * @param updatedImport import to update
+	 * @param records records to be contained in updated import
+	 */
 	public void updateImport(Import updatedImport, Set<Record> records) {
 		importsRepository.findById(updatedImport.getId()).ifPresent(oldImport -> {
 
