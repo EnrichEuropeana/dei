@@ -195,6 +195,12 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Downloads contents pointed in url. If url returns 301 then follow link
+	 * @param url url to fetch
+	 * @param file file to which save contents
+	 * @throws IOException
+	 */
 	private void copyURLToFile(URL url, File file) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		connection.setConnectTimeout(500);
