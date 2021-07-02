@@ -116,7 +116,11 @@ public class TranscriptionPlatformService {
 		return availableProjects;
 	}
 
+	/**
+	 * Fetches projects from Transcription Platform and saves them if not exists
+	 */
 	public void refreshAvailableProjects() {
+		// fetch projects from TP
 		availableProjects = new ArrayList<>();
 		Project[] projects = webClient.get()
 				.uri(urlBuilder.urlForAllProjects())
@@ -131,9 +135,11 @@ public class TranscriptionPlatformService {
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
 				})
 				.bodyToMono(Project[].class).block();
+		// owh error :/
 		if (projects == null)
 			return;
 
+		// check which projects are not present
 		for (Project tempProject : projects) {
 			Project project = projectsRepository.findByName(tempProject.getName());
 			if (project == null)
@@ -145,11 +151,17 @@ public class TranscriptionPlatformService {
 		}
 	}
 
+	/**
+	 * Loads datasets for given project
+	 * Fetches them from Transcription Platform, and saves if not exists
+	 * @param project name of project which datasets should be fetched
+	 */
 	public void getDatasetsFor(Project project) {
 		Dataset[] projectDatasets = this.webClient.get().uri(urlBuilder.urlForProjectDatasets(project)).retrieve().bodyToMono(Dataset[].class).block();
 		if (projectDatasets != null) {
 			for (Dataset projectDataset : projectDatasets) {
 				Dataset dataset = datasetsRepository.findDatasetByDatasetId(projectDataset.getDatasetId());
+				// no given ds in database then override missing one
 				if (dataset == null) {
 					dataset = projectDataset;
 				}
