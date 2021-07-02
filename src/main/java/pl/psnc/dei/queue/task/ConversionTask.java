@@ -14,6 +14,9 @@ import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.io.IOException;
 
+/**
+ * Task which try to create an IIIF for given record
+ */
 public class ConversionTask extends Task {
 
 	Logger logger = LoggerFactory.getLogger(ConversionTask.class);
@@ -43,6 +46,7 @@ public class ConversionTask extends Task {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
+				// fetch record data
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
 				break;
@@ -58,12 +62,17 @@ public class ConversionTask extends Task {
 	public void process() throws Exception {
 		try {
 			converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
+			// readd task to queue for further processing
+			// previously processing ended with state C_PENDIGN due to IIIF creation
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
 		} catch (ConversionImpossibleException e) {
 			logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
 			try {
+				// if IIIF generation failed then failure must be added to record and entire Import Sending ends with failure
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+				// update record
 				tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+				// fail import due to change in import state from IN_PROGRESS to FAILED
 				tps.updateImportState(record.getAnImport());
 
 			} catch (NotFoundException ex) {
@@ -71,6 +80,7 @@ public class ConversionTask extends Task {
 						+ ", identifier: " + record.getIdentifier(), e);
 			}
 		} catch (ConversionException | InterruptedException | IOException e) {
+			// same as previous
 			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
