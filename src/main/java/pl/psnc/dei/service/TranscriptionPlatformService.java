@@ -105,6 +105,10 @@ public class TranscriptionPlatformService {
 				.build();
 	}
 
+	/**
+	 * Returns all projects available in system, fetch only (?) on first try
+	 * @return available projects
+	 */
 	public List<Project> getProjects() {
 		if (availableProjects == null || availableProjects.isEmpty())
 			refreshAvailableProjects();
