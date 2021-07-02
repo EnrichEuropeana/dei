@@ -228,6 +228,13 @@ public class Converter {
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
+	/**
+	 * Converts images into IIIF
+	 * @param dataHolder combined data of record and europeana
+	 * @throws ConversionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
 		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 			if (convData.srcFile == null || convData.mediaType == null)
