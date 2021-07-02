@@ -160,6 +160,11 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Fetch data from external server and save to local files
+	 * @param dataHolder combined data of record and data fetched from europeana
+	 * @throws ConversionException
+	 */
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
 		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
