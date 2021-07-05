@@ -78,8 +78,10 @@ public class BatchService {
 		recordIds.stream().filter(r -> r != null && !r.isEmpty()).forEach(recordId -> {
 			Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
 			if (record == null) {
+				// record does not belongs to some project
 				record = recordsRepository.findByIdentifierAndProject(recordId, project);
 				if (record == null) {
+					// record does not exist
 					// new record - get necessary information from Europeana
 					Record newRecord = new Record();
 					newRecord.setIdentifier(recordId);
@@ -90,6 +92,7 @@ public class BatchService {
 					recordsRepository.save(newRecord);
 					candidates.add(newRecord);
 				} else {
+					// record exist but have no dataset assigned
 					record.setDataset(dataset);
 					recordsRepository.save(record);
 					if (record.getAnImport() == null) {
@@ -97,12 +100,18 @@ public class BatchService {
 					}
 				}
 			} else if (record.getAnImport() == null) {
+				// project exist and have data set assigned
 				candidates.add(record);
 			}
 		});
 		return candidates;
 	}
 
+	/**
+	 * fetch title of record from europeana
+	 * @param recordId european record id
+	 * @return title
+	 */
 	private String getTitle(String recordId) {
 		JsonObject jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
 		if (jsonObject != null) {
