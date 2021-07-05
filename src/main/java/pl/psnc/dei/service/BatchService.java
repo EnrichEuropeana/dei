@@ -162,6 +162,12 @@ public class BatchService {
 		return result;
 	}
 
+	/**
+	 * Reads file content and populate map with it
+	 * @param file file to read
+	 * @return map populated with file contents
+	 * @throws IOException on file read error
+	 */
 	private Map<String, List<String>> readRecordsFromFile(MultipartFile file) throws IOException {
 		if (file.isEmpty()) {
 			throw new IllegalArgumentException("Empty file");
