@@ -54,6 +54,14 @@ public class BatchController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
+	/**
+	 * Saves records to DB and create new import out of them
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName dataset name from which data comes
+	 * @param name name of new import
+	 * @param recordsIds ids of records to save
+	 * @return HTTP response code
+	 */
 	@PostMapping("/imports")
 	public ResponseEntity<Import> uploadRecordsAndCreateImport(@RequestParam(value = "projectName") String projectName,
 															   @RequestParam(value = "datasetName", required = false) String datasetName,
