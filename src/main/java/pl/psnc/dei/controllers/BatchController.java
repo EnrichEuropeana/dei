@@ -35,6 +35,13 @@ public class BatchController {
 		this.importService = importService;
 	}
 
+	/**
+	 * Upload records to DB. If no dataset provided null assigned. If record exist no duplicate made
+	 * @param projectName project to which records belong
+	 * @param datasetName dataset from which records orginate
+	 * @param recordsIds ids of records to save
+	 * @return HTTP response code
+	 */
 	@PostMapping("/records")
 	public ResponseEntity<String> uploadRecords(@RequestParam(value = "projectName") String projectName,
 												@RequestParam(value = "datasetName", required = false) String datasetName,
