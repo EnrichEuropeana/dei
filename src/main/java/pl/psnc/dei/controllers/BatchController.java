@@ -105,6 +105,16 @@ public class BatchController {
 		return records;
 	}
 
+	/**
+	 * Uploads records to DB and create imports, based on multipart file and single/complex record structure of
+	 * file
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName name of dataset from which dataset comes
+	 * @param name name of import
+	 * @param file file from which records should be taken
+	 * @return HTTP Response code
+	 * @throws IOException
+	 */
 	@PostMapping(path = "/complex-imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<List<Import>> splitImport(@RequestParam(value = "projectName") String projectName,
 											  		@RequestParam(value = "datasetName", required = false) String datasetName,
