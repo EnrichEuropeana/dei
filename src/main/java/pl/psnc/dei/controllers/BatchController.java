@@ -70,6 +70,15 @@ public class BatchController {
 		}
 	}
 
+	/**
+	 * Saves records to DB, and calculate difference of saved and provided ones, as some of them can
+	 * be omitted during persiting process
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName name of dataset from which data comes
+	 * @param recordsIds id of data to save
+	 * @return saved records
+	 * @throws NotFoundException
+	 */
 	private Set<Record> uploadRecordsToProject(String projectName,
 											   String datasetName,
 											   Set<String> recordsIds)
