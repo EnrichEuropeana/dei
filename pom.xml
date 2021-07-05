@@ -16,7 +16,7 @@
 
     <properties>
       <java.version>1.8</java.version>
-      <vaadin.version>13.0.8</vaadin.version>
+      <vaadin.version>14.6.5</vaadin.version>
       <keycloak.version>4.8.3.Final</keycloak.version>
         <jena.version>3.11.0</jena.version>
     </properties>
@@ -45,14 +45,14 @@
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-accordion-flow</artifactId>
-            <version>1.0.1</version>
+            <version>${vaadin.version}</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/com.vaadin/vaadin-select-flow -->
         <dependency>
             <groupId>com.vaadin</groupId>
             <artifactId>vaadin-select-flow</artifactId>
-            <version>1.0.0</version>
+            <version>${vaadin.version}</version>
         </dependency>
 
         <dependency>
@@ -172,6 +172,7 @@
             <id>prod</id>
             <properties>
                 <activatedProperties>prod</activatedProperties>
+                <vaadin.productionMode>true</vaadin.productionMode>
             </properties>
             <activation>
                 <activeByDefault>false</activeByDefault>
@@ -183,6 +184,22 @@
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vaadin</groupId>
+                        <artifactId>vaadin-maven-plugin</artifactId>
+                        <version>${vaadin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>build-frontend</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
         <profile>
             <id>dev</id>
@@ -204,6 +221,7 @@
             <id>test</id>
             <properties>
                 <activatedProperties>test</activatedProperties>
+                <vaadin.productionMode>true</vaadin.productionMode>
             </properties>
             <dependencies>
                 <dependency>
@@ -212,6 +230,22 @@
                     <scope>runtime</scope>
                 </dependency>
             </dependencies>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.vaadin</groupId>
+                        <artifactId>vaadin-maven-plugin</artifactId>
+                        <version>${vaadin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>build-frontend</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
         </profile>
     </profiles>
 </project>
