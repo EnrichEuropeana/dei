@@ -168,7 +168,7 @@ public class TranscriptionPlatformService {
 
 	public void sendRecord(JsonObject recordBody, Record record) throws TranscriptionPlatformException {
 		Hibernate.initialize(record.getAnImport());
-		this.webClient.post()
+		/*this.webClient.post()
 				.uri(urlBuilder.urlForSendingRecord(record))
 				.header("Authorization", authToken)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -191,6 +191,7 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
+		 */
 	}
 
 	/**
@@ -239,6 +240,7 @@ public class TranscriptionPlatformService {
 		logger.info("Sending annotation id to TP: \n" +
 				"Record id: " + (transcription.getRecord() != null ? transcription.getRecord().getIdentifier() : "missing") +
 				"\nAnnotation id: " + transcription.getAnnotationId());
+		/*
 		this.webClient
 				.post()
 				.uri(urlBuilder.urlForTranscription(transcription))
@@ -263,6 +265,8 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
+
+		 */
 	}
 
 	private String convertToJson(String annotationId) {

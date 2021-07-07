@@ -1,10 +1,10 @@
 package pl.psnc.dei.ui.components.facets;
 
+import org.apache.commons.lang3.NotImplementedException;
 import pl.psnc.dei.response.search.ddb.DDBFacet;
 import pl.psnc.dei.response.search.FacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.Facet;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 
@@ -21,7 +21,7 @@ public class FacetBoxFactory {
 		} else if(facet instanceof DDBFacet) {
 			return new DDBFacetBox(parent, facet);
 		} else {
-			throw new NotImplementedException();
+			throw new NotImplementedException(facet.getName());
 		}
 	}
 

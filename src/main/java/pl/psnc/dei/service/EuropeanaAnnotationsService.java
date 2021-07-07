@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -59,7 +60,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
-        logger.info("Sending transcription to Annotations API. Transcription: " + transcription.getTranscriptionContent().toString());
+        logger.info("Sending transcription to Annotations API. Transcription: " + transcription.getTranscriptionContent().toString()); /*
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
                 .header("Authorization", "Bearer " + userToken)
@@ -87,6 +88,9 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
             return postTranscription(transcription);
         }
         return extractAnnotationId(annotationResponse);
+        */
+        return UUID.randomUUID().toString();
+
     }
 
     /**
@@ -96,6 +100,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return
      */
     public String updateTranscription(Transcription transcription) {
+        /*
         String annotationResponse = webClient.put()
                 .uri(b -> b.path(annotationApiEndpoint + (annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId()).build())
                 .header("Authorization", "Bearer " + userToken)
@@ -121,6 +126,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
             return updateTranscription(transcription);
         }
         return extractAnnotationId(annotationResponse);
+         */
+        return UUID.randomUUID().toString();
     }
 
     private String extractAnnotationId(String annotationResponse) {
