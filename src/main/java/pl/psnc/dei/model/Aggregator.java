@@ -13,14 +13,6 @@ public enum Aggregator {
 	private int id;
 	private String fullName;
 
-	public int getId() {
-		return id;
-	}
-
-	public String getFullName() {
-		return fullName;
-	}
-
 	public static Aggregator getById(int id) {
 		for (Aggregator aggregator : values()) {
 			if (aggregator.getId() == id) {
