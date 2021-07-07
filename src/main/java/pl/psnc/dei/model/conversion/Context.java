@@ -1,4 +1,4 @@
-package pl.psnc.dei.queue.context;
+package pl.psnc.dei.model.conversion;
 
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;

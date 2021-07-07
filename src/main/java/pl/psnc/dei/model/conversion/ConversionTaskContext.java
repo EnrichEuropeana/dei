@@ -1,4 +1,4 @@
-package pl.psnc.dei.queue.context;
+package pl.psnc.dei.model.conversion;
 
 import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.model.Record;
