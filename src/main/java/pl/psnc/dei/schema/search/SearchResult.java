@@ -1,7 +1,11 @@
 package pl.psnc.dei.schema.search;
 
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import pl.psnc.dei.util.IiifAvailability;
 
+@Data
+@NoArgsConstructor
 public class SearchResult {
 
     private String id;
@@ -30,101 +34,4 @@ public class SearchResult {
      * URL to object on aggregator portal
      */
     private String sourceObjectURL;
-
-
-    public String getId() {
-        return id;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public String getImageURL() {
-        return imageURL;
-    }
-
-    public void setImageURL(String imageURL) {
-        this.imageURL = imageURL;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public String getAuthor() {
-        return author;
-    }
-
-    public void setAuthor(String author) {
-        this.author = author;
-    }
-
-    public String getIssued() {
-        return issued;
-    }
-
-    public void setIssued(String issued) {
-        this.issued = issued;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getFormat() {
-        return format;
-    }
-
-    public void setFormat(String format) {
-        this.format = format;
-    }
-
-    public String getLanguage() {
-        return language;
-    }
-
-    public void setLanguage(String language) {
-        this.language = language;
-    }
-
-    public String getLicense() {
-        return license;
-    }
-
-    public void setLicense(String license) {
-        this.license = license;
-    }
-
-    public String getSourceObjectURL() {
-        return sourceObjectURL;
-    }
-
-    public void setSourceObjectURL(String sourceObjectURL) {
-        this.sourceObjectURL = sourceObjectURL;
-    }
-
-    public IiifAvailability getIiifAvailability() {
-        return iiifAvailability;
-    }
-
-    public void setIiifAvailability(IiifAvailability iiifAvailability) {
-        this.iiifAvailability = iiifAvailability;
-    }
-
-    public boolean isImported() {
-        return isImported;
-    }
-
-    public void setImported(boolean imported) {
-        isImported = imported;
-    }
 }
