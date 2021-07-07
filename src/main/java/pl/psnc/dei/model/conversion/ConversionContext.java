@@ -45,8 +45,7 @@ public class ConversionContext {
         conversionContext.setImagePath("");
         conversionContext.setMediaType("");
         conversionContext.setDimension(new Dimension(-1, -1));
-        // TODO: should use repository
-        return null;
+        return conversionContext;
     }
 
     // TODO: inflate and deflate to and from Europeana and Deutche...

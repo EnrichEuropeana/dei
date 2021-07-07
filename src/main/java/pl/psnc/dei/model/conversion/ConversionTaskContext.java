@@ -35,8 +35,7 @@ public class ConversionTaskContext extends Context{
         context.setHasAddedFailure(false);
         context.setRecordJson("");
         context.setRecordJsonRaw("");
-        // TODO: should use repository
-        return null;
+        return context;
     }
 
     public Long getId() {
