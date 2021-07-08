@@ -15,16 +15,7 @@ public abstract class Context {
     @OneToOne
     private Record record;
 
-    private Record.RecordState recordState;
     private Task.TaskState taskState;
-
-    public Record.RecordState getRecordState() {
-        return recordState;
-    }
-
-    public void setRecordState(Record.RecordState recordState) {
-        this.recordState = recordState;
-    }
 
     public Task.TaskState getTaskState() {
         return taskState;

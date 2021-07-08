@@ -3,6 +3,7 @@ package pl.psnc.dei.model.conversion;
 import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.queue.task.Task;
 
 import javax.persistence.*;
 import java.util.List;
@@ -20,9 +21,11 @@ public class UpdateTaskContext extends Context{
 
     public static UpdateTaskContext from(Record record) {
         UpdateTaskContext context = new UpdateTaskContext();
+        context.setTaskState(Task.TaskState.U_GET_TRANSCRIPTION_FROM_TP);
         context.setRecord(record);
         context.setHasFetchedUpdatedTranscriptions(false);
         context.setHasSendUpdates(false);
+        return context;
     }
 
     public Long getId() {
