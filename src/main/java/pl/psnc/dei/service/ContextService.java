@@ -6,10 +6,7 @@ import pl.psnc.dei.model.DAO.ConversionContextRepository;
 import pl.psnc.dei.model.DAO.ConversionTaskContextRepository;
 import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.conversion.Context;
-import pl.psnc.dei.model.conversion.ConversionContext;
-import pl.psnc.dei.model.conversion.ConversionTaskContext;
-import pl.psnc.dei.model.conversion.TranscribeTaskContext;
+import pl.psnc.dei.model.conversion.*;
 import pl.psnc.dei.queue.task.ConversionTask;
 import pl.psnc.dei.queue.task.Task;
 import pl.psnc.dei.queue.task.TranscribeTask;
@@ -78,5 +75,9 @@ public class ContextService {
     private TranscribeTaskContext getTranscribeTaskContext(TranscribeTask task) {
         Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(task.getRecord());
         return context.orElseGet(() -> TranscribeTaskContext.from(task.getRecord()));
+    }
+
+    private EnrichTaskContext getEnrichTaskContext(Task task) {
+        return null;
     }
 }
