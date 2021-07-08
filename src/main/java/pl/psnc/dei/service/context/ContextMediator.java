@@ -22,13 +22,13 @@ public class ContextMediator {
 
 
 
-    private final TranscribeTaskContextRepository transcribeTaskContextRepository;
+
 
     public ContextMediator(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
 
 
 
-        this.transcribeTaskContextRepository = transcribeTaskContextRepository;
+
 
     };
 
@@ -81,8 +81,7 @@ public class ContextMediator {
     }
 
     private TranscribeTaskContext getTranscribeTaskContext(Task task) {
-        Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(record);
-        return context.orElseGet(() -> TranscribeTaskContext.from(record));
+
     }
 
     private EnrichTaskContext getEnrichTaskContext(Task task) {
