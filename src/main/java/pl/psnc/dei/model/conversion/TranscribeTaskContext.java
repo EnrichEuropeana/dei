@@ -31,7 +31,7 @@ public class TranscribeTaskContext extends Context{
     private Task.TaskState taskState;
     private Exception exception;
 
-    public TranscribeTaskContext from(Record record) {
+    public static TranscribeTaskContext from(Record record) {
         TranscribeTaskContext context = new TranscribeTaskContext();
         context.setRecord(record);
         context.setHasJson(false);

@@ -3,10 +3,9 @@ package pl.psnc.dei.model.conversion;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;
 
-public class Context {
+public abstract class Context {
     private Record.RecordState recordState;
     private Task.TaskState taskState;
-    private Record record;
 
     public Record.RecordState getRecordState() {
         return recordState;
