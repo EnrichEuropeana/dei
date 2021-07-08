@@ -26,8 +26,10 @@ public class UpdateTask extends Task {
 
 	UpdateTask(Record record, QueueRecordService queueRecordService,
 			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+		// Fired only for crash recovery
 		super(record, queueRecordService, tps, ess, eas);
 
+		// TODO: transcription should be fetched from context
 		if (record.getTranscriptions().isEmpty()) {
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
@@ -44,6 +46,7 @@ public class UpdateTask extends Task {
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
 					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
+		// fired for normal execution
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);

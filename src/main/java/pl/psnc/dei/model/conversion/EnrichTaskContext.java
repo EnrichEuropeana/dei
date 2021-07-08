@@ -8,6 +8,7 @@ import javax.persistence.*;
 import java.util.List;
 
 @Entity
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class EnrichTaskContext extends Context{
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

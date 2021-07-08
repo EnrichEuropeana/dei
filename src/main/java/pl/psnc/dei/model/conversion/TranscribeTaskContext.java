@@ -10,6 +10,7 @@ import javax.persistence.*;
  * Context of Transcribe Task
  */
 @Entity
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class TranscribeTaskContext extends Context{
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

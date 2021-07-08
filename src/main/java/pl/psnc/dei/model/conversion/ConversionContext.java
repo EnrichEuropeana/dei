@@ -10,6 +10,7 @@ import javax.persistence.*;
  * Stores context for converter
  */
 @Entity
+@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class ConversionContext extends Context {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
