@@ -2,15 +2,15 @@ package pl.psnc.dei.model.conversion;
 
 import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.ConversionTask;
+import pl.psnc.dei.queue.task.Task;
 
 import javax.persistence.*;
 
 /**
- * Stores context for conversion task
+ * Context of Transcribe Task
  */
 @Entity
-public class ConversionTaskContext extends Context{
+public class TranscribeTaskContext extends Context{
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -20,25 +20,27 @@ public class ConversionTaskContext extends Context{
 
     // PROCESSING STATE STORAGE
     private boolean hasJson;
-    private boolean hasConverted;
-    private boolean hasThrownException;
+    private boolean hasSendRecord;
+    private boolean hasThrownError;
     private boolean hasAddedFailure;
 
     // PROCESSING DATA STORAGE
     private String recordJsonRaw;
     private String recordJson;
+    @Enumerated(EnumType.STRING)
+    private Task.TaskState taskState;
     private Exception exception;
 
-
-    public static ConversionTaskContext from(ConversionTask task){
-        ConversionTaskContext context = new ConversionTaskContext();
-        context.setRecord(task.getRecord());
+    public TranscribeTaskContext from(Record record) {
+        TranscribeTaskContext context = new TranscribeTaskContext();
+        context.setRecord(record);
         context.setHasJson(false);
-        context.setHasConverted(false);
-        context.setHasThrownException(false);
+        context.setHasSendRecord(false);
+        context.setHasThrownError(false);
         context.setHasAddedFailure(false);
         context.setRecordJson("");
         context.setRecordJsonRaw("");
+        context.setTaskState(null);
         context.setException(null);
         return context;
     }
@@ -69,20 +71,20 @@ public class ConversionTaskContext extends Context{
         this.hasJson = hasJson;
     }
 
-    public boolean isHasConverted() {
-        return hasConverted;
+    public boolean isHasSendRecord() {
+        return hasSendRecord;
     }
 
-    public void setHasConverted(boolean hasConverted) {
-        this.hasConverted = hasConverted;
+    public void setHasSendRecord(boolean hasSendRecord) {
+        this.hasSendRecord = hasSendRecord;
     }
 
-    public boolean isHasThrownException() {
-        return hasThrownException;
+    public boolean isHasThrownError() {
+        return hasThrownError;
     }
 
-    public void setHasThrownException(boolean hasThrownException) {
-        this.hasThrownException = hasThrownException;
+    public void setHasThrownError(boolean hasThrownError) {
+        this.hasThrownError = hasThrownError;
     }
 
     public boolean isHasAddedFailure() {
@@ -107,6 +109,16 @@ public class ConversionTaskContext extends Context{
 
     public void setRecordJson(String recordJson) {
         this.recordJson = recordJson;
+    }
+
+    @Override
+    public Task.TaskState getTaskState() {
+        return taskState;
+    }
+
+    @Override
+    public void setTaskState(Task.TaskState taskState) {
+        this.taskState = taskState;
     }
 
     public Exception getException() {
