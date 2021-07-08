@@ -22,12 +22,4 @@ public abstract class Context {
     public void setTaskState(Task.TaskState taskState) {
         this.taskState = taskState;
     }
-
-    public Record getRecord() {
-        return record;
-    }
-
-    public void setRecord(Record record) {
-        this.record = record;
-    }
 }
