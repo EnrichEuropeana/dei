@@ -24,9 +24,9 @@ public class ConversionTaskContext extends Context{
     private Exception exception;
 
 
-    public static ConversionTaskContext from(ConversionTask task){
+    public static ConversionTaskContext from(Record record){
         ConversionTaskContext context = new ConversionTaskContext();
-        context.setRecord(task.getRecord());
+        context.setRecord(record);
         context.setHasJson(false);
         context.setHasConverted(false);
         context.setHasThrownException(false);

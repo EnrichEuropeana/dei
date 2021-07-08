@@ -1,11 +1,9 @@
 package pl.psnc.dei.service;
 
+import org.hibernate.sql.Update;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.model.DAO.ConversionContextRepository;
-import pl.psnc.dei.model.DAO.ConversionTaskContextRepository;
-import pl.psnc.dei.model.DAO.EnrichTaskContextRepository;
-import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
+import pl.psnc.dei.model.DAO.*;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.*;
 import pl.psnc.dei.queue.task.ConversionTask;
@@ -24,12 +22,14 @@ public class ContextService {
     private final ConversionContextRepository conversionContextRepository;
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
     private final EnrichTaskContextRepository enrichTaskContextRepository;
+    private final UpdateTaskContextRepository updateTaskContextRepository;
 
-    public ContextService(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository){
+    public ContextService(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
         this.conversionTaskContextRepository = conversionTaskContextRepository;
         this.conversionContextRepository = conversionContextRepository;
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
         this.enrichTaskContextRepository = enrichTaskContextRepository;
+        this.updateTaskContextRepository = updateTaskContextRepository;
     };
 
     /**
@@ -39,13 +39,16 @@ public class ContextService {
      */
     public Context getTaskContext(Task task) {
         if (task.getRecord().getState() == Record.RecordState.C_PENDING) {
-            return this.getConversionTaskContext((ConversionTask) task);
+            return this.getConversionTaskContext( task);
         }
         else if (task.getRecord().getState() == Record.RecordState.T_PENDING) {
-            return this.getTranscribeTaskContext((TranscribeTask) task);
+            return this.getTranscribeTaskContext(task);
         }
         else if (task.getRecord().getState() == Record.RecordState.E_PENDING) {
             return this.getEnrichTaskContext(task);
+        }
+        else if (task.getRecord().getState() == Record.RecordState.U_PENDING) {
+            return this.getUpdateTaskContext(task);
         }
         else throw new IllegalArgumentException(task.getRecord().getState().name());
     }
@@ -65,9 +68,9 @@ public class ContextService {
         }
     }
 
-    private ConversionTaskContext getConversionTaskContext(ConversionTask task) {
+    private ConversionTaskContext getConversionTaskContext(Task task) {
         Optional<ConversionTaskContext> context = this.conversionTaskContextRepository.findAllByRecord(task.getRecord());
-        return context.orElseGet(() -> ConversionTaskContext.from(task));
+        return context.orElseGet(() -> ConversionTaskContext.from(task.getRecord()));
     }
 
     private ConversionContext getConversionContext(Record record) {
@@ -75,7 +78,7 @@ public class ContextService {
         return context.orElseGet(() -> ConversionContext.from(record));
     }
 
-    private TranscribeTaskContext getTranscribeTaskContext(TranscribeTask task) {
+    private TranscribeTaskContext getTranscribeTaskContext(Task task) {
         Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(task.getRecord());
         return context.orElseGet(() -> TranscribeTaskContext.from(task.getRecord()));
     }
@@ -83,5 +86,10 @@ public class ContextService {
     private EnrichTaskContext getEnrichTaskContext(Task task) {
         Optional<EnrichTaskContext> context = this.enrichTaskContextRepository.findByRecord(task.getRecord());
         return context.orElseGet(() -> EnrichTaskContext.from(task.getRecord()));
+    }
+
+    private UpdateTaskContext getUpdateTaskContext (Task task) {
+        Optional<UpdateTaskContext> context = this.updateTaskContextRepository.findByRecord(task.getRecord());
+        return context.orElseGet(() -> UpdateTaskContext.from(task.getRecord()));
     }
 }
