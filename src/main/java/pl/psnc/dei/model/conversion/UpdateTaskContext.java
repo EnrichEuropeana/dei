@@ -28,22 +28,6 @@ public class UpdateTaskContext extends Context{
         return context;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Record getRecord() {
-        return record;
-    }
-
-    public void setRecord(Record record) {
-        this.record = record;
-    }
-
     public boolean isHasFetchedUpdatedTranscriptions() {
         return hasFetchedUpdatedTranscriptions;
     }
