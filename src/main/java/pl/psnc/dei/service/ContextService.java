@@ -8,6 +8,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.conversion.ConversionContext;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
+import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 import pl.psnc.dei.queue.task.ConversionTask;
 import pl.psnc.dei.queue.task.Task;
 
