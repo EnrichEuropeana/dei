@@ -4,6 +4,7 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.ConversionContextRepository;
 import pl.psnc.dei.model.DAO.ConversionTaskContextRepository;
+import pl.psnc.dei.model.DAO.EnrichTaskContextRepository;
 import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.*;
@@ -20,15 +21,15 @@ import java.util.Optional;
 public class ContextService {
 
     private final ConversionTaskContextRepository conversionTaskContextRepository;
-
     private final ConversionContextRepository conversionContextRepository;
-
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
+    private final EnrichTaskContextRepository enrichTaskContextRepository;
 
-    public ContextService(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository){
+    public ContextService(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository){
         this.conversionTaskContextRepository = conversionTaskContextRepository;
         this.conversionContextRepository = conversionContextRepository;
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
+        this.enrichTaskContextRepository = enrichTaskContextRepository;
     };
 
     /**
@@ -43,15 +44,17 @@ public class ContextService {
         else if (task.getRecord().getState() == Record.RecordState.T_PENDING) {
             return this.getTranscribeTaskContext((TranscribeTask) task);
         }
+        else if (task.getRecord().getState() == Record.RecordState.E_PENDING) {
+            return this.getEnrichTaskContext(task);
+        }
         else throw new IllegalArgumentException(task.getRecord().getState().name());
     }
 
     /**
      * In some cases context must be persisted by
-     * @param record
-     * @param contextClass
-     * @param <T>
-     * @return
+     * @param record record for which context should be fetched
+     * @param contextClass class of context to fetch
+     * @return context
      */
     public <T extends Context> T getRecordContext(Record record, Class<T> contextClass) {
         if (contextClass.isAssignableFrom(ConversionContext.class)) {
@@ -78,6 +81,7 @@ public class ContextService {
     }
 
     private EnrichTaskContext getEnrichTaskContext(Task task) {
-        return null;
+        Optional<EnrichTaskContext> context = this.enrichTaskContextRepository.findByRecord(task.getRecord());
+        return context.orElseGet(() -> EnrichTaskContext.from(task.getRecord()));
     }
 }
