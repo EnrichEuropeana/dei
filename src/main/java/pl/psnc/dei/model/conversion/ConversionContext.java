@@ -12,14 +12,7 @@ import javax.persistence.*;
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class ConversionContext extends Context {
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NaturalId
-    @OneToOne
-    private Record record;
-
-    // PROCESSING STATE STORAGE
+// PROCESSING STATE STORAGE
     private boolean hasSavedFiles;
     private boolean hasConvertedToIIIF;
     private boolean hasDownloadedImage;
@@ -64,22 +57,6 @@ public class ConversionContext extends Context {
         this.setImagePath("");
         this.setMediaType("");
         this.setDimension(new Dimension(-1, -1));
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public Record getRecord() {
-        return record;
-    }
-
-    public void setRecord(Record record) {
-        this.record = record;
     }
 
     public boolean isHasSavedFiles() {
