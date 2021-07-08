@@ -7,7 +7,7 @@ import pl.psnc.dei.model.Record;
 import javax.persistence.*;
 
 @Entity
-public class ConversionContext {
+public class ConversionContext extends Context {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -32,7 +32,7 @@ public class ConversionContext {
 
     // new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 
-    public ConversionContext from(Record record) {
+    public static ConversionContext from(Record record) {
         ConversionContext conversionContext = new ConversionContext();
         conversionContext.setRecord(record);
         conversionContext.setHasConvertedToIIIF(false);
@@ -49,6 +49,18 @@ public class ConversionContext {
     }
 
     // TODO: inflate and deflate to and from Europeana and Deutche...
+
+    public ConversionDataHolder inflate() {
+        return null;
+    }
+
+    public void deflate(ConversionDataHolder conversionDataHolder) {
+        this.setSrcFileUrl("");
+        this.setOutFileUrl("");
+        this.setImagePath("");
+        this.setMediaType("");
+        this.setDimension(new Dimension(-1, -1));
+    }
 
     public Long getId() {
         return id;

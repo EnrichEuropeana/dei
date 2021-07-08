@@ -26,6 +26,7 @@ public class ConversionTaskContext extends Context{
     private String recordJson;
 
 
+
     public static ConversionTaskContext from(ConversionTask task){
         ConversionTaskContext context = new ConversionTaskContext();
         context.setRecord(task.getRecord());
