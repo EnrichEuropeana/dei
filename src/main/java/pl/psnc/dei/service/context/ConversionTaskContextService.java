@@ -26,4 +26,9 @@ public class ConversionTaskContextService extends ContextService<ConversionTaskC
     public ConversionTaskContext save(ConversionTaskContext context) {
         return null;
     }
+
+    @Override
+    public Boolean canHandle(Record record) {
+        return record.getState().equals(Record.RecordState.C_PENDING);
+    }
 }

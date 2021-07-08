@@ -1,10 +1,12 @@
 package pl.psnc.dei.model.conversion;
 
-import org.hibernate.annotations.NaturalId;
+import pl.psnc.dei.iiif.ConversionDataHolder;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.queue.task.ConversionTask;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Stores context for conversion task
@@ -18,10 +20,19 @@ public class ConversionTaskContext extends Context{
     private boolean hasThrownException;
     private boolean hasAddedFailure;
 
+    // CONVERTER STATE STORAGE
+    private boolean hasConverterSavedFiles;
+    private boolean hasConverterConvertedToIIIF;
+    private boolean hasConverterDownloadedImage;
+    private boolean hasConverterDownloadedJson;
+
     // PROCESSING DATA STORAGE
     private String recordJsonRaw;
     private String recordJson;
     private Exception exception;
+
+    @OneToMany
+    private List<ConversionData> conversionDataHolder;
 
 
     public static ConversionTaskContext from(Record record){
@@ -34,7 +45,54 @@ public class ConversionTaskContext extends Context{
         context.setRecordJson("");
         context.setRecordJsonRaw("");
         context.setException(null);
+        context.setHasAddedFailure(false);
+        context.setHasConverterConvertedToIIIF(false);
+        context.setHasConverterSavedFiles(false);
+        context.setHasConverterDownloadedJson(false);
+        context.setHasConverterDownloadedImage(false);
+        context.setConversionDataHolder(null);
         return context;
+    }
+
+    // TODO: convert to and from ConversionDataHolder to ConversionData
+    public ConversionDataHolder getConversionDataHolder() {
+       return null;
+    }
+
+    public void setConversionDataHolder(ConversionDataHolder conversionDataHolder) {
+
+    }
+
+    public boolean isHasConverterSavedFiles() {
+        return hasConverterSavedFiles;
+    }
+
+    public void setHasConverterSavedFiles(boolean hasConverterSavedFiles) {
+        this.hasConverterSavedFiles = hasConverterSavedFiles;
+    }
+
+    public boolean isHasConverterConvertedToIIIF() {
+        return hasConverterConvertedToIIIF;
+    }
+
+    public void setHasConverterConvertedToIIIF(boolean hasConverterConvertedToIIIF) {
+        this.hasConverterConvertedToIIIF = hasConverterConvertedToIIIF;
+    }
+
+    public boolean isHasConverterDownloadedImage() {
+        return hasConverterDownloadedImage;
+    }
+
+    public void setHasConverterDownloadedImage(boolean hasConverterDownloadedImage) {
+        this.hasConverterDownloadedImage = hasConverterDownloadedImage;
+    }
+
+    public boolean isHasConverterDownloadedJson() {
+        return hasConverterDownloadedJson;
+    }
+
+    public void setHasConverterDownloadedJson(boolean hasConverterDownloadedJson) {
+        this.hasConverterDownloadedJson = hasConverterDownloadedJson;
     }
 
     public boolean isHasJson() {

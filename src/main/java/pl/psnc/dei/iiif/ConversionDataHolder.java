@@ -13,7 +13,7 @@ public abstract class ConversionDataHolder {
 
 	abstract void initFileUrls(String recordId);
 
-	class ConversionData {
+	public static class ConversionData {
 		JsonObject json;
 		URL srcFileUrl;
 		List<File> outFile = new ArrayList<>();

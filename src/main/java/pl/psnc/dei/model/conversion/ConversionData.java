@@ -1,6 +1,5 @@
 package pl.psnc.dei.model.conversion;
 
-import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.iiif.*;
 import pl.psnc.dei.model.Record;
 
@@ -10,15 +9,10 @@ import javax.persistence.*;
  * Stores context for converter
  */
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-public class ConversionContext extends Context {
-// PROCESSING STATE STORAGE
-    private boolean hasSavedFiles;
-    private boolean hasConvertedToIIIF;
-    private boolean hasDownloadedImage;
-    private boolean hasDownloadedJson;
+public class ConversionData {
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
-    // PROCESSING DATA STORAGE
     private String recordJsonRaw;
     private String recordJson;
     private String srcFileUrl;
@@ -29,12 +23,8 @@ public class ConversionContext extends Context {
 
     // new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 
-    public static ConversionContext from(Record record) {
-        ConversionContext conversionContext = new ConversionContext();
-        conversionContext.setRecord(record);
-        conversionContext.setHasConvertedToIIIF(false);
-        conversionContext.setHasDownloadedImage(false);
-        conversionContext.setHasSavedFiles(false);
+    public static ConversionData from(Record record) {
+        ConversionData conversionContext = new ConversionData();
         conversionContext.setRecordJson("");
         conversionContext.setRecordJsonRaw("");
         conversionContext.setSrcFileUrl("");
@@ -47,40 +37,16 @@ public class ConversionContext extends Context {
 
     // TODO: inflate and deflate to and from Europeana and Deutche...
 
-    public ConversionDataHolder inflate() {
+    public ConversionDataHolder.ConversionData inflate() {
         return null;
     }
 
-    public void deflate(ConversionDataHolder conversionDataHolder) {
+    public void deflate(ConversionDataHolder.ConversionData conversionDataHolder) {
         this.setSrcFileUrl("");
         this.setOutFileUrl("");
         this.setImagePath("");
         this.setMediaType("");
         this.setDimension(new Dimension(-1, -1));
-    }
-
-    public boolean isHasSavedFiles() {
-        return hasSavedFiles;
-    }
-
-    public void setHasSavedFiles(boolean hasSavedFiles) {
-        this.hasSavedFiles = hasSavedFiles;
-    }
-
-    public boolean isHasConvertedToIIIF() {
-        return hasConvertedToIIIF;
-    }
-
-    public void setHasConvertedToIIIF(boolean hasConvertedToIIIF) {
-        this.hasConvertedToIIIF = hasConvertedToIIIF;
-    }
-
-    public boolean isHasDownloadedImage() {
-        return hasDownloadedImage;
-    }
-
-    public void setHasDownloadedImage(boolean hasDownloaded) {
-        this.hasDownloadedImage = hasDownloaded;
     }
 
     public String getRecordJsonRaw() {
@@ -137,13 +103,5 @@ public class ConversionContext extends Context {
 
     public void setDimension(Dimension dimension) {
         this.dimension = dimension;
-    }
-
-    public boolean isHasDownloadedJson() {
-        return hasDownloadedJson;
-    }
-
-    public void setHasDownloadedJson(boolean hasDownloadedJson) {
-        this.hasDownloadedJson = hasDownloadedJson;
     }
 }
