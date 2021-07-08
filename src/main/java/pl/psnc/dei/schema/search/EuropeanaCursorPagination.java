@@ -1,12 +1,19 @@
 package pl.psnc.dei.schema.search;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static pl.psnc.dei.util.EuropeanaConstants.*;
 
+@AllArgsConstructor
 public class EuropeanaCursorPagination implements Pagination {
 
+	@Getter
 	private String cursor;
 
 	private String rows;
@@ -14,15 +21,6 @@ public class EuropeanaCursorPagination implements Pagination {
 	public EuropeanaCursorPagination(String rows) {
 		this.cursor = FIRST_CURSOR;
 		this.rows = rows;
-	}
-
-	public EuropeanaCursorPagination(String cursor, String rows) {
-		this.cursor = cursor;
-		this.rows = rows;
-	}
-
-	public String getCursor() {
-		return cursor;
 	}
 
 	@Override
