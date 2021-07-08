@@ -1,4 +1,4 @@
-package pl.psnc.dei.service;
+package pl.psnc.dei.service.context;
 
 import org.hibernate.sql.Update;
 import org.springframework.stereotype.Service;
@@ -16,20 +16,18 @@ import java.util.Optional;
  * Service used to manage context of processing. Each context could be possibly saved in DB by usage of this class
  */
 @Service
-public class ContextService {
+public class ContextMediator {
 
     private final ConversionTaskContextRepository conversionTaskContextRepository;
     private final ConversionContextRepository conversionContextRepository;
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
     private final EnrichTaskContextRepository enrichTaskContextRepository;
-    private final UpdateTaskContextRepository updateTaskContextRepository;
 
-    public ContextService(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
+    public ContextMediator(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
         this.conversionTaskContextRepository = conversionTaskContextRepository;
         this.conversionContextRepository = conversionContextRepository;
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
         this.enrichTaskContextRepository = enrichTaskContextRepository;
-        this.updateTaskContextRepository = updateTaskContextRepository;
     };
 
     /**
@@ -68,6 +66,10 @@ public class ContextService {
         }
     }
 
+    public <T extends Context> T saveContext(Task task) {
+
+    }
+
     private ConversionTaskContext getConversionTaskContext(Task task) {
         Optional<ConversionTaskContext> context = this.conversionTaskContextRepository.findAllByRecord(task.getRecord());
         return context.orElseGet(() -> ConversionTaskContext.from(task.getRecord()));
@@ -86,10 +88,5 @@ public class ContextService {
     private EnrichTaskContext getEnrichTaskContext(Task task) {
         Optional<EnrichTaskContext> context = this.enrichTaskContextRepository.findByRecord(task.getRecord());
         return context.orElseGet(() -> EnrichTaskContext.from(task.getRecord()));
-    }
-
-    private UpdateTaskContext getUpdateTaskContext (Task task) {
-        Optional<UpdateTaskContext> context = this.updateTaskContextRepository.findByRecord(task.getRecord());
-        return context.orElseGet(() -> UpdateTaskContext.from(task.getRecord()));
     }
 }
