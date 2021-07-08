@@ -10,13 +10,6 @@ import java.util.List;
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class EnrichTaskContext extends Context{
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @NaturalId
-    @OneToOne
-    private Record record;
-
     // PROCESSING STATE STORAGE
     private boolean hasDownloadedEnrichment;
     private boolean hasPersistedTranscriptions;
@@ -36,24 +29,6 @@ public class EnrichTaskContext extends Context{
         context.setSavedTranscriptions(null);
         context.setFetchedTranscriptions(null);
         return context;
-    }
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    @Override
-    public Record getRecord() {
-        return record;
-    }
-
-    @Override
-    public void setRecord(Record record) {
-        this.record = record;
     }
 
     public boolean isHasDownloadedEnrichment() {
