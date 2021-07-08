@@ -19,14 +19,14 @@ import java.util.Optional;
 public class ContextMediator {
 
 
-    private final ConversionContextRepository conversionContextRepository;
+
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
     private final EnrichTaskContextRepository enrichTaskContextRepository;
 
     public ContextMediator(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
 
 
-        this.conversionContextRepository = conversionContextRepository;
+
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
         this.enrichTaskContextRepository = enrichTaskContextRepository;
     };
@@ -76,8 +76,7 @@ public class ContextMediator {
     }
 
     private ConversionContext getConversionContext(Record record) {
-        Optional<ConversionContext> context = this.conversionContextRepository.findByRecord(record);
-        return context.orElseGet(() -> ConversionContext.from(record));
+
     }
 
     private TranscribeTaskContext getTranscribeTaskContext(Task task) {
