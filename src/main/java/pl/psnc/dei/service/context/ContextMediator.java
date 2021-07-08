@@ -20,15 +20,16 @@ public class ContextMediator {
 
 
 
+
+
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
-    private final EnrichTaskContextRepository enrichTaskContextRepository;
 
     public ContextMediator(ConversionTaskContextRepository conversionTaskContextRepository, ConversionContextRepository conversionContextRepository, TranscribeTaskContextRepository transcribeTaskContextRepository, EnrichTaskContextRepository enrichTaskContextRepository, UpdateTaskContextRepository updateTaskContextRepository){
 
 
 
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
-        this.enrichTaskContextRepository = enrichTaskContextRepository;
+
     };
 
     /**
@@ -80,12 +81,11 @@ public class ContextMediator {
     }
 
     private TranscribeTaskContext getTranscribeTaskContext(Task task) {
-        Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(task.getRecord());
-        return context.orElseGet(() -> TranscribeTaskContext.from(task.getRecord()));
+        Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(record);
+        return context.orElseGet(() -> TranscribeTaskContext.from(record));
     }
 
     private EnrichTaskContext getEnrichTaskContext(Task task) {
-        Optional<EnrichTaskContext> context = this.enrichTaskContextRepository.findByRecord(task.getRecord());
-        return context.orElseGet(() -> EnrichTaskContext.from(task.getRecord()));
+
     }
 }
