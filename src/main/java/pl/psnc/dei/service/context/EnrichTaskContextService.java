@@ -26,4 +26,9 @@ public class EnrichTaskContextService extends ContextService<EnrichTaskContext> 
     public EnrichTaskContext save(EnrichTaskContext context) {
         return null;
     }
+
+    @Override
+    public Boolean canHandle(Record record) {
+        return record.getState().equals(Record.RecordState.E_PENDING);
+    }
 }

@@ -14,8 +14,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Service used to manage context of processing. Each context could be possibly saved in DB by usage of this class
+ * Mediator used to save and fetch context for tasks
  */
+@SuppressWarnings("rawtypes")
 @Service
 public class ContextMediator {
 
@@ -25,8 +26,22 @@ public class ContextMediator {
         this.contextServiceList = contextServiceList;
     };
 
-    public get(Record record) {
+    public Context get(Record record) {
+        for (ContextService contextService : this.contextServiceList) {
+            if (contextService.canHandle(record)) {
+                return (Context) contextService.get(record);
+            }
+        }
+        throw new IllegalArgumentException(record.getState().toString());
+    }
 
+    public Context save(Record record) {
+        for (ContextService contextService : this.contextServiceList) {
+            if (contextService.canHandle(record)) {
+                return (Context) contextService.save(record);
+            }
+        }
+        throw new IllegalArgumentException(record.getState().toString());
     }
 
 }

@@ -28,4 +28,9 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
     public TranscribeTaskContext save(TranscribeTaskContext context) {
         return null;
     }
+
+    @Override
+    public Boolean canHandle(Record record) {
+        return record.getState().equals(Record.RecordState.T_PENDING);
+    }
 }

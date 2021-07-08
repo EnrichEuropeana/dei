@@ -26,4 +26,9 @@ public class UpdateTaskContextService extends ContextService<UpdateTaskContext>{
     public UpdateTaskContext save(UpdateTaskContext context) {
         return null;
     }
+
+    @Override
+    public Boolean canHandle(Record record) {
+        return record.getState().equals(Record.RecordState.U_PENDING);
+    }
 }
