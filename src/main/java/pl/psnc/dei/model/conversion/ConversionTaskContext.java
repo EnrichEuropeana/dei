@@ -1,14 +1,20 @@
 package pl.psnc.dei.model.conversion;
 
 import pl.psnc.dei.iiif.ConversionDataHolder;
+import pl.psnc.dei.iiif.ConversionDataHolderTransformer;
+import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.model.Record;
 
 import javax.persistence.*;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Stores context for conversion task
+ * For convenience entity automatically converts list of persistable ConversionData to and from ConversionDataHolder,
+ * thus end user sees entity as able to persist ConversionDataHolder even it is not
  */
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
@@ -31,7 +37,10 @@ public class ConversionTaskContext extends Context{
     private Exception exception;
 
     @OneToMany
-    private List<ConversionData> conversionData;
+    private List<ConversionData> conversionDataHolder;
+
+    @Transient
+    private final ConversionDataHolderTransformer conversionDataHolderTransformer = new ConversionDataHolderTransformer();
 
 
     public static ConversionTaskContext from(Record record){
@@ -49,8 +58,16 @@ public class ConversionTaskContext extends Context{
         context.setHasConverterSavedFiles(false);
         context.setHasConverterDownloadedJson(false);
         context.setHasConverterDownloadedImage(false);
-        context.setConversionData(new ArrayList<>());
+        context.conversionDataHolder = new ArrayList<>();
         return context;
+    }
+
+    public ConversionDataHolder getConversionDataHolder() throws ConversionImpossibleException {
+       return this.conversionDataHolderTransformer.toConversionDataHolder(this);
+    }
+
+    public void setConversionDataHolder(@NotNull ConversionDataHolder conversionDataHolder) {
+        this.conversionDataHolder = this.conversionDataHolderTransformer.toDBModel(conversionDataHolder);
     }
 
     public boolean isHasConverterSavedFiles() {
@@ -141,11 +158,7 @@ public class ConversionTaskContext extends Context{
         this.exception = exception;
     }
 
-    public List<ConversionData> getConversionData() {
-        return conversionData;
-    }
-
-    public void setConversionData(List<ConversionData> conversionData) {
-        this.conversionData = conversionData;
+    public List<ConversionData> getRawConversionData() {
+        return conversionDataHolder;
     }
 }

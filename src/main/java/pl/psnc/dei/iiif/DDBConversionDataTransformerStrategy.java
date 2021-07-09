@@ -26,7 +26,7 @@ public class DDBConversionDataTransformerStrategy extends ConversionDataTransfor
         JsonObject recordJsonRaw = JSON.parse(conversionTaskContext.getRecordJsonRaw());
         Record record = conversionTaskContext.getRecord();
 
-        List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getConversionData().stream()
+        List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
                     ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
                     a.dimensions = el.getDimension();

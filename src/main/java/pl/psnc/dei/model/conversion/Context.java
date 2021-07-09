@@ -5,6 +5,8 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;
 
 import javax.persistence.*;
+import java.util.Optional;
+import java.util.function.Function;
 
 @Entity
 public abstract class Context {
@@ -14,6 +16,18 @@ public abstract class Context {
     @NaturalId
     @OneToOne
     private Record record;
+
+    public static void setIfPresent(Object toModify, Object value) {
+        if (value != null) {
+            toModify = value;
+        }
+    }
+
+    public static void executeIf(Boolean flag, Runnable function) {
+        if (flag) {
+            function.run();
+        }
+    }
 
     private Task.TaskState taskState;
 

@@ -5,6 +5,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;

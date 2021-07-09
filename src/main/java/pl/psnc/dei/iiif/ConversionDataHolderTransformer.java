@@ -10,7 +10,6 @@ import java.util.List;
 /**
  * Service extracts fileObjects from concrete implementations of ConversionDataHolder and put them back there
  */
-@Service
 public class ConversionDataHolderTransformer {
 
     private final EuropeanaConversionDataTransformerStrategy europeanaConversionDataTransformerStrategy = new EuropeanaConversionDataTransformerStrategy();
