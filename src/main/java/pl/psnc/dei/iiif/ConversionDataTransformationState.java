@@ -1,13 +1,15 @@
 package pl.psnc.dei.iiif;
 
+import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.ConversionData;
+import pl.psnc.dei.model.conversion.ConversionTaskContext;
 
 import java.util.List;
 
 /**
- * Define state structural pattern for transformation strategy for transformer
+ * Define state behavioural pattern for transformation strategy for transformer
  */
-public abstract class ConversionDataTransformationState {
-    public abstract ConversionDataHolder toConversionDataHolder();
-    public abstract List<ConversionData> toDBModel();
+public abstract class ConversionDataTransformationState<T extends ConversionDataHolder> {
+    public abstract ConversionDataHolder toConversionDataHolder(ConversionTaskContext conversionTaskContext) throws ConversionImpossibleException;
+    public abstract List<ConversionData> toDBModel(T conversionDataHolder);
 }

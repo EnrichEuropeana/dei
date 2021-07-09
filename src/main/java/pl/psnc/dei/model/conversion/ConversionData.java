@@ -4,6 +4,8 @@ import pl.psnc.dei.iiif.*;
 import pl.psnc.dei.model.Record;
 
 import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Stores context for converter
@@ -13,25 +15,28 @@ public class ConversionData {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String recordJsonRaw;
-    private String recordJson;
+    private String json;
     private String srcFileUrl;
-    private String outFileUrl;
-    private String imagePath;
+    private String srcFilePath;
+    @ElementCollection
+    private List<String> outFilePath;
+    @ElementCollection
+    private List<String> imagePath;
     private String mediaType;
-    private Dimension dimension;
+    @ElementCollection
+    private List<Dimension> dimension;
 
     // new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 
     public static ConversionData from(Record record) {
         ConversionData conversionContext = new ConversionData();
-        conversionContext.setRecordJson("");
-        conversionContext.setRecordJsonRaw("");
+        conversionContext.setJson("");
         conversionContext.setSrcFileUrl("");
-        conversionContext.setOutFileUrl("");
-        conversionContext.setImagePath("");
+        conversionContext.setOutFilePath("");
+        conversionContext.setImagePath(new ArrayList<>());
         conversionContext.setMediaType("");
-        conversionContext.setDimension(new Dimension(-1, -1));
+        conversionContext.setDimension(new ArrayList<>());
+        conversionContext.setSrcFilePath("");
         return conversionContext;
     }
 
@@ -43,26 +48,17 @@ public class ConversionData {
 
     public void deflate(ConversionDataHolder.ConversionData conversionDataHolder) {
         this.setSrcFileUrl("");
-        this.setOutFileUrl("");
-        this.setImagePath("");
+        this.setOutFilePath("");
+        this.setImagePath(new ArrayList<>());
         this.setMediaType("");
-        this.setDimension(new Dimension(-1, -1));
+        this.setDimension(new ArrayList<>());
+    }
+    public String getJson() {
+        return json;
     }
 
-    public String getRecordJsonRaw() {
-        return recordJsonRaw;
-    }
-
-    public void setRecordJsonRaw(String recordJsonRaw) {
-        this.recordJsonRaw = recordJsonRaw;
-    }
-
-    public String getRecordJson() {
-        return recordJson;
-    }
-
-    public void setRecordJson(String recordJson) {
-        this.recordJson = recordJson;
+    public void setJson(String recordJson) {
+        this.json = recordJson;
     }
 
     public String getSrcFileUrl() {
@@ -73,20 +69,12 @@ public class ConversionData {
         this.srcFileUrl = srcFileUrl;
     }
 
-    public String getOutFileUrl() {
-        return outFileUrl;
+    public List<String> getOutFilePath() {
+        return outFilePath;
     }
 
-    public void setOutFileUrl(String outFileUrl) {
-        this.outFileUrl = outFileUrl;
-    }
-
-    public String getImagePath() {
-        return imagePath;
-    }
-
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
+    public void setOutFilePath(List<String> outFileUrl) {
+        this.outFilePath = outFileUrl;
     }
 
     public String getMediaType() {
@@ -97,11 +85,27 @@ public class ConversionData {
         this.mediaType = mediaType;
     }
 
-    public Dimension getDimension() {
+    public List<Dimension> getDimension() {
         return dimension;
     }
 
-    public void setDimension(Dimension dimension) {
+    public void setDimension(List<Dimension> dimension) {
         this.dimension = dimension;
+    }
+
+    public List<String> getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(List<String> imagePath) {
+        this.imagePath = imagePath;
+    }
+
+    public String getSrcFilePath() {
+        return srcFilePath;
+    }
+
+    public void setSrcFilePath(String srcFilePath) {
+        this.srcFilePath = srcFilePath;
     }
 }

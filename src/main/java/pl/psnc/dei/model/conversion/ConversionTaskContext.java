@@ -150,4 +150,8 @@ public class ConversionTaskContext extends Context{
     public void setException(Exception exception) {
         this.exception = exception;
     }
+
+    public List<ConversionData> getRawConversionData() {
+        return conversionDataHolder;
+    }
 }
