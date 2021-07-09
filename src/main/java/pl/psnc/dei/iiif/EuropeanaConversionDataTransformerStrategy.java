@@ -28,7 +28,7 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         JsonObject recordJson = JSON.parse(conversionTaskContext.getRecordJson());
         JsonObject recordJsonRaw = JSON.parse(conversionTaskContext.getRecordJsonRaw());
         Record record = conversionTaskContext.getRecord();
-        List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
+        List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getConversionData().stream()
                 .map(el -> {
                     ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
                     a.dimensions = el.getDimension();

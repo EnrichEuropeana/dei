@@ -6,7 +6,6 @@ import pl.psnc.dei.model.Record;
 import javax.persistence.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Stores context for conversion task
@@ -32,7 +31,7 @@ public class ConversionTaskContext extends Context{
     private Exception exception;
 
     @OneToMany
-    private List<ConversionData> conversionDataHolder;
+    private List<ConversionData> conversionData;
 
 
     public static ConversionTaskContext from(Record record){
@@ -50,17 +49,8 @@ public class ConversionTaskContext extends Context{
         context.setHasConverterSavedFiles(false);
         context.setHasConverterDownloadedJson(false);
         context.setHasConverterDownloadedImage(false);
-        context.setConversionDataHolder(null);
+        context.setConversionData(new ArrayList<>());
         return context;
-    }
-
-    // TODO: convert to and from ConversionDataHolder to ConversionData
-    public ConversionDataHolder getConversionDataHolder() {
-       return null;
-    }
-
-    public void setConversionDataHolder(ConversionDataHolder conversionDataHolder) {
-
     }
 
     public boolean isHasConverterSavedFiles() {
@@ -151,7 +141,11 @@ public class ConversionTaskContext extends Context{
         this.exception = exception;
     }
 
-    public List<ConversionData> getRawConversionData() {
-        return conversionDataHolder;
+    public List<ConversionData> getConversionData() {
+        return conversionData;
+    }
+
+    public void setConversionData(List<ConversionData> conversionData) {
+        this.conversionData = conversionData;
     }
 }

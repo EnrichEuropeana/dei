@@ -32,7 +32,7 @@ public class ConversionData {
         ConversionData conversionContext = new ConversionData();
         conversionContext.setJson("");
         conversionContext.setSrcFileUrl("");
-        conversionContext.setOutFilePath("");
+        conversionContext.setOutFilePath(new ArrayList<>());
         conversionContext.setImagePath(new ArrayList<>());
         conversionContext.setMediaType("");
         conversionContext.setDimension(new ArrayList<>());
@@ -40,19 +40,6 @@ public class ConversionData {
         return conversionContext;
     }
 
-    // TODO: inflate and deflate to and from Europeana and Deutche...
-
-    public ConversionDataHolder.ConversionData inflate() {
-        return null;
-    }
-
-    public void deflate(ConversionDataHolder.ConversionData conversionDataHolder) {
-        this.setSrcFileUrl("");
-        this.setOutFilePath("");
-        this.setImagePath(new ArrayList<>());
-        this.setMediaType("");
-        this.setDimension(new ArrayList<>());
-    }
     public String getJson() {
         return json;
     }
