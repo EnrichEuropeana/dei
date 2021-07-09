@@ -53,6 +53,9 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
             throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
         }
 
+        // TODO: consider add of no-args constructor
+        // usage of this constructor is rather useless as it init some of fields that will be override by data fetched from database. However  EuropeanaConversionDataHolder has no no-args constructor to init empty object anyway
+        // maybe it is worth to create one for purpose of data persisting
         EuropeanaConversionDataHolder europeanaConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
         europeanaConversionDataHolder.fileObjects = convertedData;
         return europeanaConversionDataHolder;
