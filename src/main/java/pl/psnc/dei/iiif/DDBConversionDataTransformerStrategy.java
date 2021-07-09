@@ -2,7 +2,6 @@ package pl.psnc.dei.iiif;
 
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
-import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -14,12 +13,10 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTransformationState<EuropeanaConversionDataHolder> {
+public class DDBConversionDataTransformerStrategy extends ConversionDataTransformationState<DDBConversionDataHolder> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -28,6 +25,7 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         JsonObject recordJson = JSON.parse(conversionTaskContext.getRecordJson());
         JsonObject recordJsonRaw = JSON.parse(conversionTaskContext.getRecordJsonRaw());
         Record record = conversionTaskContext.getRecord();
+
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
                     ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
@@ -45,26 +43,13 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
                             .map(File::new).collect(Collectors.toList());
                     return a;
                 }).collect(Collectors.toList());
-
-        Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
-                .map(JsonValue::getAsObject)
-                .filter(e -> e.get("edm:isShownBy") != null)
-                .findFirst();
-
-        if (!aggregatorData.isPresent()) {
-            throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
-        }
-
-        // TODO: consider add of no-args constructor
-        // usage of this constructor is rather useless as it init some of fields that will be override by data fetched from database. However  EuropeanaConversionDataHolder has no no-args constructor to init empty object anyway
-        // maybe it is worth to create one for purpose of data persisting
-        EuropeanaConversionDataHolder europeanaConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
-        europeanaConversionDataHolder.fileObjects = convertedData;
-        return europeanaConversionDataHolder;
+        DDBConversionDataHolder conversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+        conversionDataHolder.fileObjects = convertedData;
+        return conversionDataHolder;
     }
 
     @Override
-    public List<ConversionData> toDBModel(EuropeanaConversionDataHolder conversionDataHolder) {
+    public List<ConversionData> toDBModel(DDBConversionDataHolder conversionDataHolder) {
         List<ConversionDataHolder.ConversionData> conversionData = conversionDataHolder.fileObjects;
         return conversionData.stream()
                 .map(el -> {
