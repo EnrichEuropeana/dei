@@ -41,6 +41,9 @@ public class TasksFactory {
 	@Autowired
 	private Converter converter;
 
+	@Autowired
+	private PersistableExceptionService persistableExceptionService;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -52,7 +55,7 @@ public class TasksFactory {
 			case E_PENDING:
 				return new EnrichTask(record, qrs, tps, ess, eas);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator);
+				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator, persistableExceptionService);
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:

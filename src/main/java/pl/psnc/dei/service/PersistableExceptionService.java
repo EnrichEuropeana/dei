@@ -8,6 +8,7 @@ import pl.psnc.dei.model.PersistableException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import pl.psnc.dei.service.context.ContextMediator;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,15 +19,13 @@ public class PersistableExceptionService {
     @Autowired
     private PersistableExceptionRepository persistableExceptionRepository;
 
-    public <T> T findByContextAndExceptionClass(Context context, Class<T> exceptionClass) throws NotFoundException {
+    @Autowired
+    private ContextMediator contextMediator;
+
+    public <T extends  Exception> T findByContextAndExceptionClass(Context context, Class<T> exceptionClass) {
         PersistableException.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exceptionClass);
         Optional<PersistableException> optionalExceptions = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
-        if (optionalExceptions.isPresent()) {
-            return this.inflateException(optionalExceptions.get(), exceptionClass);
-        }
-        else {
-            throw new NotFoundException("No exceptions saved for record identifier: " + context.getRecord().getIdentifier());
-        }
+        return optionalExceptions.map(persistableException -> this.inflateException(persistableException, exceptionClass)).orElse(null);
     }
 
     public PersistableException save(Exception exception, Context context) {
@@ -35,24 +34,34 @@ public class PersistableExceptionService {
         if (optionalException.isPresent()) {
             PersistableException fetchedException = optionalException.get();
             fetchedException.setMessage(exception.getMessage());
-            this.persistableExceptionRepository.save(fetchedException);
+            PersistableException persistableException = this.persistableExceptionRepository.save(fetchedException);
+            context.getExceptions().add(persistableException);
+            this.contextMediator.save(context);
+            return persistableException;
         }
         else {
             PersistableException newPersistableException = new PersistableException();
             newPersistableException.setContext(context);
             newPersistableException.setMessage(exception.getMessage());
             newPersistableException.setType(this.convertExceptionClassToExceptionType(exception.getClass()));
-            this.persistableExceptionRepository.save(newPersistableException);
+            newPersistableException = this.persistableExceptionRepository.save(newPersistableException);
+            context.getExceptions().add(newPersistableException);
+            this.contextMediator.save(context);
+            return newPersistableException;
         }
-        throw new IllegalArgumentException("Cannot save exception of type: " + exception.getClass());
     }
 
-    private <T> T inflateException(PersistableException persistableException, Class<T> exceptionClass) {
+    private <T extends Exception> T inflateException(PersistableException persistableException, Class<T> exceptionClass) {
         switch (persistableException.getType()) {
             case TRANSCRIPTION_PLATFORM_EXCEPTION: {
                 // unchecked cast without it
                 if (exceptionClass.isAssignableFrom(TranscriptionPlatformException.class)) {
                     return exceptionClass.cast(new TranscriptionPlatformException(persistableException.getMessage()));
+                }
+            }
+            case NOT_FOUND_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(NotFoundException.class)) {
+                    return exceptionClass.cast(new NotFoundException(persistableException.getMessage()));
                 }
             }
             default: {
@@ -65,6 +74,18 @@ public class PersistableExceptionService {
         if (aClass.isAssignableFrom(TranscriptionPlatformException.class)) {
             return PersistableException.ExceptionType.TRANSCRIPTION_PLATFORM_EXCEPTION;
         }
+        else if (aClass.isAssignableFrom(NotFoundException.class)) {
+            return PersistableException.ExceptionType.NOT_FOUND_EXCEPTION;
+        }
         throw new IllegalArgumentException("Class " + aClass.getName() + " cannot be translated");
+    }
+
+    public void findFirstOfAndThrow(List<Class<? extends Exception>> exceptionClasses, Context context) throws Exception {
+        for (Class<? extends Exception> aClass : exceptionClasses) {
+            Exception exception = this.findByContextAndExceptionClass(context, aClass);
+            if (exception != null) {
+                throw exception;
+            }
+        }
     }
 }

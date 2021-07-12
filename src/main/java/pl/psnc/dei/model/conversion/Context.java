@@ -20,7 +20,7 @@ public abstract class Context {
     @OneToOne
     private Record record;
 
-    @OneToMany(mappedBy = "record")
+    @OneToMany(mappedBy = "context", cascade = CascadeType.ALL)
     private List<PersistableException> exceptions;
 
     private Task.TaskState taskState;

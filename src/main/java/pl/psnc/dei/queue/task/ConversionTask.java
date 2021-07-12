@@ -57,6 +57,7 @@ public class ConversionTask extends Task {
 	@Override
 	public void process() throws Exception {
 		try {
+			// conversion supervision moved to Converter class
 			converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
 		} catch (ConversionImpossibleException e) {

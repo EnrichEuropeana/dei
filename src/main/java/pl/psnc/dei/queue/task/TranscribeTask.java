@@ -9,14 +9,15 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
-import pl.psnc.dei.service.EuropeanaAnnotationsService;
-import pl.psnc.dei.service.QueueRecordService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
@@ -40,8 +41,10 @@ public class TranscribeTask extends Task {
 
 	private TranscribeTaskContext transcribeTaskContext;
 
+	private PersistableExceptionService persistableExceptionService;
+
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
@@ -53,6 +56,7 @@ public class TranscribeTask extends Task {
 		);
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
+		this.persistableExceptionService = persistableExceptionService;
 	}
 
 	@Override
@@ -103,14 +107,12 @@ public class TranscribeTask extends Task {
 			case T_SEND_RESULT:
 				try {
 					if (this.transcribeTaskContext.isHasThrownError()) {
-						throw this.transcribeTaskContext.getException();
+						this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(NotFoundException.class, TranscriptionPlatformException.class), this.transcribeTaskContext);
 					}
-					throw new TranscriptionPlatformException();
-					/*
 					ContextUtils.executeIfNotPresent(this.recordJson,
 							() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
 					);
-					ContextUtils.executeIfNotPresent(this.recordJson,
+					ContextUtils.executeIfNotPresent(this.recordJsonRaw,
 							() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
 					);
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasSendRecord(),
@@ -122,18 +124,16 @@ public class TranscribeTask extends Task {
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					tps.updateImportState(record.getAnImport());
 					this.contextMediator.delete(this.transcribeTaskContext);
-					 */
 				} catch (TranscriptionPlatformException e) {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
 							() -> {
 								this.transcribeTaskContext.setHasThrownError(true);
-								this.transcribeTaskContext.setException(e);
+								this.persistableExceptionService.save(e, this.transcribeTaskContext);
 								this.contextMediator.save(this.transcribeTaskContext);
 							});
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
 							() -> {
 									try {
-										queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
 										tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
 										this.transcribeTaskContext.setHasAddedFailure(true);
 										this.contextMediator.save(this.transcribeTaskContext);
@@ -142,16 +142,18 @@ public class TranscribeTask extends Task {
 												+ ", identifier: " + record.getIdentifier(), e1);
 									}
 								});
-					tps.updateImportState(record.getAnImport());
+					// deletion must occur before state change or context will never be deleted
 					this.contextMediator.delete(this.transcribeTaskContext);
+					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+					tps.updateImportState(record.getAnImport());
 				} catch (NotFoundException e) {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
 							() -> {
 								this.transcribeTaskContext.setHasThrownError(true);
-								this.transcribeTaskContext.setException(e);
+								this.persistableExceptionService.save(e, this.transcribeTaskContext);
 								this.contextMediator.save(this.transcribeTaskContext);
-								this.contextMediator.delete(this.transcribeTaskContext);
 							});
+					this.contextMediator.delete(this.transcribeTaskContext);
 					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 							+ ", identifier: " + record.getIdentifier(), e);
 				}

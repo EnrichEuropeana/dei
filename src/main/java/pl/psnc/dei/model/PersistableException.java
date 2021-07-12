@@ -8,7 +8,8 @@ import javax.persistence.*;
 public class PersistableException {
 
     public enum ExceptionType{
-        TRANSCRIPTION_PLATFORM_EXCEPTION
+        TRANSCRIPTION_PLATFORM_EXCEPTION,
+        NOT_FOUND_EXCEPTION
     }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

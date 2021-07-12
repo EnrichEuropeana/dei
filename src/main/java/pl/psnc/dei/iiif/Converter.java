@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionTaskContext;
+import pl.psnc.dei.service.context.ContextMediator;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -53,6 +55,9 @@ public class Converter {
 	@Autowired
 	private RecordsRepository recordsRepository;
 
+	@Autowired
+	private ContextMediator contextMediator;
+
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
@@ -87,6 +92,7 @@ public class Converter {
 	}
 
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")

@@ -5,6 +5,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 
 /**
  * Context of Transcribe Task
@@ -23,7 +24,6 @@ public class TranscribeTaskContext extends Context{
     private String recordJson;
     @Enumerated(EnumType.STRING)
     private Task.TaskState taskState;
-    private Exception exception;
 
     public static TranscribeTaskContext from(Record record) {
         TranscribeTaskContext context = new TranscribeTaskContext();
@@ -34,7 +34,7 @@ public class TranscribeTaskContext extends Context{
         context.setRecordJson(null);
         context.setRecordJsonRaw(null);
         context.setTaskState(null);
-        context.setException(null);
+        context.setExceptions(new ArrayList<>());
         return context;
     }
 
@@ -86,13 +86,5 @@ public class TranscribeTaskContext extends Context{
     @Override
     public void setTaskState(Task.TaskState taskState) {
         this.taskState = taskState;
-    }
-
-    public Exception getException() {
-        return exception;
-    }
-
-    public void setException(Exception exception) {
-        this.exception = exception;
     }
 }
