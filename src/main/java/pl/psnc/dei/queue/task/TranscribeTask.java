@@ -48,7 +48,9 @@ public class TranscribeTask extends Task {
 		this.tqs = tqs;
 		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;
-		ContextUtils.setIfPresent(this.state, this.transcribeTaskContext.getTaskState());
+		ContextUtils.executeIfPresent(this.transcribeTaskContext.getTaskState(),
+				() -> this.state = this.transcribeTaskContext.getTaskState()
+		);
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
 	}
@@ -103,6 +105,14 @@ public class TranscribeTask extends Task {
 					if (this.transcribeTaskContext.isHasThrownError()) {
 						throw this.transcribeTaskContext.getException();
 					}
+					throw new TranscriptionPlatformException();
+					/*
+					ContextUtils.executeIfNotPresent(this.recordJson,
+							() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
+					);
+					ContextUtils.executeIfNotPresent(this.recordJson,
+							() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
+					);
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasSendRecord(),
 							() -> {
 								tps.sendRecord(recordJson, record);
@@ -112,6 +122,7 @@ public class TranscribeTask extends Task {
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					tps.updateImportState(record.getAnImport());
 					this.contextMediator.delete(this.transcribeTaskContext);
+					 */
 				} catch (TranscriptionPlatformException e) {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
 							() -> {
