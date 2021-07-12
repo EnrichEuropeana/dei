@@ -28,8 +28,14 @@ public class ContextUtils {
         }
     }
 
-    public static void executeIfEmpty(Collection<?> collection, Runnable function) {
+    public static void executeIfNotEmpty(Collection<?> collection, Runnable function) {
         if (collection.size() > 0) {
+            function.run();
+        }
+    }
+
+    public static void executeIfEmpty(Collection<?> collection, Runnable function) {
+        if (collection.isEmpty()) {
             function.run();
         }
     }
