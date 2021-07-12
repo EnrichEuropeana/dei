@@ -59,7 +59,7 @@ public class TasksFactory {
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this);
+				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, persistableExceptionService, contextMediator);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");

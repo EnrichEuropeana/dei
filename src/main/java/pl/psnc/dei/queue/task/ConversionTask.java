@@ -1,20 +1,30 @@
 package pl.psnc.dei.queue.task;
 
+import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
+import pl.psnc.dei.model.DAO.ConversionContextRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.io.IOException;
 
 public class ConversionTask extends Task {
+
+	private ContextMediator contextMediator;
+
+	private PersistableExceptionService persistableExceptionService;
 
 	Logger logger = LoggerFactory.getLogger(ConversionTask.class);
 
@@ -32,9 +42,14 @@ public class ConversionTask extends Task {
 
 	private DDBFormatResolver ddbFormatResolver;
 
+	private ConversionTaskContext context;
+
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.persistableExceptionService = persistableExceptionService;
+		this.contextMediator = contextMediator;
+		this.context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.tqs = tqs;
 		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
@@ -43,11 +58,35 @@ public class ConversionTask extends Task {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
-				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				ContextUtils.executeIfPresent(this.context.getRecordJson(),
+						() -> this.recordJson = JSON.parse(this.context.getRecordJson())
+				);
+				ContextUtils.executeIfNotPresent(this.context.getRecordJson(),
+						() -> {
+							this.recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+							this.context.setRecordJson(this.recordJson.toString());
+							this.contextMediator.save(this.context);
+						});
+				ContextUtils.executeIfPresent(this.context.getRecordJson(),
+						() -> this.recordJsonRaw = JSON.parse(this.context.getRecordJsonRaw())
+				);
+				ContextUtils.executeIfNotPresent(this.context.getRecordJson(),
+						() -> {
+							this.recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+							this.context.setRecordJsonRaw(this.recordJsonRaw.toString());
+							this.contextMediator.save(this.context);
+						});
 				break;
 			case DDB:
-				recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());
+				ContextUtils.executeIfPresent(this.context.getRecordJson(),
+						() -> this.recordJson = JSON.parse(this.context.getRecordJson())
+				);
+				ContextUtils.executeIfNotPresent(this.context.getRecordJson(),
+						() -> {
+							this.recordJson = ddbfr.getRecordBinariesObject(record.getIdentifier());
+							this.context.setRecordJson(this.recordJson.toString());
+							this.contextMediator.save(this.context);
+						});
 				break;
 			default:
 				throw new IllegalStateException("Unsupported aggregator for conversion.");
@@ -57,7 +96,7 @@ public class ConversionTask extends Task {
 	@Override
 	public void process() throws Exception {
 		try {
-			// conversion supervision moved to Converter class
+
 			converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
 		} catch (ConversionImpossibleException e) {
