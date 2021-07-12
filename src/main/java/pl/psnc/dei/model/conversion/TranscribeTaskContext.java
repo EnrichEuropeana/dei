@@ -17,7 +17,9 @@ public class TranscribeTaskContext extends Context{
     private boolean hasAddedFailure;
 
     // PROCESSING DATA STORAGE
+    @Column(columnDefinition = "LONGTEXT")
     private String recordJsonRaw;
+    @Column(columnDefinition = "LONGTEXT")
     private String recordJson;
     @Enumerated(EnumType.STRING)
     private Task.TaskState taskState;
@@ -26,7 +28,6 @@ public class TranscribeTaskContext extends Context{
     public static TranscribeTaskContext from(Record record) {
         TranscribeTaskContext context = new TranscribeTaskContext();
         context.setRecord(record);
-        context.setHasJson(false);
         context.setHasSendRecord(false);
         context.setHasThrownError(false);
         context.setHasAddedFailure(false);

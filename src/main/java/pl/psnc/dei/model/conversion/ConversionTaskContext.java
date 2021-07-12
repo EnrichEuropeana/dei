@@ -31,7 +31,9 @@ public class ConversionTaskContext extends Context{
     private boolean hasConverterDownloadedJson;
 
     // PROCESSING DATA STORAGE
+    @Column(columnDefinition = "LONGTEXT")
     private String recordJsonRaw;
+    @Column(columnDefinition = "LONGTEXT")
     private String recordJson;
     private Exception exception;
 
