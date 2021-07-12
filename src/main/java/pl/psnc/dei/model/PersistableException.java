@@ -1,5 +1,7 @@
 package pl.psnc.dei.model;
 
+import pl.psnc.dei.model.conversion.Context;
+
 import javax.persistence.*;
 
 @Entity
@@ -15,6 +17,9 @@ public class PersistableException {
     private ExceptionType type;
     @Column(columnDefinition = "TEXT")
     private String message;
+
+    @ManyToOne
+    private Context context;
 
     public Long getId() {
         return id;
@@ -38,5 +43,13 @@ public class PersistableException {
 
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    public Context getContext() {
+        return context;
+    }
+
+    public void setContext(Context context) {
+        this.context = context;
     }
 }
