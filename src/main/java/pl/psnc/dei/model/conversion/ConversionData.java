@@ -11,6 +11,7 @@ import java.util.List;
  * Stores context for converter
  */
 @Entity
+@Table(name = "conversion_data")
 public class ConversionData {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

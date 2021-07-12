@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
  * thus end user sees entity as able to persist ConversionDataHolder even it is not
  */
 @Entity
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 public class ConversionTaskContext extends Context{
     // PROCESSING STATE STORAGE
     private boolean hasJson;

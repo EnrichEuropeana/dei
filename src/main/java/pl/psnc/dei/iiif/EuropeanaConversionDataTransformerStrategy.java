@@ -30,7 +30,7 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         Record record = conversionTaskContext.getRecord();
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
-                    ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
+                    EuropeanaConversionDataHolder.ConversionData a = new EuropeanaConversionDataHolder.ConversionData();
                     a.dimensions = el.getDimension();
                     a.imagePath = el.getImagePath();
                     a.json = JSON.parse(el.getJson());
