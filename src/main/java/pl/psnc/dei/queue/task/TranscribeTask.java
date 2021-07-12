@@ -1,6 +1,7 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
@@ -53,17 +54,21 @@ public class TranscribeTask extends Task {
 	}
 
 	@Override
-	public void process() {
+	public void process() throws Exception {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				ContextUtils.setIfPresent(this.recordJson, this.transcribeTaskContext.getRecordJson());
+				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJson(),
+						() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
+				);
 				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJson(),
 						() -> {
 							recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 							this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
 							this.contextMediator.save(this.transcribeTaskContext);
 						});
-				ContextUtils.setIfPresent(this.recordJson, this.transcribeTaskContext.getRecordJsonRaw());
+				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJsonRaw(),
+						() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
+				);
 				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJsonRaw(),
 						() -> {
 							recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
@@ -95,6 +100,9 @@ public class TranscribeTask extends Task {
 				}
 			case T_SEND_RESULT:
 				try {
+					if (this.transcribeTaskContext.isHasThrownError()) {
+						throw this.transcribeTaskContext.getException();
+					}
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasSendRecord(),
 							() -> {
 								tps.sendRecord(recordJson, record);
@@ -103,20 +111,40 @@ public class TranscribeTask extends Task {
 							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					tps.updateImportState(record.getAnImport());
+					this.contextMediator.delete(this.transcribeTaskContext);
 				} catch (TranscriptionPlatformException e) {
-					try {
-						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
-						tps.updateImportState(record.getAnImport());
-						this.contextMediator.delete(this.transcribeTaskContext);
-					} catch (NotFoundException e1) {
-						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-								+ ", identifier: " + record.getIdentifier(), e1);
-					}
+					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
+							() -> {
+								this.transcribeTaskContext.setHasThrownError(true);
+								this.transcribeTaskContext.setException(e);
+								this.contextMediator.save(this.transcribeTaskContext);
+							});
+					ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
+							() -> {
+									try {
+										queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+										tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+										this.transcribeTaskContext.setHasAddedFailure(true);
+										this.contextMediator.save(this.transcribeTaskContext);
+									} catch (NotFoundException e1) {
+										throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+												+ ", identifier: " + record.getIdentifier(), e1);
+									}
+								});
+					tps.updateImportState(record.getAnImport());
+					this.contextMediator.delete(this.transcribeTaskContext);
 				} catch (NotFoundException e) {
+					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
+							() -> {
+								this.transcribeTaskContext.setHasThrownError(true);
+								this.transcribeTaskContext.setException(e);
+								this.contextMediator.save(this.transcribeTaskContext);
+								this.contextMediator.delete(this.transcribeTaskContext);
+							});
 					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 							+ ", identifier: " + record.getIdentifier(), e);
 				}
+				break;
 		}
 	}
 
