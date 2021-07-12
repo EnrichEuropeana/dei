@@ -24,7 +24,7 @@ public class EnrichTaskContextService extends ContextService<EnrichTaskContext> 
 
     @Override
     public EnrichTaskContext save(EnrichTaskContext context) {
-        return null;
+        return this.enrichTaskContextRepository.save(context);
     }
 
     @Override

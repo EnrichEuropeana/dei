@@ -24,7 +24,7 @@ public class UpdateTaskContextService extends ContextService<UpdateTaskContext>{
 
     @Override
     public UpdateTaskContext save(UpdateTaskContext context) {
-        return null;
+        return this.updateTaskContextRepository.save(context);
     }
 
     @Override

@@ -56,8 +56,16 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+				ContextUtils.setIfPresent(this.recordJson, this.transcribeTaskContext.getRecordJson());
+				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJson(),
+						() -> {
+							recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+							this.contextMediator.
+						});
+
 				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
+				this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {

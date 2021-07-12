@@ -24,7 +24,7 @@ public class ConversionTaskContextService extends ContextService<ConversionTaskC
 
     @Override
     public ConversionTaskContext save(ConversionTaskContext context) {
-        return null;
+        return this.conversionTaskContextRepository.save(context);
     }
 
     @Override

@@ -7,6 +7,12 @@ public class ContextUtils {
         }
     }
 
+    public static void executeIfNotPresent(Object toCheck, Runnable function) {
+        if (toCheck == null) {
+            function.run();
+        }
+    }
+
     public static void executeIf(Boolean flag, Runnable function) {
         if (flag) {
             function.run();

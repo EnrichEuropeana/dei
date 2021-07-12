@@ -26,7 +26,7 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
 
     @Override
     public TranscribeTaskContext save(TranscribeTaskContext context) {
-        return null;
+        return this.transcribeTaskContextRepository.save(context);
     }
 
     @Override

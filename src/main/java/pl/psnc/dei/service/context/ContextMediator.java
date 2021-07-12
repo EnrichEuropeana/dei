@@ -35,13 +35,13 @@ public class ContextMediator {
         throw new IllegalArgumentException(record.getState().toString());
     }
 
-    public Context save(Record record) {
+    public Context save(Context context) {
         for (ContextService contextService : this.contextServiceList) {
-            if (contextService.canHandle(record)) {
-                return (Context) contextService.save(record);
+            if (contextService.canHandle(context.getRecord())) {
+                return (Context) contextService.save(context);
             }
         }
-        throw new IllegalArgumentException(record.getState().toString());
+        throw new IllegalArgumentException("Cannot save record in state: " + context.getRecord().getState().toString());
     }
 
 }
