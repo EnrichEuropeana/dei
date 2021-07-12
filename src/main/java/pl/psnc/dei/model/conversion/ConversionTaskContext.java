@@ -49,8 +49,8 @@ public class ConversionTaskContext extends Context{
         context.setHasConverted(false);
         context.setHasThrownException(false);
         context.setHasAddedFailure(false);
-        context.setRecordJson("");
-        context.setRecordJsonRaw("");
+        context.setRecordJson(null);
+        context.setRecordJsonRaw(null);
         context.setException(null);
         context.setHasAddedFailure(false);
         context.setHasConverterConvertedToIIIF(false);

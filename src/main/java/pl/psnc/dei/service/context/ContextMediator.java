@@ -44,4 +44,12 @@ public class ContextMediator {
         throw new IllegalArgumentException("Cannot save record in state: " + context.getRecord().getState().toString());
     }
 
+    public void delete(Context context) {
+        for (ContextService contextService : this.contextServiceList) {
+            if (contextService.canHandle(context.getRecord())) {
+                contextService.delete(context);
+            }
+        }
+    }
+
 }

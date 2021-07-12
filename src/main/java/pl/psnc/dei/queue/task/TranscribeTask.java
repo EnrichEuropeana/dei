@@ -108,6 +108,7 @@ public class TranscribeTask extends Task {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
 						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
 						tps.updateImportState(record.getAnImport());
+						this.contextMediator.delete(this.transcribeTaskContext);
 					} catch (NotFoundException e1) {
 						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 								+ ", identifier: " + record.getIdentifier(), e1);

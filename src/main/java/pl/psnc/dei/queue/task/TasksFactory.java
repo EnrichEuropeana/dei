@@ -1,6 +1,7 @@
 package pl.psnc.dei.queue.task;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
@@ -8,6 +9,7 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 @Service
@@ -16,6 +18,7 @@ public class TasksFactory {
 	@Autowired
 	private QueueRecordService qrs;
 
+	@Qualifier("transcriptionPlatformService")
 	@Autowired
 	private TranscriptionPlatformService tps;
 
@@ -24,6 +27,9 @@ public class TasksFactory {
 
 	@Autowired
 	private EuropeanaAnnotationsService eas;
+
+	@Autowired
+	private ContextMediator contextMediator;
 
 	@Autowired
 	private DDBFormatResolver ddbfr;
@@ -46,7 +52,7 @@ public class TasksFactory {
 			case E_PENDING:
 				return new EnrichTask(record, qrs, tps, ess, eas);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this);
+				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator);
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:

@@ -31,8 +31,8 @@ public class TranscribeTaskContext extends Context{
         context.setHasSendRecord(false);
         context.setHasThrownError(false);
         context.setHasAddedFailure(false);
-        context.setRecordJson("");
-        context.setRecordJsonRaw("");
+        context.setRecordJson(null);
+        context.setRecordJsonRaw(null);
         context.setTaskState(null);
         context.setException(null);
         return context;
