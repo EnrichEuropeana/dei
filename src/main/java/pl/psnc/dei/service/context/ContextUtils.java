@@ -1,5 +1,7 @@
 package pl.psnc.dei.service.context;
 
+import java.util.Collection;
+
 public class ContextUtils {
     public static <T> void setIfPresent(T toModify, T value) {
         // actually java is not working like this
@@ -22,6 +24,12 @@ public class ContextUtils {
 
     public static void executeIf(Boolean flag, Runnable function) {
         if (flag) {
+            function.run();
+        }
+    }
+
+    public static void executeIfEmpty(Collection<?> collection, Runnable function) {
+        if (collection.size() > 0) {
             function.run();
         }
     }

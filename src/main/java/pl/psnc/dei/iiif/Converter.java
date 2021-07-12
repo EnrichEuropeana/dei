@@ -16,6 +16,7 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.File;

@@ -19,7 +19,6 @@ import java.util.stream.Collectors;
 @Entity
 public class ConversionTaskContext extends Context{
     // PROCESSING STATE STORAGE
-    private boolean hasJson;
     private boolean hasConverted;
     private boolean hasThrownException;
     private boolean hasAddedFailure;
@@ -47,7 +46,6 @@ public class ConversionTaskContext extends Context{
     public static ConversionTaskContext from(Record record){
         ConversionTaskContext context = new ConversionTaskContext();
         context.setRecord(record);
-        context.setHasJson(false);
         context.setHasConverted(false);
         context.setHasThrownException(false);
         context.setHasAddedFailure(false);
@@ -101,14 +99,6 @@ public class ConversionTaskContext extends Context{
 
     public void setHasConverterDownloadedJson(boolean hasConverterDownloadedJson) {
         this.hasConverterDownloadedJson = hasConverterDownloadedJson;
-    }
-
-    public boolean isHasJson() {
-        return hasJson;
-    }
-
-    public void setHasJson(boolean hasJson) {
-        this.hasJson = hasJson;
     }
 
     public boolean isHasConverted() {
