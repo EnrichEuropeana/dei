@@ -37,14 +37,6 @@ public class TranscribeTaskContext extends Context{
         return context;
     }
 
-    public boolean isHasJson() {
-        return hasJson;
-    }
-
-    public void setHasJson(boolean hasJson) {
-        this.hasJson = hasJson;
-    }
-
     public boolean isHasSendRecord() {
         return hasSendRecord;
     }
