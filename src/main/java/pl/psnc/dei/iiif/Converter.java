@@ -15,6 +15,7 @@ import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
+import pl.psnc.dei.service.PersistableExceptionService;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 
@@ -59,6 +60,9 @@ public class Converter {
 	@Autowired
 	private ContextMediator contextMediator;
 
+	@Autowired
+	private PersistableExceptionService persistableExceptionService;
+
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
@@ -78,6 +82,10 @@ public class Converter {
 
 	private File outDir;
 
+	private ConversionDataHolder conversionDataHolder;
+
+	private ConversionTaskContext context;
+
 	@PostConstruct
 	private void copyScript() {
 		try {
@@ -93,7 +101,7 @@ public class Converter {
 	}
 
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
-		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(record);
+		this.context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
@@ -108,9 +116,40 @@ public class Converter {
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
 		try {
-			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
-			saveFilesInTempDirectory(conversionDataHolder);
-			convertAllFiles(conversionDataHolder);
+
+			ContextUtils.executeIf(!this.context.isHasConverterSavedFiles(),
+					() -> {
+						try {
+							this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
+							saveFilesInTempDirectory(conversionDataHolder);
+							this.context.setConversionDataHolder(this.conversionDataHolder);
+							this.context.setHasConverterSavedFiles(true);
+							this.contextMediator.save(this.context);
+						} catch (ConversionException e) {
+							this.persistableExceptionService.save(e, this.context);
+							FileUtils.deleteQuietly(outDir);
+							return;
+						} finally {
+							FileUtils.deleteQuietly(srcDir);
+						}
+					});
+			ContextUtils.executeIf(!this.context.isHasConverterConvertedToIIIF(),
+					() -> {
+						try {
+							convertAllFiles(conversionDataHolder);
+							this.context.setConversionDataHolder(this.conversionDataHolder);
+							this.context.setHasConverterConvertedToIIIF(true);
+							this.contextMediator.save(this.context);
+						} catch (ConversionException | IOException | InterruptedException e) {
+							this.persistableExceptionService.save(e, this.context);
+							FileUtils.deleteQuietly(outDir);
+							return;
+						} finally {
+							FileUtils.deleteQuietly(srcDir);
+						}
+					});
+
+
 			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 					.filter(e -> e.outFile != null && !e.outFile.isEmpty())
 					.collect(Collectors.toList());

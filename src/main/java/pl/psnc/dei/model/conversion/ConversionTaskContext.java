@@ -26,8 +26,6 @@ public class ConversionTaskContext extends Context{
     // CONVERTER STATE STORAGE
     private boolean hasConverterSavedFiles;
     private boolean hasConverterConvertedToIIIF;
-    private boolean hasConverterDownloadedImage;
-    private boolean hasConverterDownloadedJson;
 
     // PROCESSING DATA STORAGE
     @Column(columnDefinition = "LONGTEXT")
@@ -55,8 +53,6 @@ public class ConversionTaskContext extends Context{
         context.setHasAddedFailure(false);
         context.setHasConverterConvertedToIIIF(false);
         context.setHasConverterSavedFiles(false);
-        context.setHasConverterDownloadedJson(false);
-        context.setHasConverterDownloadedImage(false);
         context.conversionDataHolder = new ArrayList<>();
         return context;
     }
@@ -83,22 +79,6 @@ public class ConversionTaskContext extends Context{
 
     public void setHasConverterConvertedToIIIF(boolean hasConverterConvertedToIIIF) {
         this.hasConverterConvertedToIIIF = hasConverterConvertedToIIIF;
-    }
-
-    public boolean isHasConverterDownloadedImage() {
-        return hasConverterDownloadedImage;
-    }
-
-    public void setHasConverterDownloadedImage(boolean hasConverterDownloadedImage) {
-        this.hasConverterDownloadedImage = hasConverterDownloadedImage;
-    }
-
-    public boolean isHasConverterDownloadedJson() {
-        return hasConverterDownloadedJson;
-    }
-
-    public void setHasConverterDownloadedJson(boolean hasConverterDownloadedJson) {
-        this.hasConverterDownloadedJson = hasConverterDownloadedJson;
     }
 
     public boolean isHasConverted() {
