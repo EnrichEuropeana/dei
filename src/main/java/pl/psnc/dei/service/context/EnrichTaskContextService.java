@@ -28,6 +28,11 @@ public class EnrichTaskContextService extends ContextService<EnrichTaskContext> 
     }
 
     @Override
+    public void delete(EnrichTaskContext context) {
+        this.enrichTaskContextRepository.delete(context);
+    }
+
+    @Override
     public Boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.E_PENDING);
     }

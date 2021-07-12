@@ -28,6 +28,11 @@ public class UpdateTaskContextService extends ContextService<UpdateTaskContext>{
     }
 
     @Override
+    public void delete(UpdateTaskContext context) {
+        this.updateTaskContextRepository.delete(context);
+    }
+
+    @Override
     public Boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.U_PENDING);
     }

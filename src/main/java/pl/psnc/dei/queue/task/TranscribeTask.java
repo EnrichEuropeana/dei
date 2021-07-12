@@ -60,19 +60,27 @@ public class TranscribeTask extends Task {
 				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJson(),
 						() -> {
 							recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-							this.contextMediator.
+							this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
+							this.contextMediator.save(this.transcribeTaskContext);
 						});
-
-				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
-				this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
-				this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
+				ContextUtils.setIfPresent(this.recordJson, this.transcribeTaskContext.getRecordJsonRaw());
+				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJsonRaw(),
+						() -> {
+							recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+							this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
+							this.contextMediator.save(this.transcribeTaskContext);
+						});
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
+					this.transcribeTaskContext.setTaskState(this.state);
+					this.contextMediator.save(this.transcribeTaskContext);
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
 						state = T_SEND_RESULT;
+						this.transcribeTaskContext.setTaskState(this.state);
+						this.contextMediator.save(this.transcribeTaskContext);
 					} else {
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
@@ -87,7 +95,12 @@ public class TranscribeTask extends Task {
 				}
 			case T_SEND_RESULT:
 				try {
-					tps.sendRecord(recordJson, record);
+					ContextUtils.executeIf(!this.transcribeTaskContext.isHasSendRecord(),
+							() -> {
+								tps.sendRecord(recordJson, record);
+								this.transcribeTaskContext.setHasSendRecord(true);
+								this.contextMediator.save(this.transcribeTaskContext);
+							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					tps.updateImportState(record.getAnImport());
 				} catch (TranscriptionPlatformException e) {

@@ -28,6 +28,11 @@ public class ConversionTaskContextService extends ContextService<ConversionTaskC
     }
 
     @Override
+    public void delete(ConversionTaskContext context) {
+        this.conversionTaskContextRepository.delete(context);
+    }
+
+    @Override
     public Boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.C_PENDING);
     }

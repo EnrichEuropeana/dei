@@ -30,6 +30,11 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
     }
 
     @Override
+    public void delete(TranscribeTaskContext context) {
+        this.transcribeTaskContextRepository.delete(context);
+    }
+
+    @Override
     public Boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.T_PENDING);
     }
