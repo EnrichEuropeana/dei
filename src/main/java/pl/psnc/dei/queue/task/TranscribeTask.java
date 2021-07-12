@@ -6,11 +6,14 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.Context;
+import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
 
@@ -32,12 +35,19 @@ public class TranscribeTask extends Task {
 
 	private String serverPath;
 
+	private ContextMediator contextMediator;
+
+	private TranscribeTaskContext transcribeTaskContext;
+
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.contextMediator = contextMediator;
+		this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
 		this.tqs = tqs;
 		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;
+		ContextUtils.setIfPresent(this.state, this.transcribeTaskContext.getTaskState());
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
 	}
