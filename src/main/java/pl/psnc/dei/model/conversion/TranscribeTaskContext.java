@@ -12,7 +12,6 @@ import javax.persistence.*;
 @Entity
 public class TranscribeTaskContext extends Context{
     // PROCESSING STATE STORAGE
-    private boolean hasJson;
     private boolean hasSendRecord;
     private boolean hasThrownError;
     private boolean hasAddedFailure;
