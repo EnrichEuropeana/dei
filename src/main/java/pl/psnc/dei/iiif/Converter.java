@@ -278,7 +278,7 @@ public class Converter {
 								+ getTiffFileName(convData.srcFile.getName()));
 						convData.dimensions.add(extractDimensions(convertedFile, MAX_RETRY_COUNT));
 					} else {
-						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + ". Converted file not found.");
 					}
 				} catch (ConversionException | InterruptedException | IOException e) {
 					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());

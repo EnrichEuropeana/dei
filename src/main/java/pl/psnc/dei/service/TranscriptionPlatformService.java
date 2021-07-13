@@ -213,6 +213,9 @@ public class TranscriptionPlatformService {
 				.doOnError(cause -> {
 					if (cause instanceof TranscriptionPlatformException) {
 						throw new TranscriptionPlatformException("Error while communicating with Transcription Platform");
+					} else if (cause instanceof DEIHttpException) {
+						DEIHttpException ex = (DEIHttpException) cause;
+						throw new TranscriptionPlatformException("Error while communicating with Transcription Platform. " + ex);
 					} else {
 						throw new TranscriptionPlatformException("Error while communicating with Transcription Platform", cause);
 					}
