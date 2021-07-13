@@ -4,7 +4,6 @@ import pl.psnc.dei.response.search.ddb.DDBFacet;
 import pl.psnc.dei.response.search.FacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.Facet;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.util.List;
 
@@ -21,7 +20,7 @@ public class FacetBoxFactory {
 		} else if(facet instanceof DDBFacet) {
 			return new DDBFacetBox(parent, facet);
 		} else {
-			throw new NotImplementedException();
+			throw new UnsupportedOperationException("Unsupported facet type");
 		}
 	}
 
