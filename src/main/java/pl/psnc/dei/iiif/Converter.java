@@ -68,6 +68,9 @@ public class Converter {
 	@Autowired
 	private ConversionDataHolderTransformer conversionDataHolderTransformer;
 
+	@Autowired
+	private ConversionDataHolderService conversionDataHolderService;
+
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
@@ -88,8 +91,6 @@ public class Converter {
 	private File outDir;
 
 	private ConversionDataHolder conversionDataHolder;
-
-	private ConversionTaskContext context;
 
 	@PostConstruct
 	private void copyScript() {
@@ -120,19 +121,9 @@ public class Converter {
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
 		this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
-		saveFilesInTempDirectory(conversionDataHolder);
-		this.context.setConversionDataHolder(this.conversionDataHolder);
-		this.context.setHasConverterSavedFiles(true);
-		this.contextMediator.save(this.context);
-		this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
-		this.conversionDataHolder = this.context.getConversionDataHolder();
+		this.conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
+		this.conversionDataHolder =	convertAllFiles(conversionDataHolder);
 
-		if (!this.context.isHasConverterConvertedToIIIF()) {
-			convertAllFiles(conversionDataHolder);
-			this.context.setConversionDataHolder(this.conversionDataHolder);
-			this.context.setHasConverterConvertedToIIIF(true);
-			this.contextMediator.save(this.context);
-		}
 		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
 				.collect(Collectors.toList());
@@ -158,20 +149,28 @@ public class Converter {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				EuropeanaConversionDataHolder conversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
-				List<ConversionData> conversionData = this.conversionDataHolderTransformer.toDBModel(conversionDataHolder);
-
+				EuropeanaConversionDataHolder EconversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				context.setHasConverterCreatedDataHolder(true);
+				this.contextMediator.save(context);
+				return this.conversionDataHolderService.save(EconversionDataHolder, context);
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
-				return new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				DDBConversionDataHolder DconversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				context.setHasConverterCreatedDataHolder(true);
+				this.contextMediator.save(context);
+				return this.conversionDataHolderService.save(DconversionDataHolder, context);
 			default:
 				throw new IllegalStateException("Unsupported aggregator");
 		}
 	}
 
-	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+	private ConversionDataHolder saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterSavedFiles()) {
+			return dataHolder;
+		}
 		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
 				continue;
@@ -190,6 +189,9 @@ public class Converter {
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
 			}
 		}
+		context.setHasConverterSavedFiles(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	private void replaceUrl(ConversionDataHolder.ConversionData data) throws MalformedURLException {
@@ -228,7 +230,11 @@ public class Converter {
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
-	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+	private ConversionDataHolder convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterConvertedToIIIF()) {
+			return dataHolder;
+		}
 		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
@@ -271,6 +277,7 @@ public class Converter {
 					} else {
 						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 					}
+
 				} catch (ConversionException | InterruptedException | IOException e) {
 					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
 					throw e;
@@ -280,6 +287,9 @@ public class Converter {
 		if (outDir.listFiles().length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
+		context.setHasConverterConvertedToIIIF(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {

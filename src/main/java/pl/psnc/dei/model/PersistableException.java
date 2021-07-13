@@ -9,7 +9,11 @@ public class PersistableException {
 
     public enum ExceptionType{
         TRANSCRIPTION_PLATFORM_EXCEPTION,
-        NOT_FOUND_EXCEPTION
+        NOT_FOUND_EXCEPTION,
+        CONVERSION_EXCEPTION,
+        CONVERSION_IMPOSSIBLE_EXCEPTION,
+        INTERRUPTED_EXCEPTION,
+        IO_EXCEPTION;
     }
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)

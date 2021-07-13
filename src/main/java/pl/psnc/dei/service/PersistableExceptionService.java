@@ -3,6 +3,8 @@ package pl.psnc.dei.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.iiif.ConversionException;
+import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.model.DAO.PersistableExceptionRepository;
 import pl.psnc.dei.model.PersistableException;
 import pl.psnc.dei.model.Record;
@@ -10,6 +12,7 @@ import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.context.ContextMediator;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +54,8 @@ public class PersistableExceptionService {
         }
     }
 
+    // ConversionException | InterruptedException | IOException
+
     private <T extends Exception> T inflateException(PersistableException persistableException, Class<T> exceptionClass) {
         switch (persistableException.getType()) {
             case TRANSCRIPTION_PLATFORM_EXCEPTION: {
@@ -62,6 +67,27 @@ public class PersistableExceptionService {
             case NOT_FOUND_EXCEPTION: {
                 if (exceptionClass.isAssignableFrom(NotFoundException.class)) {
                     return exceptionClass.cast(new NotFoundException(persistableException.getMessage()));
+                }
+            }
+
+            case IO_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(IOException.class)) {
+                    return exceptionClass.cast(new IOException(persistableException.getMessage()));
+                }
+            }
+            case CONVERSION_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(ConversionImpossibleException.class)) {
+                    return exceptionClass.cast(new ConversionImpossibleException(persistableException.getMessage()));
+                }
+            }
+            case INTERRUPTED_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(InterruptedException.class)) {
+                    return exceptionClass.cast(new InterruptedException(persistableException.getMessage()));
+                }
+            }
+            case CONVERSION_IMPOSSIBLE_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(ConversionImpossibleException.class)) {
+                    return exceptionClass.cast(new ConversionImpossibleException(persistableException.getMessage()));
                 }
             }
             default: {
@@ -76,6 +102,18 @@ public class PersistableExceptionService {
         }
         else if (aClass.isAssignableFrom(NotFoundException.class)) {
             return PersistableException.ExceptionType.NOT_FOUND_EXCEPTION;
+        }
+        else if (aClass.isAssignableFrom(IOException.class)) {
+            return PersistableException.ExceptionType.IO_EXCEPTION;
+        }
+        else if (aClass.isAssignableFrom(ConversionException.class)) {
+            return PersistableException.ExceptionType.CONVERSION_EXCEPTION;
+        }
+        else if (aClass.isAssignableFrom(ConversionImpossibleException.class)) {
+            return PersistableException.ExceptionType.CONVERSION_IMPOSSIBLE_EXCEPTION;
+        }
+        else if (aClass.isAssignableFrom(InterruptedException.class)) {
+            return PersistableException.ExceptionType.INTERRUPTED_EXCEPTION;
         }
         throw new IllegalArgumentException("Class " + aClass.getName() + " cannot be translated");
     }
