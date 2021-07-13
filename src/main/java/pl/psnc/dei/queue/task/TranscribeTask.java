@@ -45,16 +45,21 @@ public class TranscribeTask extends Task {
 	public void process() {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
+				// fetch data from europeana
 				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
 				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				// check if fetched data already contains address to iiif
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
+						// record has no IIIF on europeana, so in previous run was marked as in C_PENDING (see below) and
+						// IIIF was generated, now we need to add manifest to it
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
 						state = T_SEND_RESULT;
 					} else {
+						// europeana has no IIIF for this record, thus we generate new and host it on our owns
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
 							record.setState(Record.RecordState.C_PENDING);
@@ -70,9 +75,11 @@ public class TranscribeTask extends Task {
 				try {
 					tps.sendRecord(recordJson, record);
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
+					// check if all records are done
 					tps.updateImportState(record.getAnImport());
 				} catch (TranscriptionPlatformException e) {
 					try {
+						// record cannot be send so mark it as faild and fail entire import send
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
 						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
 						tps.updateImportState(record.getAnImport());

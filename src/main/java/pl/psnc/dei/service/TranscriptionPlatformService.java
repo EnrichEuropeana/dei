@@ -81,12 +81,18 @@ public class TranscriptionPlatformService {
 	private UrlBuilder urlBuilder;
 	private WebClient webClient;
 
+
 	public TranscriptionPlatformService(UrlBuilder urlBuilder,
 										WebClient.Builder webClientBuilder) {
 		this.urlBuilder = urlBuilder;
 		configureWebClient(urlBuilder, webClientBuilder);
 	}
 
+	/**
+	 * Creates and configures web client, uses url builder as service for link building
+	 * @param urlBuilder service for assemblation of links
+	 * @param webClientBuilder web client builder
+	 */
 	private void configureWebClient(UrlBuilder urlBuilder, WebClient.Builder webClientBuilder) {
 		TcpClient tcpClient = TcpClient.create()
 				.option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_IN_SECONDS * 1000)
@@ -99,6 +105,10 @@ public class TranscriptionPlatformService {
 				.build();
 	}
 
+	/**
+	 * Returns all projects available in system, fetch only (?) on first try
+	 * @return available projects
+	 */
 	public List<Project> getProjects() {
 		if (availableProjects == null || availableProjects.isEmpty())
 			refreshAvailableProjects();
@@ -106,7 +116,11 @@ public class TranscriptionPlatformService {
 		return availableProjects;
 	}
 
+	/**
+	 * Fetches projects from Transcription Platform and saves them if not exists
+	 */
 	public void refreshAvailableProjects() {
+		// fetch projects from TP
 		availableProjects = new ArrayList<>();
 		Project[] projects = webClient.get()
 				.uri(urlBuilder.urlForAllProjects())
@@ -121,9 +135,11 @@ public class TranscriptionPlatformService {
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
 				})
 				.bodyToMono(Project[].class).block();
+		// owh error :/
 		if (projects == null)
 			return;
 
+		// check which projects are not present
 		for (Project tempProject : projects) {
 			Project project = projectsRepository.findByName(tempProject.getName());
 			if (project == null)
@@ -135,11 +151,17 @@ public class TranscriptionPlatformService {
 		}
 	}
 
+	/**
+	 * Loads datasets for given project
+	 * Fetches them from Transcription Platform, and saves if not exists
+	 * @param project name of project which datasets should be fetched
+	 */
 	public void getDatasetsFor(Project project) {
 		Dataset[] projectDatasets = this.webClient.get().uri(urlBuilder.urlForProjectDatasets(project)).retrieve().bodyToMono(Dataset[].class).block();
 		if (projectDatasets != null) {
 			for (Dataset projectDataset : projectDatasets) {
 				Dataset dataset = datasetsRepository.findDatasetByDatasetId(projectDataset.getDatasetId());
+				// no given ds in database then override missing one
 				if (dataset == null) {
 					dataset = projectDataset;
 				}
@@ -150,6 +172,11 @@ public class TranscriptionPlatformService {
 		}
 	}
 
+	/**
+	 * Creates bidirectional link for HB
+	 * @param project project to which dataset should be added
+	 * @param dataset dataset which should be added to after mentioned project
+	 */
 	private void addDatasetToProject(Project project, Dataset dataset) {
 		if (project
 				.getDatasets()
@@ -271,6 +298,11 @@ public class TranscriptionPlatformService {
 		return annotation.toString();
 	}
 
+	/**
+	 * Fetch content of updated transcription
+	 * @param transcription transcription to fetch content for
+	 * @return content of transcription
+	 */
 	public JsonObject fetchTranscriptionUpdate(Transcription transcription) {
 		String response = this.webClient
 				.get()
@@ -330,6 +362,11 @@ public class TranscriptionPlatformService {
 		return null;
 	}
 
+	/**
+	 * Fetch and create task to enrich record
+	 * @param recordId id of record to be enriched
+	 * @throws NotFoundException if record was not found
+	 */
 	public void createNewEnrichTask(String recordId) throws NotFoundException {
 		Optional<Record> record = recordsRepository.findByIdentifier(recordId);
 		if (record.isPresent()) {
@@ -355,6 +392,11 @@ public class TranscriptionPlatformService {
 		throw new NotFoundException("Record " + recordId + " not found!");
 	}
 
+	/**
+	 * Start sending procedure of import in which import goes through consecutive states
+	 * @param importName name of import to send
+	 * @throws NotFoundException thrown if import was not found
+	 */
 	public void sendImport(String importName) throws NotFoundException {
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
 		if (!anImport.isPresent()) {

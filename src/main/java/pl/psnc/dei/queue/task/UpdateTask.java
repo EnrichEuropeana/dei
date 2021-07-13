@@ -28,6 +28,8 @@ public class UpdateTask extends Task {
 			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
 		super(record, queueRecordService, tps, ess, eas);
 
+		// someone is pushing update to transcription that is not present
+		// ignore request
 		if (record.getTranscriptions().isEmpty()) {
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
@@ -45,6 +47,7 @@ public class UpdateTask extends Task {
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
 					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
+		// assemble transcription onece more
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
@@ -60,12 +63,15 @@ public class UpdateTask extends Task {
 		switch (state) {
 			case U_GET_TRANSCRIPTION_FROM_TP:
 				for (Transcription t : transcriptions) {
+					// transcription body are transient so each time we
+					// must download it
 					JsonObject tContent = tps.fetchTranscriptionUpdate(t);
 					t.setTranscriptionContent(tContent);
 				}
 				state = TaskState.U_HANDLE_TRANSCRIPTION;
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
+					// send updated transcription to europeana
 					eas.updateTranscription(t);
 					record.getTranscriptions().remove(t);
 					queueRecordService.saveRecord(record);

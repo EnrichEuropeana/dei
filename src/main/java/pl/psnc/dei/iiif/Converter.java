@@ -86,6 +86,15 @@ public class Converter {
 
 	}
 
+	/**
+	 * Create IIIF image for further processing in ConversionTask
+	 * @param record record for witch we create IIIF
+	 * @param recordJson record data imported from europeana
+	 * @param recordJsonRaw record data imported from europeana
+	 * @throws ConversionException
+	 * @throws IOException
+	 * @throws InterruptedException
+	 */
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
@@ -119,6 +128,14 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Combines record data and data fetched from europeana into Dataholder
+	 * @param record record to be combined
+	 * @param recordJson data fetched from europeana to be combined
+	 * @param recordJsonRaw raw data fetched from europeana to be combined
+	 * @return combined data in form of dataholder
+	 * @throws ConversionImpossibleException if some of data are missing
+	 */
 	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
@@ -143,6 +160,11 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Fetch data from external server and save to local files
+	 * @param dataHolder combined data of record and data fetched from europeana
+	 * @throws ConversionException
+	 */
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
 		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
@@ -173,6 +195,12 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Downloads contents pointed in url. If url returns 301 then follow link
+	 * @param url url to fetch
+	 * @param file file to which save contents
+	 * @throws IOException
+	 */
 	private void copyURLToFile(URL url, File file) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
 		connection.setConnectTimeout(500);
@@ -200,12 +228,20 @@ public class Converter {
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
+	/**
+	 * Converts images into IIIF
+	 * @param dataHolder combined data of record and europeana
+	 * @throws ConversionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
 		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
 
 			if (convData.mediaType.toLowerCase().equals("pdf")) {
+				// PDF
 				try {
 					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
 					executor.runCommand(Arrays.asList(
@@ -220,6 +256,7 @@ public class Converter {
 				}
 
 			} else {
+				// just images
 				try {
 					executor.runCommand(Arrays.asList("vips",
 							"tiffsave",
@@ -254,6 +291,10 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Create paths for images contained in conversion Data
+	 * @param convData data for which paths should be created
+	 */
 	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {
 		String filterName = extractFileName(convData.srcFile.getName());
 
@@ -272,6 +313,12 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Extract dimensions from file, if retryCount exceeded 6k by 6k is returned
+	 * @param file file to analyze
+	 * @param retryCount times to try read file for dimensions
+	 * @return Dimensions of object
+	 */
 	private Dimension extractDimensions(File file, int retryCount) {
 		if (retryCount > 0) {
 			try {
@@ -303,6 +350,11 @@ public class Converter {
 		return (i != -1 ? fileName.substring(0, i) : fileName) + ".tif";
 	}
 
+	/**
+	 * Creates manifest pointing to our server with IIIF
+	 * @param storedFilesData data holder with populated IIIF
+	 * @return IIIF Manifest
+	 */
 	private JsonObject getManifest(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
@@ -319,6 +371,11 @@ public class Converter {
 		return manifest;
 	}
 
+	/**
+	 * Add information about generated IIIF to manifest
+	 * @param storedFilesData data holder with populated information
+	 * @return
+	 */
 	private JsonArray getSequenceJson(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
 
@@ -361,6 +418,12 @@ public class Converter {
 		return canvases;
 	}
 
+	/**
+	 * Adds manifest to json representation of data fetched from european
+	 * @param record record for which changes will be made
+	 * @param jsonObject json to which changes will be made
+	 * @param jsonObjectRaw
+	 */
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
 			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);

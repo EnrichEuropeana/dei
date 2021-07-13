@@ -10,6 +10,9 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
+/**
+ * Factory used to convert records into tasks based on state they are in
+ */
 @Service
 public class TasksFactory {
 
@@ -41,6 +44,11 @@ public class TasksFactory {
 	@Value("${server.servlet.context-path}")
 	private String serverPath;
 
+	/**
+	 * Converts record basing on it state to proper task
+	 * @param record record to convert
+	 * @return Task
+	 */
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
@@ -61,6 +69,10 @@ public class TasksFactory {
 		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas);
 	}
 
+	/**
+	 * Sets task queue service used later on during record -> task conversion
+	 * @param tasksQueueService task queue service tos set
+	 */
 	public void setTasksQueueService(TasksQueueService tasksQueueService) {
 		this.tqs = tasksQueueService;
 	}

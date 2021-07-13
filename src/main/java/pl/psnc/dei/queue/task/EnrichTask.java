@@ -15,6 +15,10 @@ import pl.psnc.dei.util.TranscriptionConverter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Enrich task is responsible for adding new transcriptions to existing records
+ * Adding transcription to records having transcription will drop new data
+ */
 public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
@@ -43,8 +47,12 @@ public class EnrichTask extends Task {
 		}
 	}
 
+	/**
+	 * Fetch transcription from transcription platform and save them to record and transcription entity
+	 */
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
+		// fetch transcription from TP
 		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
 			try {
 				Transcription transcription = new Transcription();
@@ -61,12 +69,15 @@ public class EnrichTask extends Task {
 				logger.error("Transcription was corrupted: " + val.toString());
 			}
 		}
+		// add transcription to record
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
 			queueRecordService.saveRecord(record);
+			// transcriptions that has no transcription id
 			fillQueue();
 		} else {
+			// if record has transcription add context to it
 			logger.info("Record already has transcriptions. Processing not annotated.");
 			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions) {
@@ -77,6 +88,9 @@ public class EnrichTask extends Task {
 		}
 	}
 
+	/**
+	 * Filter records to check if some of them miss their annotations
+	 */
 	private void fillQueue() {
 		notAnnotatedTranscriptions
 				.addAll(record.getTranscriptions().stream()
@@ -84,6 +98,9 @@ public class EnrichTask extends Task {
 						.collect(Collectors.toList()));
 	}
 
+	/**
+	 * Fetches annotations id to transcriptions missing it
+	 */
 	private void handleTranscriptions() {
 		while (!notAnnotatedTranscriptions.isEmpty()) {
 			Transcription transcription = notAnnotatedTranscriptions.peek();
