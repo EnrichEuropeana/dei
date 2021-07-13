@@ -133,6 +133,15 @@ public class Converter {
 							FileUtils.deleteQuietly(srcDir);
 						}
 					});
+			ContextUtils.executeIf(this.context.isHasConverterSavedFiles(),
+					() -> {
+						try {
+							this.conversionDataHolder = this.context.getConversionDataHolder();
+						} catch (ConversionImpossibleException e) {
+							this.persistableExceptionService.save(e, this.context);
+							return;
+						}
+					});
 			ContextUtils.executeIf(!this.context.isHasConverterConvertedToIIIF(),
 					() -> {
 						try {
