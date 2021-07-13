@@ -1,5 +1,7 @@
 package pl.psnc.dei.model.conversion;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import pl.psnc.dei.iiif.ConversionDataHolder;
 import pl.psnc.dei.iiif.ConversionDataHolderTransformer;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
@@ -26,6 +28,7 @@ public class ConversionTaskContext extends Context{
     // CONVERTER STATE STORAGE
     private boolean hasConverterSavedFiles;
     private boolean hasConverterConvertedToIIIF;
+    private boolean hasConverterCreatedDataHolder;
 
     // PROCESSING DATA STORAGE
     @Column(columnDefinition = "LONGTEXT")
@@ -34,11 +37,15 @@ public class ConversionTaskContext extends Context{
     private String recordJson;
     private Exception exception;
 
-    @OneToMany
+    @OneToMany(mappedBy = "conversionTaskContext", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
     private List<ConversionData> conversionDataHolder;
 
     @Transient
     private final ConversionDataHolderTransformer conversionDataHolderTransformer = new ConversionDataHolderTransformer();
+
+    public ConversionTaskContext() {
+    }
 
 
     public static ConversionTaskContext from(Record record){
@@ -53,6 +60,7 @@ public class ConversionTaskContext extends Context{
         context.setHasAddedFailure(false);
         context.setHasConverterConvertedToIIIF(false);
         context.setHasConverterSavedFiles(false);
+        context.setHasConverterCreatedDataHolder(false);
         context.conversionDataHolder = new ArrayList<>();
         return context;
     }
@@ -63,6 +71,9 @@ public class ConversionTaskContext extends Context{
 
     public void setConversionDataHolder(@NotNull ConversionDataHolder conversionDataHolder) {
         this.conversionDataHolder = this.conversionDataHolderTransformer.toDBModel(conversionDataHolder);
+        this.conversionDataHolder.forEach(
+                el -> el.setConversionTaskContext(this)
+        );
     }
 
     public boolean isHasConverterSavedFiles() {
@@ -131,5 +142,13 @@ public class ConversionTaskContext extends Context{
 
     public List<ConversionData> getRawConversionData() {
         return conversionDataHolder;
+    }
+
+    public boolean isHasConverterCreatedDataHolder() {
+        return hasConverterCreatedDataHolder;
+    }
+
+    public void setHasConverterCreatedDataHolder(boolean hasConverterCreatedDataHolder) {
+        this.hasConverterCreatedDataHolder = hasConverterCreatedDataHolder;
     }
 }

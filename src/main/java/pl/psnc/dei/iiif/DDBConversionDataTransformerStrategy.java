@@ -29,6 +29,7 @@ public class DDBConversionDataTransformerStrategy extends ConversionDataTransfor
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
                     ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
+                    a.id = el.getId();
                     a.dimensions = el.getDimension();
                     a.imagePath = el.getImagePath();
                     a.json = JSON.parse(el.getJson());
@@ -54,12 +55,14 @@ public class DDBConversionDataTransformerStrategy extends ConversionDataTransfor
         return conversionData.stream()
                 .map(el -> {
                     ConversionData a = new ConversionData();
+                    a.setId(el.id);
                     a.setImagePath(el.imagePath);
                     a.setJson(el.json.toString());
                     a.setMediaType(el.mediaType);
                     a.setSrcFilePath(el.srcFile.getAbsolutePath());
                     a.setSrcFileUrl(el.srcFileUrl.toString());
                     a.setOutFilePath(el.outFile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
+                    a.setDimension(el.dimensions);
                     return a;
                 }).collect(Collectors.toList());
     }

@@ -27,6 +27,9 @@ public class ConversionData {
     @ElementCollection
     private List<Dimension> dimension;
 
+    @ManyToOne
+    private ConversionTaskContext conversionTaskContext;
+
     // new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 
     public static ConversionData from(Record record) {
@@ -95,5 +98,21 @@ public class ConversionData {
 
     public void setSrcFilePath(String srcFilePath) {
         this.srcFilePath = srcFilePath;
+    }
+
+    public ConversionTaskContext getConversionTaskContext() {
+        return conversionTaskContext;
+    }
+
+    public void setConversionTaskContext(ConversionTaskContext conversionDataHolder) {
+        this.conversionTaskContext = conversionDataHolder;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 }

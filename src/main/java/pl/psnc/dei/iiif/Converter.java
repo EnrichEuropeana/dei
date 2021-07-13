@@ -14,12 +14,14 @@ import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import pl.psnc.dei.service.PersistableExceptionService;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 
 import javax.annotation.PostConstruct;
+import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -63,6 +65,9 @@ public class Converter {
 	@Autowired
 	private PersistableExceptionService persistableExceptionService;
 
+	@Autowired
+	private ConversionDataHolderTransformer conversionDataHolderTransformer;
+
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
@@ -101,7 +106,6 @@ public class Converter {
 	}
 
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
-		this.context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.record = record;
 		String imagePath = record.getProject().getProjectId() + "/"
 				+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
@@ -115,66 +119,33 @@ public class Converter {
 		outDir.mkdirs();
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
-		try {
+		this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
+		saveFilesInTempDirectory(conversionDataHolder);
+		this.context.setConversionDataHolder(this.conversionDataHolder);
+		this.context.setHasConverterSavedFiles(true);
+		this.contextMediator.save(this.context);
+		this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		this.conversionDataHolder = this.context.getConversionDataHolder();
 
-			ContextUtils.executeIf(!this.context.isHasConverterSavedFiles(),
-					() -> {
-						try {
-							this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
-							saveFilesInTempDirectory(conversionDataHolder);
-							this.context.setConversionDataHolder(this.conversionDataHolder);
-							this.context.setHasConverterSavedFiles(true);
-							this.contextMediator.save(this.context);
-						} catch (ConversionException e) {
-							this.persistableExceptionService.save(e, this.context);
-							FileUtils.deleteQuietly(outDir);
-							return;
-						} finally {
-							FileUtils.deleteQuietly(srcDir);
-						}
-					});
-			ContextUtils.executeIf(this.context.isHasConverterSavedFiles(),
-					() -> {
-						try {
-							this.conversionDataHolder = this.context.getConversionDataHolder();
-						} catch (ConversionImpossibleException e) {
-							this.persistableExceptionService.save(e, this.context);
-							return;
-						}
-					});
-			ContextUtils.executeIf(!this.context.isHasConverterConvertedToIIIF(),
-					() -> {
-						try {
-							convertAllFiles(conversionDataHolder);
-							this.context.setConversionDataHolder(this.conversionDataHolder);
-							this.context.setHasConverterConvertedToIIIF(true);
-							this.contextMediator.save(this.context);
-						} catch (ConversionException | IOException | InterruptedException e) {
-							this.persistableExceptionService.save(e, this.context);
-							FileUtils.deleteQuietly(outDir);
-							return;
-						} finally {
-							FileUtils.deleteQuietly(srcDir);
-						}
-					});
-
-
-			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
-					.filter(e -> e.outFile != null && !e.outFile.isEmpty())
-					.collect(Collectors.toList());
-
-			record.setIiifManifest(getManifest(convertedFiles).toString());
-			record.setState(Record.RecordState.T_PENDING);
-			recordsRepository.save(record);
-		} catch (Exception e) {
-			FileUtils.deleteQuietly(outDir);
-			throw e;
-		} finally {
-			FileUtils.deleteQuietly(srcDir);
+		if (!this.context.isHasConverterConvertedToIIIF()) {
+			convertAllFiles(conversionDataHolder);
+			this.context.setConversionDataHolder(this.conversionDataHolder);
+			this.context.setHasConverterConvertedToIIIF(true);
+			this.contextMediator.save(this.context);
 		}
+		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
+				.collect(Collectors.toList());
+		record.setIiifManifest(getManifest(convertedFiles).toString());
+		record.setState(Record.RecordState.T_PENDING);
+		recordsRepository.save(record);
 	}
 
 	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(record);
+		if (context.isHasConverterCreatedDataHolder()) {
+			return context.getConversionDataHolder();
+		}
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
@@ -187,7 +158,9 @@ public class Converter {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				EuropeanaConversionDataHolder conversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				List<ConversionData> conversionData = this.conversionDataHolderTransformer.toDBModel(conversionDataHolder);
+
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");

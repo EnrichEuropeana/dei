@@ -31,6 +31,7 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
                     EuropeanaConversionDataHolder.ConversionData a = new EuropeanaConversionDataHolder.ConversionData();
+                    a.id = el.getId();
                     a.dimensions = el.getDimension();
                     a.imagePath = el.getImagePath();
                     a.json = JSON.parse(el.getJson());
@@ -69,12 +70,14 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         return conversionData.stream()
                 .map(el -> {
                     ConversionData a = new ConversionData();
+                    a.setId(el.id);
                     a.setImagePath(el.imagePath);
                     a.setJson(el.json.toString());
                     a.setMediaType(el.mediaType);
                     a.setSrcFilePath(el.srcFile.getAbsolutePath());
                     a.setSrcFileUrl(el.srcFileUrl.toString());
                     a.setOutFilePath(el.outFile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
+                    a.setDimension(el.dimensions);
                     return a;
                 }).collect(Collectors.toList());
     }
