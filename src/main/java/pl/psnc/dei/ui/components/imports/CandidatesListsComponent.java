@@ -1,6 +1,7 @@
 package pl.psnc.dei.ui.components.imports;
 
 import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -18,6 +19,7 @@ import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.ui.components.CommonComponentsFactory;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -112,10 +114,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 	}
 
 	private Select<Aggregator> aggregatorSelector(){
-		aggregators = new Select<>();
-		ListDataProvider<Aggregator> aggregatorsDataProvider = new ListDataProvider<>(Arrays.stream(Aggregator.values()).filter(e -> !e.equals(Aggregator.UNKNOWN)).collect(Collectors.toList()));
-		aggregators.setDataProvider(aggregatorsDataProvider);
-		aggregators.setLabel("Select aggregator");
+		aggregators = CommonComponentsFactory.getAggregatorSelector();
 		aggregators.addValueChangeListener(event -> {
 			aggregator = event.getValue();
 			projects.setReadOnly(false);
@@ -125,10 +124,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 	}
 
 	private Select<Project> projectSelector(){
-		projects = new Select<>();
-		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projects.setDataProvider(listDataProvider);
-		projects.setLabel("Select project");
+		projects = CommonComponentsFactory.getProjectSelector(projectsRepository);
 		projects.setReadOnly(true);
 		projects.addValueChangeListener(event -> {
 			project = event.getValue();
