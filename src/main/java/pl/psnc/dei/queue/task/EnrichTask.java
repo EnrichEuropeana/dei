@@ -84,7 +84,9 @@ public class EnrichTask extends Task {
 							logger.error("Transcription was corrupted: " + val.toString());
 						}
 					}
-
+					this.queueRecordService.saveTranscriptions(transcriptions.values());
+					this.context.setHasDownloadedEnrichment(true);
+					this.contextMediator.save(this.context);
 		});
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
