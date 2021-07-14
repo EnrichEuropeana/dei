@@ -134,7 +134,6 @@ public class EnrichTask extends Task {
 			Transcription t = it.next();
 			tps.sendAnnotationUrl(t);
 			it.remove();
-			queueRecordService.saveRecord(record);
 		}
 		record.setState(Record.RecordState.NORMAL);
 		queueRecordService.saveRecord(record);
