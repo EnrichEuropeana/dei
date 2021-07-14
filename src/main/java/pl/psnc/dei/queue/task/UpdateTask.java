@@ -6,9 +6,12 @@ import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.conversion.UpdateTaskContext;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.util.Arrays;
@@ -24,11 +27,16 @@ public class UpdateTask extends Task {
 	 */
 	private List<Transcription> transcriptions;
 
+	private ContextMediator contextMediator;
+
+	private UpdateTaskContext context;
+
 	UpdateTask(Record record, QueueRecordService queueRecordService,
-			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		// Fired only for crash recovery
 		super(record, queueRecordService, tps, ess, eas);
-
+		this.contextMediator = contextMediator;
+		this.context = (UpdateTaskContext) contextMediator.get(record);
 		// TODO: transcription should be fetched from context
 		if (record.getTranscriptions().isEmpty()) {
 			try {
@@ -42,20 +50,28 @@ public class UpdateTask extends Task {
 		}
 		transcriptions = record.getTranscriptions();
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
+		ContextUtils.executeIfPresent(this.context.getTaskState(),
+				() -> {
+					this.state = this.context.getTaskState();
+				});
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) throws NotFoundException {
 		// fired for normal execution
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
+		this.contextMediator = contextMediator;
+		this.context = (UpdateTaskContext) this.contextMediator.get(record);
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
-
 		transcriptions = Arrays.asList(newTranscription);
-
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
+		ContextUtils.executeIfPresent(this.context.getTaskState(),
+				() -> {
+					this.state = this.context.getTaskState();
+				});
 	}
 
 	@Override
@@ -67,13 +83,14 @@ public class UpdateTask extends Task {
 					t.setTranscriptionContent(tContent);
 				}
 				state = TaskState.U_HANDLE_TRANSCRIPTION;
+				this.context.setTaskState(this.state);
+				this.contextMediator.save(this.context);
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
 					eas.updateTranscription(t);
 					record.getTranscriptions().remove(t);
 					queueRecordService.saveRecord(record);
 				}
-
 				if (record.getTranscriptions().isEmpty()) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
@@ -81,6 +98,8 @@ public class UpdateTask extends Task {
 //						Actually, this is not possible
 					}
 				}
+				this.context.setTaskState(this.state);
+				this.contextMediator.save(this.context);
 		}
 	}
 }

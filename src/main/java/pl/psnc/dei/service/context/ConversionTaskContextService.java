@@ -50,4 +50,9 @@ public class ConversionTaskContextService extends ContextService<ConversionTaskC
     public Boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.C_PENDING);
     }
+
+    @Override
+    public Boolean canHandle(Class<?> aClass) {
+        return aClass.isAssignableFrom(ConversionTaskContext.class);
+    }
 }

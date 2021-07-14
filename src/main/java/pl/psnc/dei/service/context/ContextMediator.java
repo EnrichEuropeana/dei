@@ -54,7 +54,7 @@ public class ContextMediator {
 
     public <T> void delete(Context context, Class<T> contextClass) {
         for (ContextService contextService : this.contextServiceList) {
-            if (contextService.getClass().isAssignableFrom(contextClass)) {
+            if (contextService.canHandle(contextClass)) {
                 contextService.delete(context);
             }
         }

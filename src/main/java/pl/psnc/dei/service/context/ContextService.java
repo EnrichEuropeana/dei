@@ -7,4 +7,5 @@ public abstract class ContextService<T> {
     public abstract T save (T context);
     public abstract void delete(T context);
     public abstract Boolean canHandle(Record record);
+    public abstract Boolean canHandle(Class<?> aClass);
 }

@@ -12,6 +12,7 @@ import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
+import pl.psnc.dei.service.context.EnrichTaskContextService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -53,7 +54,7 @@ public class EnrichTask extends Task {
 				logger.info("Task state: E_SEND_ANNOTATION_IDS_TO_TP");
 				sendAnnotationIdsAndFinalizeTask();
 		}
-		this.contextMediator.delete(this.context);
+		this.contextMediator.delete(this.context, EnrichTaskContext.class);
 	}
 
 	private void getTranscriptionsFromTp() {

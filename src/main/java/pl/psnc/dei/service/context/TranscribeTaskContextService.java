@@ -39,4 +39,9 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
     public Boolean canHandle(Record record) {
         return Arrays.asList(Record.RecordState.T_PENDING, Record.RecordState.T_SENT).contains(record.getState());
     }
+
+    @Override
+    public Boolean canHandle(Class<?> aClass) {
+        return aClass.isAssignableFrom(TranscribeTaskContext.class);
+    }
 }
