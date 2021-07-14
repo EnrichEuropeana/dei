@@ -17,7 +17,6 @@ public class Transcription {
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Record record;
 
-	@Transient
 	private JsonObject transcriptionContent;
 
 	private String annotationId;

@@ -57,7 +57,7 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas);
+				return new EnrichTask(record, qrs, tps, ess, eas, contextMediator);
 			case T_PENDING:
 				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator, persistableExceptionService);
 			case U_PENDING:

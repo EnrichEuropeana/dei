@@ -46,7 +46,6 @@ public class EnrichTask extends Task {
 			case E_GET_TRANSCRIPTIONS_FROM_TP:
 				logger.info("Task state: E_GET_TRANSCRIPTIONS_FROM_TP");
 				getTranscriptionsFromTp();
-				state = TaskState.E_HANDLE_TRANSCRIPTIONS;
 			case E_HANDLE_TRANSCRIPTIONS:
 				logger.info("Task state: E_HANDLE_TRANSCRIPTIONS");
 				handleTranscriptions();
@@ -66,7 +65,7 @@ public class EnrichTask extends Task {
 							}
 					);
 		}
-		ContextUtils.executeIf(this.context.isHasDownloadedEnrichment(),
+		ContextUtils.executeIf(!this.context.isHasDownloadedEnrichment(),
 				() -> {
 					for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
 						try {
@@ -86,6 +85,7 @@ public class EnrichTask extends Task {
 					}
 					this.queueRecordService.saveTranscriptions(transcriptions.values());
 					this.context.setHasDownloadedEnrichment(true);
+					this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
 					this.contextMediator.save(this.context);
 		});
 		if (record.getTranscriptions().isEmpty()) {
@@ -102,6 +102,9 @@ public class EnrichTask extends Task {
 					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
 			}
 		}
+		state = TaskState.E_HANDLE_TRANSCRIPTIONS;
+		this.context.setTaskState(this.state);
+		this.contextMediator.save(this.context);
 	}
 
 	private void fillQueue() {
@@ -127,6 +130,7 @@ public class EnrichTask extends Task {
 			Transcription t = it.next();
 			tps.sendAnnotationUrl(t);
 			it.remove();
+			queueRecordService.saveRecord(record);
 		}
 		record.setState(Record.RecordState.NORMAL);
 		queueRecordService.saveRecord(record);
