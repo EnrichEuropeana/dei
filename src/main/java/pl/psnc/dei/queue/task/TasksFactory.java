@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.Converter;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
@@ -44,6 +45,9 @@ public class TasksFactory {
 	@Autowired
 	private PersistableExceptionService persistableExceptionService;
 
+	@Autowired
+	private RecordsRepository recordsRepository;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -59,7 +63,7 @@ public class TasksFactory {
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, persistableExceptionService, contextMediator);
+				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, persistableExceptionService, contextMediator, recordsRepository);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");

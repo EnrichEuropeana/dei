@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
@@ -21,7 +22,6 @@ import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 
 import javax.annotation.PostConstruct;
-import javax.transaction.Transactional;
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -124,12 +124,13 @@ public class Converter {
 		this.conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
 		this.conversionDataHolder =	convertAllFiles(conversionDataHolder);
 
-		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
-				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
-				.collect(Collectors.toList());
-		record.setIiifManifest(getManifest(convertedFiles).toString());
-		record.setState(Record.RecordState.T_PENDING);
-		recordsRepository.save(record);
+		throw new InterruptedException("Conversion exception test exception");
+
+//		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+//				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
+//				.collect(Collectors.toList());
+//		record.setIiifManifest(getManifest(convertedFiles).toString());
+//		recordsRepository.save(record);
 	}
 
 	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {

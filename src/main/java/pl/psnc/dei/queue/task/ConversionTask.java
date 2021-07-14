@@ -11,6 +11,7 @@ import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.ConversionContextRepository;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import pl.psnc.dei.service.*;
@@ -45,10 +46,13 @@ public class ConversionTask extends Task {
 
 	private ConversionTaskContext context;
 
+	private RecordsRepository recordsRepository;
+
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, ContextMediator contextMediator) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, ContextMediator contextMediator, RecordsRepository recordsRepository) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.persistableExceptionService = persistableExceptionService;
+		this.recordsRepository = recordsRepository;
 		this.contextMediator = contextMediator;
 		this.context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.tqs = tqs;
@@ -140,7 +144,7 @@ public class ConversionTask extends Task {
 											this.persistableExceptionService.save(e, this.context);
 											this.contextMediator.save(context);
 										});
-								ContextUtils.executeIf(this.context.isHasAddedFailure(),
+								ContextUtils.executeIf(!this.context.isHasAddedFailure(),
 										() -> {
 											try {
 
@@ -164,7 +168,8 @@ public class ConversionTask extends Task {
 							exception.printStackTrace();
 						}
 					});
-			this.contextMediator.delete(this.context);
+			record.setState(Record.RecordState.T_PENDING);
+			this.recordsRepository.save(record);
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
 	}
 }
