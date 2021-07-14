@@ -13,6 +13,7 @@ import pl.psnc.dei.model.Transcription;
 
 import javax.transaction.Transactional;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -60,6 +61,10 @@ public class QueueRecordService {
 
 	public void saveTranscription(Transcription transcription) {
 		transcriptionRepository.save(transcription);
+	}
+
+	public void saveTranscriptions(Collection<Transcription> transcriptions) {
+		this.transcriptionRepository.saveAll(transcriptions);
 	}
 
 	public void fillRecordJsonData(Record record, JsonObject json, JsonObject jsonRaw) {

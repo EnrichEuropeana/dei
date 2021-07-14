@@ -6,9 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.conversion.EnrichTaskContext;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -19,11 +22,22 @@ public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
 
+	private EnrichTaskContext context;
+
+	private ContextMediator contextMediator;
+
 	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.contextMediator = contextMediator;
+		this.context = (EnrichTaskContext) this.contextMediator.get(record);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
+		ContextUtils.executeIfPresent(this.context.getTaskState(),
+				() -> {
+					this.state = this.context.getTaskState();
+		});
+
 	}
 
 	@Override
@@ -45,22 +59,33 @@ public class EnrichTask extends Task {
 
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
-		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
-			try {
-				Transcription transcription = new Transcription();
-				transcription.setRecord(record);
-				transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
-				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
-				JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-				if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-					transcription.setAnnotationId(europeanaAnnotationId.toString());
-				}
-				transcriptions.put(transcription.getTp_id(), transcription);
-				queueRecordService.saveTranscription(transcription);
-			} catch (IllegalArgumentException e) {
-				logger.error("Transcription was corrupted: " + val.toString());
-			}
+		if(this.context.isHasDownloadedEnrichment()) {
+					this.context.getSavedTranscriptions().forEach(
+							el -> {
+								transcriptions.put(el.getAnnotationId(), el);
+							}
+					);
 		}
+		ContextUtils.executeIf(this.context.isHasDownloadedEnrichment(),
+				() -> {
+					for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
+						try {
+							Transcription transcription = new Transcription();
+							transcription.setRecord(record);
+							transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
+							transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+							JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
+							if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+								transcription.setAnnotationId(europeanaAnnotationId.toString());
+							}
+							transcriptions.put(transcription.getTp_id(), transcription);
+							// queueRecordService.saveTranscription(transcription);
+						} catch (IllegalArgumentException e) {
+							logger.error("Transcription was corrupted: " + val.toString());
+						}
+					}
+
+		});
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
