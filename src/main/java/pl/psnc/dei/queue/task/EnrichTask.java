@@ -49,11 +49,11 @@ public class EnrichTask extends Task {
 			case E_HANDLE_TRANSCRIPTIONS:
 				logger.info("Task state: E_HANDLE_TRANSCRIPTIONS");
 				handleTranscriptions();
-				state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
 			case E_SEND_ANNOTATION_IDS_TO_TP:
 				logger.info("Task state: E_SEND_ANNOTATION_IDS_TO_TP");
 				sendAnnotationIdsAndFinalizeTask();
 		}
+		this.contextMediator.delete(this.context);
 	}
 
 	private void getTranscriptionsFromTp() {
@@ -83,7 +83,8 @@ public class EnrichTask extends Task {
 							logger.error("Transcription was corrupted: " + val.toString());
 						}
 					}
-					this.queueRecordService.saveTranscriptions(transcriptions.values());
+					System.out.println("aaa");
+					this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
 					this.context.setHasDownloadedEnrichment(true);
 					this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
 					this.contextMediator.save(this.context);
@@ -122,6 +123,9 @@ public class EnrichTask extends Task {
 			queueRecordService.saveTranscription(transcription);
 			notAnnotatedTranscriptions.remove(transcription);
 		}
+		state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
+		this.context.setTaskState(this.state);
+		this.contextMediator.save(this.context);
 	}
 
 	private void sendAnnotationIdsAndFinalizeTask() {

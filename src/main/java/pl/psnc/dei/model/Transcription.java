@@ -2,6 +2,7 @@ package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.model.converter.JsonObjectToStringConverter;
 
 import javax.persistence.*;
 
@@ -10,13 +11,15 @@ public class Transcription {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	private Long id;
 
 	private String tp_id;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Record record;
 
+	@Convert(converter = JsonObjectToStringConverter.class)
+	@Column(columnDefinition = "LONGTEXT")
 	private JsonObject transcriptionContent;
 
 	private String annotationId;
@@ -62,4 +65,12 @@ public class Transcription {
 	public void setTranscriptionContent(JsonObject transcriptionContent) {
 		this.transcriptionContent = transcriptionContent;
 	}
+//
+//	public Long getId() {
+//		return id;
+//	}
+//
+//	public void setId(Long id) {
+//		this.id = id;
+//	}
 }

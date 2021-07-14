@@ -7,14 +7,14 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
 @Converter
-public class JsonObjectToStringConverter implements AttributeConverter<String, JsonObject> {
+public class JsonObjectToStringConverter implements AttributeConverter<JsonObject, String> {
     @Override
-    public JsonObject convertToDatabaseColumn(String s) {
-        return JSON.parse(s);
+    public String convertToDatabaseColumn(JsonObject jsonObject) {
+        return jsonObject.toString();
     }
 
     @Override
-    public String convertToEntityAttribute(JsonObject jsonObject) {
-        return jsonObject.toString();
+    public JsonObject convertToEntityAttribute(String s) {
+        return JSON.parse(s);
     }
 }
