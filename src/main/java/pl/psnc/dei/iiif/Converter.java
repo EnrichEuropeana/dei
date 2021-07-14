@@ -120,23 +120,24 @@ public class Converter {
 		outDir.mkdirs();
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
-		this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
+		this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw, true);
 		this.conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
 		this.conversionDataHolder =	convertAllFiles(conversionDataHolder);
 
-		throw new InterruptedException("Conversion exception test exception");
-
-//		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
-//				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
-//				.collect(Collectors.toList());
-//		record.setIiifManifest(getManifest(convertedFiles).toString());
-//		recordsRepository.save(record);
+		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
+				.collect(Collectors.toList());
+		record.setIiifManifest(getManifest(convertedFiles).toString());
+		recordsRepository.save(record);
 	}
 
-	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
-		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(record);
-		if (context.isHasConverterCreatedDataHolder()) {
-			return context.getConversionDataHolder();
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw, Boolean isRecoverable) throws ConversionImpossibleException {
+		ConversionTaskContext context = null;
+		if (isRecoverable) {
+			context = (ConversionTaskContext) this.contextMediator.get(record);
+			if (context.isHasConverterCreatedDataHolder()) {
+				return context.getConversionDataHolder();
+			}
 		}
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
@@ -151,17 +152,27 @@ public class Converter {
 				}
 
 				EuropeanaConversionDataHolder EconversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
-				context.setHasConverterCreatedDataHolder(true);
-				this.contextMediator.save(context);
-				return this.conversionDataHolderService.save(EconversionDataHolder, context);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					return this.conversionDataHolderService.save(EconversionDataHolder, context);
+				}
+				else {
+					return EconversionDataHolder;
+				}
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 				DDBConversionDataHolder DconversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
-				context.setHasConverterCreatedDataHolder(true);
-				this.contextMediator.save(context);
-				return this.conversionDataHolderService.save(DconversionDataHolder, context);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					return this.conversionDataHolderService.save(DconversionDataHolder, context);
+				}
+				else {
+					return DconversionDataHolder;
+				}
 			default:
 				throw new IllegalStateException("Unsupported aggregator");
 		}
@@ -402,7 +413,7 @@ public class Converter {
 
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
-			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);
+			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw, false);
 			conversionData.initFileUrls(record.getIdentifier());
 			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().toLowerCase().endsWith("pdf"))
 				return;

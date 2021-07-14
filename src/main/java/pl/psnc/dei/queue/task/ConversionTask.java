@@ -100,76 +100,83 @@ public class ConversionTask extends Task {
 
 	@Override
 	public void process() throws Exception {
-			ContextUtils.executeIf(!this.context.isHasConverted(),
-					() -> {
+		ContextUtils.executeIf(this.context.isHasConverted(),
+				() -> {
+					record.setState(Record.RecordState.T_PENDING);
+					this.recordsRepository.save(record);
+					tqs.addTaskToQueue(tasksFactory.getTask(record));
+				});
+		ContextUtils.executeIf(!this.context.isHasConverted(),
+				() -> {
+					try {
+						this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(ConversionImpossibleException.class, NotFoundException.class, ConversionException.class, InterruptedException.class), this.context);
+						converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
+						this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
+						this.context.setHasConverted(true);
+						record.setState(Record.RecordState.T_PENDING);
+						this.recordsRepository.save(record);
+						this.contextMediator.save(this.context);
+						tqs.addTaskToQueue(tasksFactory.getTask(record));
+						this.contextMediator.delete(this.context);
+					} catch (ConversionImpossibleException e) {
+						logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
 						try {
-							this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(ConversionImpossibleException.class, NotFoundException.class, ConversionException.class, InterruptedException.class), this.context);
-							converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
-							this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
-							this.context.setHasConverted(true);
-							this.contextMediator.save(this.context);
-						} catch (ConversionImpossibleException e) {
-							logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);
-							try {
-								ContextUtils.executeIf(!this.context.isHasThrownException(),
-										() -> {
-											this.context.setHasThrownException(true);
-											this.persistableExceptionService.save(e, this.context);
-											this.contextMediator.save(context);
-										});
-								ContextUtils.executeIf(!this.context.isHasAddedFailure(),
-										() -> {
-											try {
-												tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
-												this.context.setHasAddedFailure(true);
-												this.contextMediator.save(this.context);
-											} catch (NotFoundException notFoundException) {
-												throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-														+ ", identifier: " + record.getIdentifier(), e);
-											}
-										});
-								this.contextMediator.delete(this.context);
-								queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-								tps.updateImportState(record.getAnImport());
-							} catch (NotFoundException ex) {
-								throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-										+ ", identifier: " + record.getIdentifier(), e);
-							}
-						} catch (ConversionException | InterruptedException | IOException e) {
-							logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
-							try {
-								ContextUtils.executeIf(!this.context.isHasThrownException(),
-										() -> {
-											this.context.setHasThrownException(true);
-											this.persistableExceptionService.save(e, this.context);
-											this.contextMediator.save(context);
-										});
-								ContextUtils.executeIf(!this.context.isHasAddedFailure(),
-										() -> {
-											try {
-
-												tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
-												this.context.setHasAddedFailure(true);
-												this.contextMediator.save(this.context);
-											} catch (NotFoundException notFoundException) {
-												throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-														+ ", identifier: " + record.getIdentifier(), e);
-											}
-										});
-								this.contextMediator.delete(this.context);
-								queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-								tps.updateImportState(record.getAnImport());
-
-							} catch (NotFoundException ex) {
-								throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-										+ ", identifier: " + record.getIdentifier(), e);
-							}
-						} catch (Exception exception) {
-							exception.printStackTrace();
+							ContextUtils.executeIf(!this.context.isHasThrownException(),
+									() -> {
+										this.context.setHasThrownException(true);
+										this.persistableExceptionService.save(e, this.context);
+										this.contextMediator.save(context);
+									});
+							ContextUtils.executeIf(!this.context.isHasAddedFailure(),
+									() -> {
+										try {
+											tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+											this.context.setHasAddedFailure(true);
+											this.contextMediator.save(this.context);
+										} catch (NotFoundException notFoundException) {
+											throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+													+ ", identifier: " + record.getIdentifier(), e);
+										}
+									});
+							this.contextMediator.delete(this.context);
+							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+							tps.updateImportState(record.getAnImport());
+						} catch (NotFoundException ex) {
+							throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+									+ ", identifier: " + record.getIdentifier(), e);
 						}
-					});
-			record.setState(Record.RecordState.T_PENDING);
-			this.recordsRepository.save(record);
-			tqs.addTaskToQueue(tasksFactory.getTask(record));
+					} catch (ConversionException | InterruptedException | IOException e) {
+						logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
+						try {
+							ContextUtils.executeIf(!this.context.isHasThrownException(),
+									() -> {
+										this.context.setHasThrownException(true);
+										this.persistableExceptionService.save(e, this.context);
+										this.contextMediator.save(context);
+									});
+							ContextUtils.executeIf(!this.context.isHasAddedFailure(),
+									() -> {
+										try {
+
+											tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+											this.context.setHasAddedFailure(true);
+											this.contextMediator.save(this.context);
+										} catch (NotFoundException notFoundException) {
+											throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+													+ ", identifier: " + record.getIdentifier(), e);
+										}
+									});
+							this.contextMediator.delete(this.context);
+							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+							tps.updateImportState(record.getAnImport());
+
+						} catch (NotFoundException ex) {
+							throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+									+ ", identifier: " + record.getIdentifier(), e);
+						}
+					} catch (Exception exception) {
+						exception.printStackTrace();
+					}
+				});
 	}
 }

@@ -5,6 +5,7 @@ import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 
@@ -36,6 +37,6 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
 
     @Override
     public Boolean canHandle(Record record) {
-        return record.getState().equals(Record.RecordState.T_PENDING);
+        return Arrays.asList(Record.RecordState.T_PENDING, Record.RecordState.T_SENT).contains(record.getState());
     }
 }

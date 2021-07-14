@@ -87,6 +87,7 @@ public class TranscribeTask extends Task {
 					this.contextMediator.save(this.transcribeTaskContext);
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
+						this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
 						state = T_SEND_RESULT;
@@ -123,6 +124,7 @@ public class TranscribeTask extends Task {
 							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					tps.updateImportState(record.getAnImport());
+					this.transcribeTaskContext.setRecord(record);
 					this.contextMediator.delete(this.transcribeTaskContext);
 				} catch (TranscriptionPlatformException e) {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),

@@ -36,7 +36,8 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
                     a.imagePath = el.getImagePath();
                     a.json = JSON.parse(el.getJson());
                     a.mediaType = el.getMediaType();
-                    a.srcFile = new File(el.getSrcFilePath());
+                    a.srcFile =
+                            el.getSrcFilePath() == null ? null : new File(el.getSrcFilePath());
                     try {
                         a.srcFileUrl = new URL(el.getSrcFileUrl());
                     } catch (MalformedURLException e) {
@@ -75,7 +76,9 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
                     a.setJson(el.json.toString());
                     a.setMediaType(el.mediaType);
                     a.setSrcFilePath(el.srcFile.getAbsolutePath());
-                    a.setSrcFileUrl(el.srcFileUrl.toString());
+                    a.setSrcFilePath(
+                            el.srcFile == null ? null : el.srcFile.getAbsolutePath()
+                    );
                     a.setOutFilePath(el.outFile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
                     a.setDimension(el.dimensions);
                     return a;
