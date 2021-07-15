@@ -39,7 +39,7 @@ public class UpdateTask extends Task {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) contextMediator.get(record);
-		// TODO: transcription should be fetched from context
+		this.queueRecordService = queueRecordService;
 		if (record.getTranscriptions().isEmpty()) {
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
@@ -64,6 +64,7 @@ public class UpdateTask extends Task {
 					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) throws NotFoundException {
 		// fired for normal execution
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
+		this.queueRecordService = queueRecordService;
 		Record record = this.queueRecordService.getRecord(recordIdentifier);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
@@ -71,6 +72,9 @@ public class UpdateTask extends Task {
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
 		transcriptions = Arrays.asList(newTranscription);
+		// state should be changed here and only here
+		// moving it earlier could possibly leave us, in case of crash, with task that have no new records, then
+		// there is no point for further processing
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
