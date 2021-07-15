@@ -15,7 +15,7 @@ import java.util.function.Consumer;
 public class BatchNavigationMenu extends VerticalLayout {
 
     private BatchPage batchPage;
-    List<Button> elements = new ArrayList<>();
+    private List<Button> elements = new ArrayList<>();
 
     public BatchNavigationMenu(BatchPage batchPage) {
         this.batchPage = batchPage;
