@@ -30,7 +30,7 @@ public class TasksFactory {
 	private EuropeanaAnnotationsService eas;
 
 	@Autowired
-	private ContextMediator contextMediator;
+	private ContextMediator ctxm;
 
 	@Autowired
 	private DDBFormatResolver ddbfr;
@@ -43,7 +43,7 @@ public class TasksFactory {
 	private Converter converter;
 
 	@Autowired
-	private PersistableExceptionService persistableExceptionService;
+	private PersistableExceptionService pes;
 
 	@Autowired
 	private RecordsRepository recordsRepository;
@@ -57,13 +57,13 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas, contextMediator);
+				return new EnrichTask(record, qrs, tps, ess, eas, ctxm);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator, persistableExceptionService);
+				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes);
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ess, eas, contextMediator);
+				return new UpdateTask(record, qrs, tps, ess, eas, ctxm);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, persistableExceptionService, contextMediator, recordsRepository);
+				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, pes, ctxm, recordsRepository);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
@@ -71,7 +71,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, contextMediator);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ctxm);
 	}
 
 	public void setTasksQueueService(TasksQueueService tasksQueueService) {
