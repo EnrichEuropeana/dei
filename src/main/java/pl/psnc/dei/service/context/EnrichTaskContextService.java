@@ -24,6 +24,8 @@ public class EnrichTaskContextService extends ContextService<EnrichTaskContext> 
     @Transactional
     public EnrichTaskContext get(Record record) {
         Optional<EnrichTaskContext> context = this.enrichTaskContextRepository.findByRecord(record);
+        // initialization needed cuz further use of this collection will happen outside transaction,
+        // and there is no way to annotate method / class as Transactional
         if (context.isPresent()) {
             EnrichTaskContext enrichTaskContext = context.get();
             Hibernate.initialize(enrichTaskContext.getSavedTranscriptions());
