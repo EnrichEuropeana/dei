@@ -30,15 +30,15 @@ public class TranscribeTask extends Task {
 	// Record in JSON
 	private JsonObject recordJsonRaw;
 
-	private String serverUrl;
+	private final String serverUrl;
 
-	private String serverPath;
+	private final String serverPath;
 
-	private ContextMediator contextMediator;
+	private final ContextMediator contextMediator;
 
 	private TranscribeTaskContext transcribeTaskContext;
 
-	private PersistableExceptionService persistableExceptionService;
+	private final PersistableExceptionService persistableExceptionService;
 
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
 				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService) {

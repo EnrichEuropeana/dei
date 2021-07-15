@@ -96,6 +96,7 @@ public class UpdateTask extends Task {
 				this.contextMediator.save(this.context);
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
+					// TODO: not working as editing iterated collection on-go
 					eas.updateTranscription(t);
 					record.getTranscriptions().remove(t);
 					queueRecordService.saveRecord(record);
