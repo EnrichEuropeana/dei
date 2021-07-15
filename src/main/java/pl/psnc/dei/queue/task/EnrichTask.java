@@ -117,6 +117,7 @@ public class EnrichTask extends Task {
 	}
 
 	private void handleTranscriptions() {
+		// do not saving processed transcriptions in ctx as processed ones cannot become not annotated
 		while (!notAnnotatedTranscriptions.isEmpty()) {
 			Transcription transcription = notAnnotatedTranscriptions.peek();
 			String annotationId = eas.postTranscription(transcription);
@@ -131,6 +132,7 @@ public class EnrichTask extends Task {
 
 	private void sendAnnotationIdsAndFinalizeTask() {
 		Iterator<Transcription> it = record.getTranscriptions().iterator();
+		// sending annotations is too quick, thus putting it into db makes allover process slower
 		while (it.hasNext()) {
 			Transcription t = it.next();
 			tps.sendAnnotationUrl(t);
