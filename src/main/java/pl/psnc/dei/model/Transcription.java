@@ -1,9 +1,8 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
-import pl.psnc.dei.model.converter.JsonObjectToStringConverter;
+import pl.psnc.dei.converter.JsonObjectToStringConverter;
 
 import javax.persistence.*;
 

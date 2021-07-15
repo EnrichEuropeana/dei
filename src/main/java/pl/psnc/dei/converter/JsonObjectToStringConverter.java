@@ -1,4 +1,4 @@
-package pl.psnc.dei.model.converter;
+package pl.psnc.dei.converter;
 
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
