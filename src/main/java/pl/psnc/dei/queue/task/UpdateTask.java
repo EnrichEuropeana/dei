@@ -31,6 +31,8 @@ public class UpdateTask extends Task {
 
 	private UpdateTaskContext context;
 
+	private QueueRecordService queueRecordService;
+
 	UpdateTask(Record record, QueueRecordService queueRecordService,
 			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		// Fired only for crash recovery
@@ -48,6 +50,8 @@ public class UpdateTask extends Task {
 			logger.error("Database inconsistency, update pending task has to have at" +
 					" least one transcription! Changing state to normal. Record identifier: {}", record.getIdentifier());
 		}
+		// we are not reading saved transcriptions from context, as context possibly could not be saved before
+		// program crash, thus not containing changes
 		transcriptions = record.getTranscriptions();
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
@@ -60,8 +64,9 @@ public class UpdateTask extends Task {
 					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) throws NotFoundException {
 		// fired for normal execution
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
+		Record record = this.queueRecordService.getRecord(recordIdentifier);
 		this.contextMediator = contextMediator;
-		this.context = (UpdateTaskContext) this.contextMediator.get(record);
+		this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);

@@ -61,7 +61,7 @@ public class TasksFactory {
 			case T_PENDING:
 				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, contextMediator, persistableExceptionService);
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ess, eas);
+				return new UpdateTask(record, qrs, tps, ess, eas, contextMediator);
 			case C_PENDING:
 				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this, persistableExceptionService, contextMediator, recordsRepository);
 
@@ -71,7 +71,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, contextMediator);
 	}
 
 	public void setTasksQueueService(TasksQueueService tasksQueueService) {

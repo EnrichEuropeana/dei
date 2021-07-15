@@ -60,4 +60,13 @@ public class ContextMediator {
         }
     }
 
+    public <T> Context get(Record record, Class<T> contextClass) {
+        for (ContextService contextService : this.contextServiceList) {
+            if (contextService.canHandle(contextClass)) {
+                return (Context) contextService.get(record);
+            }
+        }
+        throw new IllegalArgumentException("Cannot fetch record for task class: " + contextClass.toString());
+    }
+
 }

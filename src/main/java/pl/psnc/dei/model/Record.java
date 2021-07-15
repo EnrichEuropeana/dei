@@ -15,7 +15,7 @@ public class Record {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	private Long id;
 
 	/**
 	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)
@@ -154,6 +154,10 @@ public class Record {
 
 	public void setAggregator(Aggregator aggregator) {
 		this.aggregator = aggregator;
+	}
+
+	public void setId(Long id) {
+		this.id = id;
 	}
 
 	/**
