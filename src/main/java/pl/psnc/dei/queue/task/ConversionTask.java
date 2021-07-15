@@ -4,13 +4,11 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.DAO.ConversionContextRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
@@ -124,7 +122,7 @@ public class ConversionTask extends Task {
 							ContextUtils.executeIf(!this.context.isHasThrownException(),
 									() -> {
 										this.context.setHasThrownException(true);
-										this.persistableExceptionService.save(e, this.context);
+										this.persistableExceptionService.bind(e, this.context);
 										this.contextMediator.save(context);
 									});
 							ContextUtils.executeIf(!this.context.isHasAddedFailure(),
@@ -151,7 +149,7 @@ public class ConversionTask extends Task {
 							ContextUtils.executeIf(!this.context.isHasThrownException(),
 									() -> {
 										this.context.setHasThrownException(true);
-										this.persistableExceptionService.save(e, this.context);
+										this.persistableExceptionService.bind(e, this.context);
 										this.contextMediator.save(context);
 									});
 							ContextUtils.executeIf(!this.context.isHasAddedFailure(),

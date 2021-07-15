@@ -24,6 +24,8 @@ public class ConversionTaskContextService extends ContextService<ConversionTaskC
         Optional<ConversionTaskContext> context = this.conversionTaskContextRepository.findAllByRecord(record);
         if (context.isPresent()) {
             ConversionTaskContext conversionTaskContext = context.get();
+            // initialization needed cuz further use of this collection will happen outside transaction,
+            // and there is no way to annotate method / class as Transactional
             conversionTaskContext.getRawConversionData()
                     .forEach(el -> {
                         el.getOutFilePath().forEach(Hibernate::initialize);

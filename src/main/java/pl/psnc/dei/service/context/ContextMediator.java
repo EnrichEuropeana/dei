@@ -52,6 +52,7 @@ public class ContextMediator {
         }
     }
 
+    // one can force mediator to use defined context service
     public <T> void delete(Context context, Class<T> contextClass) {
         for (ContextService contextService : this.contextServiceList) {
             if (contextService.canHandle(contextClass)) {

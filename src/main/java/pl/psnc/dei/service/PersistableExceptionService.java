@@ -31,7 +31,7 @@ public class PersistableExceptionService {
         return optionalExceptions.map(persistableException -> this.inflateException(persistableException, exceptionClass)).orElse(null);
     }
 
-    public PersistableException save(Exception exception, Context context) {
+    public PersistableException bind(Exception exception, Context context) {
         PersistableException.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exception.getClass());
         Optional<PersistableException> optionalException = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
         if (optionalException.isPresent()) {
@@ -53,8 +53,6 @@ public class PersistableExceptionService {
             return newPersistableException;
         }
     }
-
-    // ConversionException | InterruptedException | IOException
 
     private <T extends Exception> T inflateException(PersistableException persistableException, Class<T> exceptionClass) {
         switch (persistableException.getType()) {

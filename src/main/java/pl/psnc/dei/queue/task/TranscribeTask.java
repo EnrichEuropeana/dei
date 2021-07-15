@@ -6,7 +6,6 @@ import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.*;
@@ -15,9 +14,7 @@ import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
@@ -130,7 +127,7 @@ public class TranscribeTask extends Task {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
 							() -> {
 								this.transcribeTaskContext.setHasThrownError(true);
-								this.persistableExceptionService.save(e, this.transcribeTaskContext);
+								this.persistableExceptionService.bind(e, this.transcribeTaskContext);
 								this.contextMediator.save(this.transcribeTaskContext);
 							});
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
@@ -152,7 +149,7 @@ public class TranscribeTask extends Task {
 					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
 							() -> {
 								this.transcribeTaskContext.setHasThrownError(true);
-								this.persistableExceptionService.save(e, this.transcribeTaskContext);
+								this.persistableExceptionService.bind(e, this.transcribeTaskContext);
 								this.contextMediator.save(this.transcribeTaskContext);
 							});
 					this.contextMediator.delete(this.transcribeTaskContext);
