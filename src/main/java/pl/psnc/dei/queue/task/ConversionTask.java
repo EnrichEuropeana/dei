@@ -109,6 +109,7 @@ public class ConversionTask extends Task {
 					try {
 						this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(ConversionImpossibleException.class, NotFoundException.class, ConversionException.class, InterruptedException.class), this.context);
 						converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
+						// refetch context as converter.convertAndGenerateManifest(...) will override it
 						this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
 						this.context.setHasConverted(true);
 						record.setState(Record.RecordState.T_PENDING);
@@ -136,6 +137,8 @@ public class ConversionTask extends Task {
 													+ ", identifier: " + record.getIdentifier(), e);
 										}
 									});
+							// delete before state change, otherwise ctx could be never deleted as application will
+							// never come here
 							this.contextMediator.delete(this.context);
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
 							tps.updateImportState(record.getAnImport());
@@ -164,6 +167,7 @@ public class ConversionTask extends Task {
 													+ ", identifier: " + record.getIdentifier(), e);
 										}
 									});
+							// same as previous
 							this.contextMediator.delete(this.context);
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
 							tps.updateImportState(record.getAnImport());
