@@ -4,6 +4,7 @@ import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -284,5 +285,11 @@ public class BatchService {
 			}
 		}
 		return allDimensions;
+	}
+
+	public List<Dataset> getProjectDataset(Project project) {
+		Project currentProject = projectsRepository.findByProjectId(project.getProjectId());
+		Hibernate.initialize(currentProject.getDatasets());
+		return currentProject.getDatasets();
 	}
 }
