@@ -2,6 +2,9 @@ package pl.psnc.dei.service.context;
 
 import java.util.Collection;
 
+/**
+ * Helper class for Context manipulation and execution
+ */
 public class ContextUtils {
     public static <T> void setIfPresent(T toModify, T value) {
         // actually java is not working like this
