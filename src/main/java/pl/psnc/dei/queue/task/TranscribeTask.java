@@ -2,6 +2,7 @@ package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
@@ -46,8 +47,20 @@ public class TranscribeTask extends Task {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
 				// fetch data from europeana
-				recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-				recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				try {
+					recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+					recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+				} catch (AggregatorException aggregatorException) {
+					try {
+						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+						tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
+						tps.updateImportState(record.getAnImport());
+					} catch (NotFoundException nfe) {
+						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+								+ ", identifier: " + record.getIdentifier(), nfe);
+					}
+					throw new RuntimeException(aggregatorException.getCause());
+				}
 				// check if fetched data already contains address to iiif
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;

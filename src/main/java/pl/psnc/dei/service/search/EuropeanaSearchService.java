@@ -10,18 +10,32 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
+import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.DEIHttpException;
+import pl.psnc.dei.exception.EuropeanaAggregatorException;
+import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.FACET_SEPARATOR;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.*;
+import static pl.psnc.dei.util.EuropeanaConstants.API_KEY_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.CURSOR_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.FIRST_CURSOR;
+import static pl.psnc.dei.util.EuropeanaConstants.FIXED_API_PARAMS;
+import static pl.psnc.dei.util.EuropeanaConstants.QF_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.QUERY_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.ROWS_PARAM_NAME;
 
 @Service
 public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
@@ -110,6 +124,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                     return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(cause -> {
+                    if (cause instanceof DEIHttpException) {
+                        String message = cause.toString();
+                        throw new EuropeanaAggregatorException(message, cause);
+                    } else {
+                        throw new EuropeanaAggregatorException(cause.getMessage(), cause);
+                    }
+                })
                 .block();
         return JSON.parse(record);
     }
@@ -120,7 +142,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      * @param recordId record identifier that will be used for retrieval
      * @return Retrieved record in JSON format
      */
-    public JsonObject retrieveRecordInJson(String recordId) {
+    public JsonObject retrieveRecordInJson(String recordId) throws AggregatorException {
         logger.info("Retrieving record from europeana {}", recordId);
         String record = webClient.get()
                 .uri(recordApiEndpoint + "/" + recordId + ".json?wskey=" + apiKey)
@@ -134,6 +156,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                     return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(cause -> {
+                    if (cause instanceof DEIHttpException) {
+                        String message = cause.toString();
+                        throw new EuropeanaAggregatorException(message, cause);
+                    } else {
+                        throw new EuropeanaAggregatorException(cause.getMessage(), cause);
+                    }
+                })
                 .block();
         return JSON.parse(record);
     }
