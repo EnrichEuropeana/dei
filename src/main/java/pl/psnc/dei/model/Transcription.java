@@ -1,12 +1,19 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.converter.JsonObjectToStringConverter;
 
 import javax.persistence.*;
 
 @Entity
+@Data
+@NoArgsConstructor
 public class Transcription {
 
 	@Id
@@ -22,10 +29,9 @@ public class Transcription {
 	@Column(columnDefinition = "LONGTEXT")
 	private JsonObject transcriptionContent;
 
+	@JsonProperty("EuropeanaAnnotationId")
 	private String annotationId;
 
-	public Transcription() {
-	}
 
 	public Transcription(String tp_id, Record record, String annotationId) {
 		this.tp_id = tp_id;
@@ -33,45 +39,4 @@ public class Transcription {
 		this.annotationId = annotationId;
 		this.transcriptionContent = new JsonObject();
 	}
-
-	public String getTp_id() {
-		return tp_id;
-	}
-
-	public void setTp_id(String tp_id) {
-		this.tp_id = tp_id;
-	}
-
-	public Record getRecord() {
-		return record;
-	}
-
-	public void setRecord(Record record) {
-		this.record = record;
-	}
-
-	@JsonProperty("EuropeanaAnnotationId")
-	public String getAnnotationId() {
-		return annotationId;
-	}
-
-	public void setAnnotationId(String annotationId) {
-		this.annotationId = annotationId;
-	}
-
-	public JsonObject getTranscriptionContent() {
-		return transcriptionContent;
-	}
-
-	public void setTranscriptionContent(JsonObject transcriptionContent) {
-		this.transcriptionContent = transcriptionContent;
-	}
-//
-//	public Long getId() {
-//		return id;
-//	}
-//
-//	public void setId(Long id) {
-//		this.id = id;
-//	}
 }

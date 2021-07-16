@@ -1,5 +1,8 @@
 package pl.psnc.dei.util;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * Possible results of check if record is available via IIIF, also determines if record can be transferred to TP:
  * AVAILABLE - record already available via IIIF, can be transferred without conversion
@@ -7,6 +10,8 @@ package pl.psnc.dei.util;
  * CONVERSION_IMPOSSIBLE - record not available in supported format, cannot be transferred to TP
  * DATA_UNAVAILABLE - cannot retrieve record data, cannot be transferred to TP
  */
+@Getter
+@AllArgsConstructor
 public enum IiifAvailability {
 	AVAILABLE("Available", true),
 	CONVERSION_POSSIBLE("Conversion possible", true),
@@ -15,15 +20,6 @@ public enum IiifAvailability {
 
 	String message;
 	boolean transferPossible;
-
-	IiifAvailability(String message, boolean transferPossible) {
-		this.message = message;
-		this.transferPossible = transferPossible;
-	}
-
-	public String getMessage() {
-		return message;
-	}
 
 	public boolean isTransferPossible() {
 		return transferPossible;

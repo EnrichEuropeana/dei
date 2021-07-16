@@ -88,6 +88,8 @@ public class UpdateTask extends Task {
 		switch (state) {
 			case U_GET_TRANSCRIPTION_FROM_TP:
 				for (Transcription t : transcriptions) {
+					// transcription body are transient so each time we
+					// must download it
 					JsonObject tContent = tps.fetchTranscriptionUpdate(t);
 					t.setTranscriptionContent(tContent);
 				}

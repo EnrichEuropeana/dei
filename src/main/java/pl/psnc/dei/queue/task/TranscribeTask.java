@@ -91,6 +91,7 @@ public class TranscribeTask extends Task {
 						this.transcribeTaskContext.setTaskState(this.state);
 						this.contextMediator.save(this.transcribeTaskContext);
 					} else {
+						// europeana has no IIIF for this record, thus we generate new and host it on our owns
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
 							record.setState(Record.RecordState.C_PENDING);
@@ -120,6 +121,7 @@ public class TranscribeTask extends Task {
 								this.contextMediator.save(this.transcribeTaskContext);
 							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
+					// check if all records are done
 					tps.updateImportState(record.getAnImport());
 					this.transcribeTaskContext.setRecord(record);
 					this.contextMediator.delete(this.transcribeTaskContext);

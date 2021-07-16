@@ -7,7 +7,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 
 /**
- * Class responsible for building urls to different endpoints;
+ * Class responsible for building urls to different endpoints of transcription api;
  * <p>
  * Created by pwozniak on 3/20/19
  */

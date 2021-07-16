@@ -37,6 +37,11 @@ public class TranscriptionController {
 		this.tasksFactory = tasksFactory;
 	}
 
+	/**
+	 * Notify server about set of newly available transcription
+	 * @param recordId
+	 * @return
+	 */
 	@PostMapping
 	public ResponseEntity transcriptionReady(@RequestParam(value = "recordId") String recordId) {
 
@@ -54,6 +59,11 @@ public class TranscriptionController {
 		}
 	}
 
+	/**
+	 * Notify server about set of newly available transcriptions
+	 * @param recordsIds ids of records transcripted
+	 * @return
+	 */
 	@PostMapping("/batch")
 	public ResponseEntity<String> transcriptionsReady(@RequestBody Set<String> recordsIds) {
 		if (!recordsIds.stream().allMatch(EuropeanaRecordIdValidator::validate)) {
@@ -76,6 +86,13 @@ public class TranscriptionController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
+	/**
+	 * Update existing transcription
+	 * @param annotationId id of updated annotation
+	 * @param recordId id of record containing updated transcription
+	 * @param transcriptionId id of transcription to update
+	 * @return
+	 */
 	@PutMapping
 	public ResponseEntity updateTranscription(
 			@RequestParam("annotationId") String annotationId,

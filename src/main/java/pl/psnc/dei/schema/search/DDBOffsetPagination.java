@@ -1,10 +1,15 @@
 package pl.psnc.dei.schema.search;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static pl.psnc.dei.ui.components.SearchResultsComponent.DEFAULT_PAGE_SIZE;
 
+@AllArgsConstructor
 public class DDBOffsetPagination implements Pagination {
 
 	private static final String ROWS_PARAM_NAME = "rows";
@@ -16,11 +21,6 @@ public class DDBOffsetPagination implements Pagination {
 	public DDBOffsetPagination() {
 		this.rows = DEFAULT_PAGE_SIZE;
 		this.offset = 0;
-	}
-
-	public DDBOffsetPagination(int rows, int offset) {
-		this.rows = rows;
-		this.offset = offset;
 	}
 
 	@Override

@@ -30,10 +30,20 @@ public class QueueRecordService {
 	@Autowired
 	private Converter converter;
 
+	/**
+	 * Returns records that are not in terminal state due to add when QueueRecordService was down or due to system crash during processing them
+	 * @return records
+	 */
 	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNotIn(Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED, Record.RecordState.T_SENT, Record.RecordState.T_FAILED));
 	}
 
+	/**
+	 * Bidirectional relation update for record
+	 * @param recordId id of record to update
+	 * @param state new state to save
+	 * @throws NotFoundException if record was not found
+	 */
 	public void setNewStateForRecord(long recordId, Record.RecordState state) throws NotFoundException {
 		Optional<Record> record = recordsRepository.findById(recordId);
 		if (record.isPresent()) {
@@ -45,6 +55,12 @@ public class QueueRecordService {
 		}
 	}
 
+	/**
+	 * return record with given name
+	 * @param identifier record identifier
+	 * @return found identifier
+	 * @throws NotFoundException if none matching record exist
+	 */
 	public Record getRecord(String identifier) throws NotFoundException {
 		Optional<Record> record = recordsRepository.findByIdentifier(identifier);
 		if (record.isPresent()) {

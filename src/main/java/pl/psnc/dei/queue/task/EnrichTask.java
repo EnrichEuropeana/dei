@@ -19,6 +19,10 @@ import pl.psnc.dei.util.TranscriptionConverter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ * Enrich task is responsible for adding new transcriptions to existing records
+ * Adding transcription to records having transcription will drop new data
+ */
 public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
@@ -57,6 +61,9 @@ public class EnrichTask extends Task {
 		this.contextMediator.delete(this.context, EnrichTaskContext.class);
 	}
 
+	/**
+	 * Fetch transcription from transcription platform and save them to record and transcription entity
+	 */
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
 		if(this.context.isHasDownloadedEnrichment()) {
@@ -94,8 +101,10 @@ public class EnrichTask extends Task {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
 			queueRecordService.saveRecord(record);
+			// transcriptions that has no transcription id
 			fillQueue();
 		} else {
+			// if record has transcription add context to it
 			logger.info("Record already has transcriptions. Processing not annotated.");
 			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions) {
@@ -109,6 +118,9 @@ public class EnrichTask extends Task {
 		this.contextMediator.save(this.context);
 	}
 
+	/**
+	 * Filter records to check if some of them miss their annotations
+	 */
 	private void fillQueue() {
 		notAnnotatedTranscriptions
 				.addAll(record.getTranscriptions().stream()
@@ -116,6 +128,9 @@ public class EnrichTask extends Task {
 						.collect(Collectors.toList()));
 	}
 
+	/**
+	 * Fetches annotations id to transcriptions missing it
+	 */
 	private void handleTranscriptions() {
 		// do not saving processed transcriptions in ctx as processed ones cannot become not annotated
 		while (!notAnnotatedTranscriptions.isEmpty()) {

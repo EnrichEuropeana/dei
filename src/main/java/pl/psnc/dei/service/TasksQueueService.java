@@ -8,15 +8,20 @@ import pl.psnc.dei.queue.TasksQueue;
 import pl.psnc.dei.queue.task.Task;
 import pl.psnc.dei.queue.task.TasksFactory;
 
+/**
+ * Creates and manage queue of tasks to be done
+ */
 @Service
 public class TasksQueueService {
-  
+
+	// endless queue executing tasks
 	private TasksQueue queue;
 
 	@Autowired
 	public TasksQueueService(TasksQueue tasksQueue,QueueRecordService queueRecordService, TasksFactory tasksFactory) {
 		queue = tasksQueue;
 		tasksFactory.setTasksQueueService(this);
+		// add tasks which could be possibly added when service was down
 		for (Record record : queueRecordService.getRecordsToProcess()) {
 			tasksQueue.addToQueue(tasksFactory.getTask(record));
 		}

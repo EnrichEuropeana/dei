@@ -20,6 +20,9 @@ import pl.psnc.dei.service.search.EuropeanaSearchService;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * Task which try to create an IIIF for given record
+ */
 public class ConversionTask extends Task {
 
 	private ContextMediator contextMediator;

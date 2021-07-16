@@ -48,6 +48,11 @@ public class ImportPackageService extends RestRequestExecutor {
 		return StringUtil.isNullOrEmpty(name) ? generateImportName(projectName) : name;
 	}
 
+	/**
+	 * Remove or Add new records to existing import so it have same records as record set
+	 * @param updatedImport import to update
+	 * @param records records to be contained in updated import
+	 */
 	public void updateImport(Import updatedImport, Set<Record> records) {
 		importsRepository.findById(updatedImport.getId()).ifPresent(oldImport -> {
 
@@ -70,6 +75,7 @@ public class ImportPackageService extends RestRequestExecutor {
 
 
 	/**
+	 * Returns candidates selected earlier on from given project and dataset
 	 * @param projectId project id for searching candidates
 	 * @param datasetId dataset id (optional)
 	 * @return list of records which are candidates
@@ -134,9 +140,10 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
-	 * Send import to TP
-	 *
-	 * @param importName name of the import which should be send
+	 * Send import to Transcription Platform
+	 * Sending is possible for imports that have previously failed or have not been sent already
+	 * Empty imports are not send too
+	 * @param importName name of the import which should be send, import with given name must exist
 	 */
 	public void sendExistingImport(String importName) throws NotFoundException {
 		log.info("Sending existing import {}", importName);
@@ -144,6 +151,7 @@ public class ImportPackageService extends RestRequestExecutor {
 		if (!anImport.isPresent()) {
 			throw new NotFoundException("Import not found");
 		}
+		// mentioned checks
 		// sending is possible only for created (first attempt) or failed (another attempt) imports with non empty records list
 		if ((ImportStatus.CREATED.equals(anImport.get().getStatus()) || ImportStatus.FAILED.equals(anImport.get().getStatus()))
 			&& !anImport.get().getRecords().isEmpty()) {
@@ -165,6 +173,7 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
+	 * Checks and returns failures if any occurred
 	 * @param importName name of the import which status and failure should be returned
 	 * @return import status and import failure information
 	 */
@@ -188,6 +197,11 @@ public class ImportPackageService extends RestRequestExecutor {
 		return anImport.get();
 	}
 
+	/**
+	 * saves relation on records back to newly created import
+	 * @param records records which was added to import
+	 * @param anImport import on its own
+	 */
 	private void updateRecords(Set<Record> records, Import anImport) {
 		records.forEach(record -> {
 			record.setAnImport(anImport);

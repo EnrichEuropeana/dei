@@ -1,6 +1,10 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 import pl.psnc.dei.converter.AggregatorConverter;
 import pl.psnc.dei.converter.RecordStateConverter;
@@ -11,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 public class Record {
 
 	@Id
@@ -56,9 +63,6 @@ public class Record {
 	@Lob
 	private String title;
 
-	public Record() {
-	}
-
 	public Record(String identifier, String title) {
 		this.identifier = identifier;
 		this.title = title;
@@ -80,86 +84,6 @@ public class Record {
 		this.title = title;
 	}
 
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public String getIdentifier() {
-		return identifier;
-	}
-
-	public void setIdentifier(String identifier) {
-		this.identifier = identifier;
-	}
-
-	public RecordState getState() {
-		return state;
-	}
-
-	public void setState(RecordState state) {
-		this.state = state;
-	}
-
-	public Project getProject() {
-		return project;
-	}
-
-	public void setProject(Project project) {
-		this.project = project;
-	}
-
-	public Dataset getDataset() {
-		return dataset;
-	}
-
-	public void setDataset(Dataset dataset) {
-		this.dataset = dataset;
-	}
-
-	public Import getAnImport() {
-		return anImport;
-	}
-
-	public void setAnImport(Import anImport) {
-		this.anImport = anImport;
-	}
-
-	public List<Transcription> getTranscriptions() {
-		return transcriptions;
-	}
-
-	public void setTranscriptions(List<Transcription> transcriptions) {
-		this.transcriptions = transcriptions;
-	}
-
-	public String getIiifManifest() {
-		return iiifManifest;
-	}
-
-	public void setIiifManifest(String iiifManifest) {
-		this.iiifManifest = iiifManifest;
-	}
-
-	public Aggregator getAggregator() {
-		return aggregator;
-	}
-
-	public void setAggregator(Aggregator aggregator) {
-		this.aggregator = aggregator;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
 	/**
 	 * States representing record state, meanings:
 	 * NORMAL - no action needed, just a normal record
@@ -171,6 +95,8 @@ public class Record {
 	 * T_FAILED - Transcription process has started and there was an attempt to transfer the record to TP which failed
 	 * T_SENT - Transcription process has started and the record was successfully transferred to TP
 	 */
+	@Getter
+	@AllArgsConstructor
 	public enum RecordState {
 
 		NORMAL(0),
@@ -192,16 +118,8 @@ public class Record {
 
 		private final int value;
 
-		RecordState(int value) {
-			this.value = value;
-		}
-
 		public static RecordState getState(int value) {
 			return map.get(value);
-		}
-
-		public int getValue() {
-			return value;
 		}
 	}
 }

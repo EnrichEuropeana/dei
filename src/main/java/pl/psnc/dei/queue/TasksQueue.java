@@ -12,6 +12,9 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
+/**
+ * Loops overs queue with tasks and execute them
+ */
 @Component
 public class TasksQueue implements Runnable {
 

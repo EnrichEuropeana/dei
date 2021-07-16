@@ -138,6 +138,9 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         return JSON.parse(record);
     }
 
+    /**
+     * Check if all arguments are not empty
+     */
     private void checkParameters(String query, String cursor) {
         if (StringUtils.isEmpty(query)) {
             throw new IllegalStateException("Mandatory parameter (query) is missing");
@@ -155,6 +158,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
         if (query.isEmpty()) {
             query = QUERY_ALL;
+            // default is *
         }
 
         String qfParam = requestParams.get(QF_PARAM_NAME);

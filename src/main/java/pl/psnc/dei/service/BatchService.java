@@ -50,7 +50,14 @@ public class BatchService {
 		this.europeanaSearchService = europeanaSearchService;
 	}
 
-
+	/**
+	 * Add multiple records. If dataset is missing then it is added.
+	 * @param projectId id of project to which records should belong
+	 * @param datasetId (optional) dataset to which records should belong
+	 * @param recordIds record identifier for aggregator
+	 * @return candaidates, that are not in import
+	 * @throws NotFoundException if some information is missing
+	 */
 	public Set<Record> uploadRecords(String projectId, String datasetId, Set<String> recordIds) throws NotFoundException {
 		Project project = projectsRepository.findByName(projectId);
 		if (project == null) {
@@ -71,8 +78,10 @@ public class BatchService {
 		recordIds.stream().filter(r -> r != null && !r.isEmpty()).forEach(recordId -> {
 			Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
 			if (record == null) {
+				// record does not belongs to some project
 				record = recordsRepository.findByIdentifierAndProject(recordId, project);
 				if (record == null) {
+					// record does not exist
 					// new record - get necessary information from Europeana
 					Record newRecord = new Record();
 					newRecord.setIdentifier(recordId);
@@ -83,6 +92,7 @@ public class BatchService {
 					recordsRepository.save(newRecord);
 					candidates.add(newRecord);
 				} else {
+					// record exist but have no dataset assigned
 					record.setDataset(dataset);
 					recordsRepository.save(record);
 					if (record.getAnImport() == null) {
@@ -90,12 +100,18 @@ public class BatchService {
 					}
 				}
 			} else if (record.getAnImport() == null) {
+				// project exist and have data set assigned
 				candidates.add(record);
 			}
 		});
 		return candidates;
 	}
 
+	/**
+	 * fetch title of record from europeana
+	 * @param recordId european record id
+	 * @return title
+	 */
 	private String getTitle(String recordId) {
 		JsonObject jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
 		if (jsonObject != null) {
@@ -146,6 +162,12 @@ public class BatchService {
 		return result;
 	}
 
+	/**
+	 * Reads file content and populate map with it
+	 * @param file file to read
+	 * @return map populated with file contents
+	 * @throws IOException on file read error
+	 */
 	private Map<String, List<String>> readRecordsFromFile(MultipartFile file) throws IOException {
 		if (file.isEmpty()) {
 			throw new IllegalArgumentException("Empty file");

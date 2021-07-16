@@ -35,6 +35,13 @@ public class BatchController {
 		this.importService = importService;
 	}
 
+	/**
+	 * Upload records to DB. If no dataset provided null assigned. If record exist no duplicate made
+	 * @param projectName project to which records belong
+	 * @param datasetName dataset from which records orginate
+	 * @param recordsIds ids of records to save
+	 * @return HTTP response code
+	 */
 	@PostMapping("/records")
 	public ResponseEntity<String> uploadRecords(@RequestParam(value = "projectName") String projectName,
 												@RequestParam(value = "datasetName", required = false) String datasetName,
@@ -47,6 +54,14 @@ public class BatchController {
 		return new ResponseEntity<>(HttpStatus.OK);
 	}
 
+	/**
+	 * Saves records to DB and create new import out of them
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName dataset name from which data comes
+	 * @param name name of new import
+	 * @param recordsIds ids of records to save
+	 * @return HTTP response code
+	 */
 	@PostMapping("/imports")
 	public ResponseEntity<Import> uploadRecordsAndCreateImport(@RequestParam(value = "projectName") String projectName,
 															   @RequestParam(value = "datasetName", required = false) String datasetName,
@@ -63,6 +78,15 @@ public class BatchController {
 		}
 	}
 
+	/**
+	 * Saves records to DB, and calculate difference of saved and provided ones, as some of them can
+	 * be omitted during persiting process
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName name of dataset from which data comes
+	 * @param recordsIds id of data to save
+	 * @return saved records
+	 * @throws NotFoundException
+	 */
 	private Set<Record> uploadRecordsToProject(String projectName,
 											   String datasetName,
 											   Set<String> recordsIds)
@@ -81,6 +105,16 @@ public class BatchController {
 		return records;
 	}
 
+	/**
+	 * Uploads records to DB and create imports, based on multipart file and single/complex record structure of
+	 * file
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName name of dataset from which dataset comes
+	 * @param name name of import
+	 * @param file file from which records should be taken
+	 * @return HTTP Response code
+	 * @throws IOException
+	 */
 	@PostMapping(path = "/complex-imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<List<Import>> splitImport(@RequestParam(value = "projectName") String projectName,
 											  		@RequestParam(value = "datasetName", required = false) String datasetName,

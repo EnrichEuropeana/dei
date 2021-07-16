@@ -1,6 +1,10 @@
 package pl.psnc.dei.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
+@Getter
+@AllArgsConstructor
 public enum Aggregator {
 	UNKNOWN(-1, "Unknown"),
 	EUROPEANA(0, "Europeana"),
@@ -8,19 +12,6 @@ public enum Aggregator {
 
 	private int id;
 	private String fullName;
-
-	public int getId() {
-		return id;
-	}
-
-	Aggregator(int id, String fullName) {
-		this.id = id;
-		this.fullName = fullName;
-	}
-
-	public String getFullName() {
-		return fullName;
-	}
 
 	public static Aggregator getById(int id) {
 		for (Aggregator aggregator : values()) {

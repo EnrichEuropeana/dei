@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@StyleSheet("frontend://styles/styles.css")
+@StyleSheet("./styles/styles.css")
 public class SearchResultsComponent extends VerticalLayout {
     public static final int DEFAULT_PAGE_SIZE = 10;
     private static final List<Integer> ROWS_PER_PAGE_ALLOWED_VALUES = new ArrayList<>();
