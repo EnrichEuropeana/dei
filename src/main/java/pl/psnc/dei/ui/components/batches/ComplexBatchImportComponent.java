@@ -11,6 +11,7 @@ import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
@@ -89,7 +90,8 @@ public class ComplexBatchImportComponent extends VerticalLayout {
     }
 
     private void prepareProjectSelect() {
-        this.projectSelect = CommonComponentsFactory.getProjectSelector(this.projectsRepository);
+        ListDataProvider<Project> projectsProvider = new ListDataProvider<>(this.projectsRepository.findAll());
+        this.projectSelect = CommonComponentsFactory.getProjectSelector(projectsProvider);
         this.projectSelect.setEmptySelectionAllowed(false);
         this.projectSelect.addValueChangeListener(event -> {
             Project project = this.projectSelect.getValue();
