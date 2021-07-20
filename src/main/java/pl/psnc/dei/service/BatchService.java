@@ -138,7 +138,7 @@ public class BatchService {
 					.filter(obj -> obj.get("dc:title") != null)
 					.findFirst();
 			if (title.isPresent()) {
-				return title.get().getAsObject().get("dc:title").getAsString().value();
+				return title.get().getAsObject().get("dc:title").getAsObject().get("@value").getAsString().value();
 			}
 		}
 		return recordId;
