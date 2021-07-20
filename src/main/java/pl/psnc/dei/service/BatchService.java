@@ -20,9 +20,17 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import javax.transaction.Transactional;
-import java.io.*;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
@@ -78,35 +86,37 @@ public class BatchService {
 
 		Set<Record> candidates = new HashSet<>();
 
-		recordIds.stream().filter(r -> r != null && !r.isEmpty()).forEach(recordId -> {
-			Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
-			if (record == null) {
-				// record does not belongs to some project
-				record = recordsRepository.findByIdentifierAndProject(recordId, project);
-				if (record == null) {
-					// record does not exist
-					// new record - get necessary information from Europeana
-					Record newRecord = new Record();
-					newRecord.setIdentifier(recordId);
-					newRecord.setTitle(getTitle(recordId));
-					newRecord.setProject(project);
-					newRecord.setDataset(dataset);
-					newRecord.setAggregator(Aggregator.EUROPEANA);
-					recordsRepository.save(newRecord);
-					candidates.add(newRecord);
-				} else {
-					// record exist but have no dataset assigned
-					record.setDataset(dataset);
-					recordsRepository.save(record);
-					if (record.getAnImport() == null) {
+		recordIds.stream()
+				.filter(r -> r != null && !r.isEmpty())
+				.forEach(recordId -> {
+					Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
+					if (record == null) {
+						// record does not belongs to some project
+						record = recordsRepository.findByIdentifierAndProject(recordId, project);
+						if (record == null) {
+							// record does not exist
+							// new record - get necessary information from Europeana
+							Record newRecord = new Record();
+							newRecord.setIdentifier(recordId);
+							newRecord.setTitle(getTitle(recordId));
+							newRecord.setProject(project);
+							newRecord.setDataset(dataset);
+							newRecord.setAggregator(Aggregator.EUROPEANA);
+							recordsRepository.save(newRecord);
+							candidates.add(newRecord);
+						} else {
+							// record exist but have no dataset assigned
+							record.setDataset(dataset);
+							recordsRepository.save(record);
+							if (record.getAnImport() == null) {
+								candidates.add(record);
+							}
+						}
+					} else if (record.getAnImport() == null) {
+						// project exist and have data set assigned
 						candidates.add(record);
 					}
-				}
-			} else if (record.getAnImport() == null) {
-				// project exist and have data set assigned
-				candidates.add(record);
-			}
-		});
+				});
 		return candidates;
 	}
 
@@ -116,7 +126,12 @@ public class BatchService {
 	 * @return title
 	 */
 	private String getTitle(String recordId) {
-		JsonObject jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
+		JsonObject jsonObject;
+		try {
+			 jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Error fetching data for record " + recordId + ". " + e.getMessage());
+		}
 		if (jsonObject != null) {
 			Optional<JsonObject> title = jsonObject
 					.get("@graph")
@@ -126,7 +141,7 @@ public class BatchService {
 					.filter(obj -> obj.get("dc:title") != null)
 					.findFirst();
 			if (title.isPresent()) {
-				return title.get().getAsObject().get("dc:title").getAsString().value();
+				return title.get().getAsObject().get("dc:title").getAsObject().get("@value").getAsString().value();
 			}
 		}
 		return recordId;

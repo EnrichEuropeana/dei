@@ -3,7 +3,6 @@ package pl.psnc.dei.ui.components;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 
@@ -14,9 +13,11 @@ import java.util.stream.Collectors;
 
 public class CommonComponentsFactory {
 
+    private CommonComponentsFactory() {
+    }
+
     public static Select<Aggregator> getAggregatorSelector() {
-        Predicate<Aggregator> predicate = (agg -> !agg.equals(Aggregator.UNKNOWN));
-        return getAggregatorSelector(predicate);
+        return getAggregatorSelector(agg -> !agg.equals(Aggregator.UNKNOWN));
     }
 
     public static Select<Aggregator> getAggregatorSelector(Predicate<Aggregator> aggregatorFilter) {
@@ -27,10 +28,9 @@ public class CommonComponentsFactory {
         return aggregators;
     }
 
-    public static Select<Project> getProjectSelector(ProjectsRepository projectsRepository) {
+    public static Select<Project> getProjectSelector(ListDataProvider<Project> projectsProvider) {
         Select<Project> projects = new Select<>();
-        ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-        projects.setDataProvider(listDataProvider);
+        projects.setDataProvider(projectsProvider);
         projects.setLabel("Select project");
         return projects;
     }

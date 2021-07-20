@@ -90,7 +90,8 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private Component createProjectSelection() {
-		Select<Project> projectSelection = CommonComponentsFactory.getProjectSelector(projectsRepository);
+		ListDataProvider<Project> projectsProvider = new ListDataProvider<>(projectsRepository.findAll());
+		Select<Project> projectSelection = CommonComponentsFactory.getProjectSelector(projectsProvider);
 		projectSelection.setEnabled(anImport == null);
 		projectSelection.addValueChangeListener(event -> {
 			project = event.getValue();
