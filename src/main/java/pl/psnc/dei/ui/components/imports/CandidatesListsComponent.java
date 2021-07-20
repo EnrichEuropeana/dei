@@ -121,7 +121,8 @@ public class CandidatesListsComponent extends VerticalLayout {
 	}
 
 	private Select<Project> projectSelector(){
-		projects = CommonComponentsFactory.getProjectSelector(projectsRepository);
+		ListDataProvider<Project> projectsProvider = new ListDataProvider<>(projectsRepository.findAll());
+		projects = CommonComponentsFactory.getProjectSelector(projectsProvider);
 		projects.setReadOnly(true);
 		projects.addValueChangeListener(event -> {
 			project = event.getValue();

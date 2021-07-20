@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
+import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.notification.Notification;
@@ -14,6 +15,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.data.provider.ListDataProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
@@ -25,7 +27,11 @@ import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
+import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -41,12 +47,13 @@ public class BatchImportComponent extends VerticalLayout {
     private Select<Aggregator> aggregatorsSelect;
     private Select<Project> projectsSelect;
     private Select<Dataset> datasetsSelect;
+    private Checkbox createImportCheckbox;
     private TextField importNameTextField;
     private TextArea recordsTextArea;
 
-    private Aggregator aggregator;
     private Project project;
     private Dataset dataset;
+    private boolean doCreateImport = true;
 
     public BatchImportComponent(ProjectsRepository projectsRepository, BatchService batchService,
                                 ImportPackageService importPackageService) {
@@ -60,11 +67,12 @@ public class BatchImportComponent extends VerticalLayout {
         Div pageContainer = new Div();
         pageContainer.setId("batch-import-component");
         pageContainer.add(prepareAggregatorProjectDatasetSelector());
+        pageContainer.add(prepareCreateImportCheckbox());
         pageContainer.add(prepareImportNameInputField());
         pageContainer.add(new Label("Records:"));
         add(pageContainer);
         add(prepareRecordsTextArea());
-        add(prepareImportButton());
+        add(prepareUploadRecordsButton());
     }
 
     private HorizontalLayout prepareAggregatorProjectDatasetSelector() {
@@ -83,10 +91,21 @@ public class BatchImportComponent extends VerticalLayout {
         return horizontalLayout;
     }
 
-    private Button prepareImportButton() {
-        Button button = new Button("Import");
-        button.addClickListener(e -> sendImport());
+    private Button prepareUploadRecordsButton() {
+        Button button = new Button("Upload records");
+        button.addClickListener(e -> uploadRecords());
         return button;
+    }
+
+    private Checkbox prepareCreateImportCheckbox() {
+        createImportCheckbox = new Checkbox();
+        createImportCheckbox.setLabel("Create import");
+        createImportCheckbox.setValue(doCreateImport);
+        createImportCheckbox.addValueChangeListener(event -> {
+            doCreateImport = event.getValue();
+            importNameTextField.setEnabled(doCreateImport);
+        });
+        return createImportCheckbox;
     }
 
     private Component createAggregatorSelection() {
@@ -98,7 +117,8 @@ public class BatchImportComponent extends VerticalLayout {
     }
 
     private Component createProjectSelection() {
-        projectsSelect = CommonComponentsFactory.getProjectSelector(projectsRepository);
+        ListDataProvider<Project> projectsProvider = new ListDataProvider<>(projectsRepository.findAll());
+        projectsSelect = CommonComponentsFactory.getProjectSelector(projectsProvider);
         projectsSelect.addValueChangeListener(event -> {
             project = event.getValue();
             datasetsSelect.setItems(batchService.getProjectDataset(project));
@@ -109,6 +129,7 @@ public class BatchImportComponent extends VerticalLayout {
     private Component createDatasetsSelection() {
         datasetsSelect = CommonComponentsFactory.getDatasetSelector(Collections.emptyList());
         datasetsSelect.addValueChangeListener(event -> dataset = event.getValue());
+        datasetsSelect.setEmptySelectionAllowed(true);
         return datasetsSelect;
     }
 
@@ -118,15 +139,22 @@ public class BatchImportComponent extends VerticalLayout {
         return importNameTextField;
     }
 
+    private boolean inputSeemsToBeJSON(String input) {
+        char firstChar = input.trim().charAt(0);
+        List<Character> jsonChars = Arrays.asList('[', '\"', '{');
+        return jsonChars.contains(firstChar);
+    }
+
     private TextArea prepareRecordsTextArea() {
         recordsTextArea = new TextArea();
         recordsTextArea.setMinHeight("150px");
         recordsTextArea.setWidthFull();
         recordsTextArea.addClassName("query-form");
+        recordsTextArea.setHelperText("Enter each Europeana ID in separate line or put JSON structured array of record IDs.");
         return recordsTextArea;
     }
 
-    private void sendImport() {
+    private void uploadRecords() {
         if (!areInputsValid()) {
             return;
         }
@@ -141,13 +169,19 @@ public class BatchImportComponent extends VerticalLayout {
             String datasetId = dataset != null ? dataset.getDatasetId() : null;
             Set<Record> uploadedRecords = batchService.uploadRecords(project.getName(), datasetId, retrievedRecords);
             if (uploadedRecords.isEmpty()) {
-                showNotification("There are no records to upload!");
+                showNotification("No records to upload, because all the records have already been uploaded.");
                 return;
             }
-            Import anImport = importPackageService.createImport(importNameTextField.getValue(), project.getProjectId(), uploadedRecords);
-            showNotification("Successfully created import: " + anImport.getName());
+            if (doCreateImport) {
+                Import anImport = importPackageService.createImport(importNameTextField.getValue(), project.getProjectId(), uploadedRecords);
+                showNotification("Successfully created import: " + anImport.getName());
+            } else {
+                showNotification("Uploaded " + uploadedRecords.size() + " records!");
+            }
         } catch (NotFoundException e) {
             showNotification("Invalid input. " + e.getMessage());
+        } catch (Exception e) {
+            showNotification(e.getMessage());
         }
     }
 
@@ -156,11 +190,15 @@ public class BatchImportComponent extends VerticalLayout {
         ObjectMapper mapper = new ObjectMapper();
         Set<String> parsedRecords;
         try {
-            parsedRecords = mapper.readValue(rawInput, new TypeReference<Set<String>>() {
+            parsedRecords = mapper.readValue(rawInput, new TypeReference<LinkedHashSet<String>>() {
             });
         } catch (JsonParseException | JsonMappingException jsonProcessingException) {
-            parsedRecords = readLines(rawInput);
-        } catch (Exception e) {
+            if (inputSeemsToBeJSON(rawInput)) {
+                throw new ParseRecordsException("Invalid JSON array structure!");
+            } else {
+                parsedRecords = readLines(rawInput);
+            }
+        } catch (IOException e) {
             logger.error("Unable to retrieve input records. " + e.getMessage());
             throw new ParseRecordsException("Cannot read records!");
         }
@@ -175,13 +213,13 @@ public class BatchImportComponent extends VerticalLayout {
 
     private Set<String> readLines(String input) {
         String[] split = input.split("\n");
-        return Set.of(split);
+        return new LinkedHashSet<>(Arrays.asList(split));
     }
 
     private Set<String> normalizeRecords(Set<String> records) {
         return records.stream()
                 .map(String::trim)
-                .collect(Collectors.toSet());
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
 
     private boolean isValidRecord(String s) {
