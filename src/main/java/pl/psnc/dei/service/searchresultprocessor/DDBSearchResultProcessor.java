@@ -7,11 +7,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.schema.search.SearchResult;
+import pl.psnc.dei.service.DDBFormatResolver;
 import pl.psnc.dei.service.RecordDataCache;
 import pl.psnc.dei.service.search.DDBSearchService;
 import pl.psnc.dei.util.IiifAvailability;
 import pl.psnc.dei.util.IiifValidator;
-import pl.psnc.dei.service.DDBFormatResolver;
 
 @Service
 public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor {
@@ -31,9 +31,9 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 	private static final String LANGUAGE = "language";
 	private static final String LICENSE = "license";
 
-	private DDBSearchService ddbSearchService;
-	private DDBFormatResolver ddbFormatResolver;
-	private RecordDataCache recordDataCache;
+	private final DDBSearchService ddbSearchService;
+	private final DDBFormatResolver ddbFormatResolver;
+	private final RecordDataCache recordDataCache;
 
 	public DDBSearchResultProcessor(DDBSearchService ddbSearchService, DDBFormatResolver ddbFormatResolver, RecordDataCache recordDataCache) {
 		this.ddbSearchService = ddbSearchService;

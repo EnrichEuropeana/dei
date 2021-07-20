@@ -1,6 +1,5 @@
 package pl.psnc.dei.controllers;
 
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -14,22 +13,19 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/batch")
 public class BatchController {
 
-	private Logger logger = LoggerFactory.getLogger(BatchController.class);
+	private final Logger logger = LoggerFactory.getLogger(BatchController.class);
 
-	private BatchService batchService;
+	private final BatchService batchService;
 
-	private ImportPackageService importService;
+	private final ImportPackageService importService;
 
 	public BatchController(BatchService batchService, ImportPackageService importService) {
 		this.batchService = batchService;

@@ -1,7 +1,6 @@
 package pl.psnc.dei.ui.components.imports;
 
 import com.vaadin.flow.component.Component;
-import com.vaadin.flow.component.HasValue;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.HeaderRow;
@@ -21,10 +20,8 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CandidatesListsComponent extends VerticalLayout {
 

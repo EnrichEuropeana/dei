@@ -18,12 +18,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.exception.ParseRecordsException;
-import pl.psnc.dei.model.Aggregator;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Import;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
@@ -38,9 +34,9 @@ public class BatchImportComponent extends VerticalLayout {
 
     private static final Logger logger = LoggerFactory.getLogger(BatchImportComponent.class);
 
-    private ProjectsRepository projectsRepository;
-    private BatchService batchService;
-    private ImportPackageService importPackageService;
+    private final ProjectsRepository projectsRepository;
+    private final BatchService batchService;
+    private final ImportPackageService importPackageService;
 
     private Select<Aggregator> aggregatorsSelect;
     private Select<Project> projectsSelect;

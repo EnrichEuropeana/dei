@@ -10,27 +10,17 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.BodySize;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
-import com.vaadin.flow.router.BeforeEnterEvent;
-import com.vaadin.flow.router.BeforeEnterObserver;
-import com.vaadin.flow.router.HighlightConditions;
-import com.vaadin.flow.router.PageTitle;
-import com.vaadin.flow.router.Route;
-import com.vaadin.flow.router.RouterLayout;
-import com.vaadin.flow.router.RouterLink;
+import com.vaadin.flow.router.*;
 import pl.psnc.dei.config.SecurityUtils;
 import pl.psnc.dei.ui.components.ListeningVerticalLayout;
-import pl.psnc.dei.ui.pages.AccessDeniedPage;
-import pl.psnc.dei.ui.pages.BatchPage;
-import pl.psnc.dei.ui.pages.ImportPage;
-import pl.psnc.dei.ui.pages.LogoutPage;
-import pl.psnc.dei.ui.pages.SearchPage;
+import pl.psnc.dei.ui.pages.*;
 
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
 @BodySize(height = "100%", width = "100%")
 public class MainView extends VerticalLayout implements RouterLayout, BeforeEnterObserver {
 
-    private Tabs menuTabs;
+    private final Tabs menuTabs;
 
     public MainView() {
         H2 title = new H2("Data Exchange Infrastructure");
