@@ -1,6 +1,9 @@
 package pl.psnc.dei.ui.pages;
 
-import com.vaadin.flow.component.*;
+import com.vaadin.flow.component.Component;
+import com.vaadin.flow.component.DetachEvent;
+import com.vaadin.flow.component.Key;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
 import com.vaadin.flow.component.html.Label;
@@ -43,29 +46,29 @@ public class SearchPage extends HorizontalLayout implements HasUrlParameter<Stri
     public static final String ONLY_IIIF_PARAM_NAME = "only_iiif";
     private static final String ROWS_PER_PAGE_PARAM_NAME = "rows";
 
-	private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
-	private static boolean onlyIiif = true;
-	private Select<Aggregator> aggregator;
-	private TextField search;
-	private Checkbox searchOnlyIiif;
-	private FacetComponent facets;
-	private SearchResultsComponent resultsComponent;
-	private SearchService searchService;
-	private TranscriptionPlatformService transcriptionPlatformService;
-	private CurrentUserRecordSelection currentUserRecordSelection;
-	private RecordsProjectsAssignmentService recordsProjectsAssignmentService;
-	private SearchResultProcessorService searchResultProcessorService;
-	// label used when no results were found
-	private Label noResults;
-	private Button invertSelectionButton;
-	private Button selectAllButton;
-	private Button addElementsButton;
-	private String originalLocation;
-	private String query;
+    private static final Logger logger = LoggerFactory.getLogger(SearchPage.class);
+    private static boolean onlyIiif = true;
+    private final SearchService searchService;
+    private final TranscriptionPlatformService transcriptionPlatformService;
+    private final CurrentUserRecordSelection currentUserRecordSelection;
+    private final RecordsProjectsAssignmentService recordsProjectsAssignmentService;
+    private final SearchResultProcessorService searchResultProcessorService;
+    private Select<Aggregator> aggregator;
+    private TextField search;
+    private Checkbox searchOnlyIiif;
+    private FacetComponent facets;
+    private SearchResultsComponent resultsComponent;
+    // label used when no results were found
+    private Label noResults;
+    private Button invertSelectionButton;
+    private Button selectAllButton;
+    private Button addElementsButton;
+    private String originalLocation;
+    private String query;
 
-	private Map<String, String> requestParams;
+    private Map<String, String> requestParams;
 
-	private Component selectionBar;
+    private Component selectionBar;
 
     public SearchPage(SearchService searchService,
                       TranscriptionPlatformService transcriptionPlatformService,

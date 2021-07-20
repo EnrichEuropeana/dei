@@ -5,6 +5,9 @@ import org.springframework.stereotype.Repository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 
+import java.util.Collection;
+import java.util.Optional;
+
 /**
  * Created by pwozniak on 3/29/19
  */
@@ -12,4 +15,6 @@ import pl.psnc.dei.model.Project;
 public interface DatasetsRepository extends JpaRepository<Dataset, Long> {
 
     Dataset findDatasetByDatasetId(String datasetID);
+    Collection<Dataset> findAllByProject(Project project);
+    Optional<Dataset> findByName(String name);
 }

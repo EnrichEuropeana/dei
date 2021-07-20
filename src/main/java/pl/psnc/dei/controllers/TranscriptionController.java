@@ -15,20 +15,19 @@ import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 @RestController
 @RequestMapping("/api/transcription")
 public class TranscriptionController {
 
-	private Logger logger = LoggerFactory.getLogger(TranscriptionController.class);
+	private final Logger logger = LoggerFactory.getLogger(TranscriptionController.class);
 
-	private TranscriptionPlatformService tps;
+	private final TranscriptionPlatformService tps;
 
-	private TasksQueueService tqs;
+	private final TasksQueueService tqs;
 
-	private TasksFactory tasksFactory;
+	private final TasksFactory tasksFactory;
 
 	@Autowired
 	public TranscriptionController(TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory) {
