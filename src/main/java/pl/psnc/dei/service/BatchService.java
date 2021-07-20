@@ -3,6 +3,7 @@ package pl.psnc.dei.service;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
+import org.apache.jena.atlas.json.JsonString;
 import org.apache.jena.atlas.json.JsonValue;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
@@ -138,7 +139,14 @@ public class BatchService {
 					.filter(obj -> obj.get("dc:title") != null)
 					.findFirst();
 			if (title.isPresent()) {
-				return title.get().getAsObject().get("dc:title").getAsObject().get("@value").getAsString().value();
+				Object dcTitle = title.get().getAsObject().get("dc:title");
+				if (dcTitle instanceof JsonObject) {
+					return ((JsonObject) dcTitle).getAsObject().get("@value").getAsString().value();
+				} else if (dcTitle instanceof JsonString) {
+					return ((JsonString) dcTitle).getAsString().value();
+				} else {
+					throw new RuntimeException("Cannot read title for record " + recordId + ".");
+				}
 			}
 		}
 		return recordId;
