@@ -10,13 +10,13 @@ import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import java.util.Optional;
 
 @Service
-public class ConversionTaskContextService extends ContextService<ConversionTaskContext> {
+public class ConversionTaskContextService implements ContextService<ConversionTaskContext> {
 
     private final ConversionTaskContextRepository conversionTaskContextRepository;
 
     public ConversionTaskContextService(ConversionTaskContextRepository conversionTaskContextRepository) {
-                this.conversionTaskContextRepository = conversionTaskContextRepository;
-            }
+        this.conversionTaskContextRepository = conversionTaskContextRepository;
+    }
 
     @Override
     @Transactional

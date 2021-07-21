@@ -78,7 +78,7 @@ public class TranscriptionPlatformService {
 	private String authToken;
 
 	private List<Project> availableProjects;
-	private UrlBuilder urlBuilder;
+	private final UrlBuilder urlBuilder;
 	private WebClient webClient;
 
 
@@ -195,14 +195,14 @@ public class TranscriptionPlatformService {
 
 	public void sendRecord(JsonObject recordBody, Record record) throws TranscriptionPlatformException {
 		Hibernate.initialize(record.getAnImport());
-		/*this.webClient.post()
+		this.webClient.post()
 				.uri(urlBuilder.urlForSendingRecord(record))
 				.header("Authorization", authToken)
 				.contentType(MediaType.APPLICATION_JSON)
 				.body(BodyInserters.fromObject(recordBody.toString()))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-					logger.info("Error while sending record {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					logger.info("Error while sending record {} {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
 				})
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
@@ -218,7 +218,6 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
-		 */
 	}
 
 	/**
@@ -267,7 +266,6 @@ public class TranscriptionPlatformService {
 		logger.info("Sending annotation id to TP: \n" +
 				"Record id: " + (transcription.getRecord() != null ? transcription.getRecord().getIdentifier() : "missing") +
 				"\nAnnotation id: " + transcription.getAnnotationId());
-		/*
 		this.webClient
 				.post()
 				.uri(urlBuilder.urlForTranscription(transcription))
@@ -292,8 +290,6 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
-
-		 */
 	}
 
 	private String convertToJson(String annotationId) {

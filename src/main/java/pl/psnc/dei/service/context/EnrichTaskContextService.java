@@ -4,15 +4,13 @@ import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.DAO.EnrichTaskContextRepository;
-import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
-import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 
 import java.util.Optional;
 
 @Service
-public class EnrichTaskContextService extends ContextService<EnrichTaskContext> {
+public class EnrichTaskContextService implements ContextService<EnrichTaskContext> {
 
     private final EnrichTaskContextRepository enrichTaskContextRepository;
 

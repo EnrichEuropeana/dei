@@ -6,7 +6,6 @@ import pl.psnc.dei.model.DAO.ConversionDataRepository;
 import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 

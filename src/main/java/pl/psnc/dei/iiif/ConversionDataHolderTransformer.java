@@ -13,14 +13,14 @@ import java.util.List;
 @Service
 public class ConversionDataHolderTransformer {
 
-    private final EuropeanaConversionDataTransformerStrategy europeanaConversionDataTransformerStrategy = new EuropeanaConversionDataTransformerStrategy();
-    private final DDBConversionDataTransformerStrategy ddbConversionDataTransformerStrategy = new DDBConversionDataTransformerStrategy();
+    private final EuropeanaConversionDataHolderTransformerStrategy europeanaConversionDataTransformerStrategy = new EuropeanaConversionDataHolderTransformerStrategy();
+    private final DDBConversionDataHolderTransformerStrategy ddbConversionDataTransformerStrategy = new DDBConversionDataHolderTransformerStrategy();
 
     public List<ConversionData> toDBModel(ConversionDataHolder conversionDataHolder) {
         if (conversionDataHolder.getClass().isAssignableFrom(EuropeanaConversionDataHolder.class)) {
             return europeanaConversionDataTransformerStrategy.toDBModel((EuropeanaConversionDataHolder) conversionDataHolder);
         }
-        else if (conversionDataHolder.getClass().isAssignableFrom(DDBConversionDataHolder.class)) {
+        if (conversionDataHolder.getClass().isAssignableFrom(DDBConversionDataHolder.class)) {
             return ddbConversionDataTransformerStrategy.toDBModel((DDBConversionDataHolder) conversionDataHolder);
         }
         throw new IllegalArgumentException("Cannot convert object of class: " + conversionDataHolder.getClass());

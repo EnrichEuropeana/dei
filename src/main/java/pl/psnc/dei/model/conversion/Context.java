@@ -1,14 +1,12 @@
 package pl.psnc.dei.model.conversion;
 
 import org.hibernate.annotations.NaturalId;
-import pl.psnc.dei.model.PersistableException;
+import pl.psnc.dei.model.PersistableExceptionEntity;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;
 
 import javax.persistence.*;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 
 @Entity
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
@@ -21,7 +19,7 @@ public abstract class Context {
     private Record record;
 
     @OneToMany(mappedBy = "context", cascade = CascadeType.ALL)
-    private List<PersistableException> exceptions;
+    private List<PersistableExceptionEntity> exceptions;
 
     private Task.TaskState taskState;
 
@@ -49,11 +47,11 @@ public abstract class Context {
         this.id = id;
     }
 
-    public List<PersistableException> getExceptions() {
+    public List<PersistableExceptionEntity> getExceptions() {
         return exceptions;
     }
 
-    public void setExceptions(List<PersistableException> exceptions) {
+    public void setExceptions(List<PersistableExceptionEntity> exceptions) {
         this.exceptions = exceptions;
     }
 }

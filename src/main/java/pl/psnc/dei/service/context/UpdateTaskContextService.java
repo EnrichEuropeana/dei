@@ -4,12 +4,11 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.DAO.UpdateTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.UpdateTaskContext;
-import pl.psnc.dei.queue.task.Task;
 
 import java.util.Optional;
 
 @Service
-public class UpdateTaskContextService extends ContextService<UpdateTaskContext>{
+public class UpdateTaskContextService implements ContextService<UpdateTaskContext> {
     private final UpdateTaskContextRepository updateTaskContextRepository;
 
     public UpdateTaskContextService(UpdateTaskContextRepository updateTaskContextRepository) {
@@ -17,7 +16,7 @@ public class UpdateTaskContextService extends ContextService<UpdateTaskContext>{
     }
 
     @Override
-    public UpdateTaskContext get (Record record) {
+    public UpdateTaskContext get(Record record) {
         Optional<UpdateTaskContext> context = this.updateTaskContextRepository.findByRecord(record);
         return context.orElseGet(() -> UpdateTaskContext.from(record));
     }

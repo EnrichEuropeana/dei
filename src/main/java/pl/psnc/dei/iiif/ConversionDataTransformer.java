@@ -3,7 +3,6 @@ package pl.psnc.dei.iiif;
 import org.apache.jena.atlas.json.JSON;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
 import pl.psnc.dei.model.conversion.ConversionData;
 
 import java.io.File;
@@ -11,7 +10,13 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.stream.Collectors;
 
+/**
+ * Transformer used to convert ConversionData between DB representation and system representation
+ */
 public class ConversionDataTransformer {
+
+    private ConversionDataTransformer() {
+    }
 
     private static final Logger logger = LoggerFactory.getLogger(ConversionDataTransformer.class);
 

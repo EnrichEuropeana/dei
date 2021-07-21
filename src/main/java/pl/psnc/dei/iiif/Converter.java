@@ -6,20 +6,15 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
-import pl.psnc.dei.service.PersistableExceptionService;
 import pl.psnc.dei.service.context.ContextMediator;
-import pl.psnc.dei.service.context.ContextUtils;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -27,10 +22,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -56,26 +48,17 @@ public class Converter {
 
 	private Record record;
 
-	@Autowired
-	private RecordsRepository recordsRepository;
+	private final RecordsRepository recordsRepository;
 
-	@Autowired
-	private ContextMediator contextMediator;
+	private final ContextMediator contextMediator;
 
-	@Autowired
-	private PersistableExceptionService persistableExceptionService;
-
-	@Autowired
-	private ConversionDataHolderTransformer conversionDataHolderTransformer;
-
-	@Autowired
-	private ConversionDataHolderService conversionDataHolderService;
+	private final ConversionDataHolderService conversionDataHolderService;
 
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
 	@Value("#{${conversion.url.replacements}}")
-	private Map<String,String> urlReplacements;
+	private Map<String, String> urlReplacements;
 
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
@@ -90,7 +73,11 @@ public class Converter {
 
 	private File outDir;
 
-	private ConversionDataHolder conversionDataHolder;
+	public Converter(RecordsRepository recordsRepository, ContextMediator contextMediator, ConversionDataHolderService conversionDataHolderService) {
+		this.recordsRepository = recordsRepository;
+		this.contextMediator = contextMediator;
+		this.conversionDataHolderService = conversionDataHolderService;
+	}
 
 	@PostConstruct
 	private void copyScript() {
@@ -111,9 +98,6 @@ public class Converter {
 	 * @param record record for witch we create IIIF
 	 * @param recordJson record data imported from europeana
 	 * @param recordJsonRaw record data imported from europeana
-	 * @throws ConversionException
-	 * @throws IOException
-	 * @throws InterruptedException
 	 */
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
@@ -129,9 +113,9 @@ public class Converter {
 		outDir.mkdirs();
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
-		this.conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw, true);
-		this.conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
-		this.conversionDataHolder =	convertAllFiles(conversionDataHolder);
+		ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw, true);
+		conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
+		conversionDataHolder = convertAllFiles(conversionDataHolder);
 
 		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
@@ -156,7 +140,7 @@ public class Converter {
 						.filter(e -> e.get("edm:isShownBy") != null)
 						.findFirst();
 
-				if (!aggregatorData.isPresent()) {
+				if (aggregatorData.isEmpty()) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
@@ -165,8 +149,7 @@ public class Converter {
 					context.setHasConverterCreatedDataHolder(true);
 					this.contextMediator.save(context);
 					return this.conversionDataHolderService.save(EconversionDataHolder, context);
-				}
-				else {
+				} else {
 					return EconversionDataHolder;
 				}
 			case DDB:
@@ -228,7 +211,6 @@ public class Converter {
 	 * Downloads contents pointed in url. If url returns 301 then follow link
 	 * @param url url to fetch
 	 * @param file file to which save contents
-	 * @throws IOException
 	 */
 	private void copyURLToFile(URL url, File file) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -266,7 +248,7 @@ public class Converter {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
 
-			if (convData.mediaType.toLowerCase().equals("pdf")) {
+			if (convData.mediaType.equalsIgnoreCase("pdf")) {
 				// PDF
 				try {
 					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
@@ -313,7 +295,7 @@ public class Converter {
 				}
 			}
 		}
-		if (outDir.listFiles().length == 0) {
+		if (Objects.requireNonNull(outDir.listFiles()).length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
 		context.setHasConverterConvertedToIIIF(true);
@@ -404,7 +386,6 @@ public class Converter {
 	/**
 	 * Add information about generated IIIF to manifest
 	 * @param storedFilesData data holder with populated information
-	 * @return
 	 */
 	private JsonArray getSequenceJson(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
@@ -452,7 +433,6 @@ public class Converter {
 	 * Adds manifest to json representation of data fetched from european
 	 * @param record record for which changes will be made
 	 * @param jsonObject json to which changes will be made
-	 * @param jsonObjectRaw
 	 */
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {

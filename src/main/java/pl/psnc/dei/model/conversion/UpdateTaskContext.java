@@ -1,12 +1,11 @@
 package pl.psnc.dei.model.conversion;
 
-import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.queue.task.Task;
 
-import javax.persistence.*;
-import java.util.List;
+import javax.persistence.Entity;
+import javax.persistence.OneToOne;
 
 @Entity
 public class UpdateTaskContext extends Context{

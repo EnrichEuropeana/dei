@@ -1,11 +1,8 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AccessLevel;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.Setter;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.converter.JsonObjectToStringConverter;
 

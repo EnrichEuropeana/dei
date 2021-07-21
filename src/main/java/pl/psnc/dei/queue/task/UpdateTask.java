@@ -25,13 +25,13 @@ public class UpdateTask extends Task {
 	 * It is possible that there will be more than 1 transcription update pending, so it has to be list, that situation
 	 * can happen only if there will be server crash.
 	 */
-	private List<Transcription> transcriptions;
+	private final List<Transcription> transcriptions;
 
-	private ContextMediator contextMediator;
+	private final ContextMediator contextMediator;
 
-	private UpdateTaskContext context;
+	private final UpdateTaskContext context;
 
-	private QueueRecordService queueRecordService;
+	private final QueueRecordService queueRecordService;
 
 	UpdateTask(Record record, QueueRecordService queueRecordService,
 			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
@@ -55,9 +55,7 @@ public class UpdateTask extends Task {
 		transcriptions = record.getTranscriptions();
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
-				() -> {
-					this.state = this.context.getTaskState();
-				});
+				() -> this.state = this.context.getTaskState());
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
@@ -78,9 +76,7 @@ public class UpdateTask extends Task {
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
-				() -> {
-					this.state = this.context.getTaskState();
-				});
+				() -> this.state = this.context.getTaskState());
 	}
 
 	@Override

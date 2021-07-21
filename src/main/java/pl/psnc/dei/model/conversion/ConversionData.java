@@ -1,10 +1,8 @@
 package pl.psnc.dei.model.conversion;
 
-import pl.psnc.dei.iiif.*;
-import pl.psnc.dei.model.Record;
+import pl.psnc.dei.iiif.Dimension;
 
 import javax.persistence.*;
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -29,20 +27,6 @@ public class ConversionData {
 
     @ManyToOne
     private ConversionTaskContext conversionTaskContext;
-
-    // new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
-
-    public static ConversionData from(Record record) {
-        ConversionData conversionContext = new ConversionData();
-        conversionContext.setJson("");
-        conversionContext.setSrcFileUrl("");
-        conversionContext.setOutFilePath(new ArrayList<>());
-        conversionContext.setImagePath(new ArrayList<>());
-        conversionContext.setMediaType("");
-        conversionContext.setDimension(new ArrayList<>());
-        conversionContext.setSrcFilePath("");
-        return conversionContext;
-    }
 
     public String getJson() {
         return json;

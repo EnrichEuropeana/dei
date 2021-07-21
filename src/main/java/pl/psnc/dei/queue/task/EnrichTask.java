@@ -12,7 +12,6 @@ import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
-import pl.psnc.dei.service.context.EnrichTaskContextService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -27,11 +26,11 @@ public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
 
-	private EnrichTaskContext context;
+	private final EnrichTaskContext context;
 
-	private ContextMediator contextMediator;
+	private final ContextMediator contextMediator;
 
-	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
 	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
@@ -39,9 +38,7 @@ public class EnrichTask extends Task {
 		this.context = (EnrichTaskContext) this.contextMediator.get(record);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
-				() -> {
-					this.state = this.context.getTaskState();
-		});
+				() -> this.state = this.context.getTaskState());
 
 	}
 

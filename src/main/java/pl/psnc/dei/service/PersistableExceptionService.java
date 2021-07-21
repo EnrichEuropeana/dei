@@ -6,8 +6,7 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
 import pl.psnc.dei.model.DAO.PersistableExceptionRepository;
-import pl.psnc.dei.model.PersistableException;
-import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.PersistableExceptionEntity;
 import pl.psnc.dei.model.conversion.Context;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.context.ContextMediator;
@@ -25,25 +24,24 @@ public class PersistableExceptionService {
     @Autowired
     private ContextMediator contextMediator;
 
-    public <T extends  Exception> T findByContextAndExceptionClass(Context context, Class<T> exceptionClass) {
-        PersistableException.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exceptionClass);
-        Optional<PersistableException> optionalExceptions = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
-        return optionalExceptions.map(persistableException -> this.inflateException(persistableException, exceptionClass)).orElse(null);
+    public <T extends Exception> T findByContextAndExceptionClass(Context context, Class<T> exceptionClass) {
+        PersistableExceptionEntity.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exceptionClass);
+        Optional<PersistableExceptionEntity> optionalException = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
+        return optionalException.map(persistableException -> this.inflateException(persistableException, exceptionClass)).orElse(null);
     }
 
-    public PersistableException bind(Exception exception, Context context) {
-        PersistableException.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exception.getClass());
-        Optional<PersistableException> optionalException = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
+    public PersistableExceptionEntity bind(Exception exception, Context context) {
+        PersistableExceptionEntity.ExceptionType exceptionType = this.convertExceptionClassToExceptionType(exception.getClass());
+        Optional<PersistableExceptionEntity> optionalException = this.persistableExceptionRepository.findByContextAndType(context, exceptionType);
         if (optionalException.isPresent()) {
-            PersistableException fetchedException = optionalException.get();
+            PersistableExceptionEntity fetchedException = optionalException.get();
             fetchedException.setMessage(exception.getMessage());
-            PersistableException persistableException = this.persistableExceptionRepository.save(fetchedException);
+            PersistableExceptionEntity persistableException = this.persistableExceptionRepository.save(fetchedException);
             context.getExceptions().add(persistableException);
             this.contextMediator.save(context);
             return persistableException;
-        }
-        else {
-            PersistableException newPersistableException = new PersistableException();
+        } else {
+            PersistableExceptionEntity newPersistableException = new PersistableExceptionEntity();
             newPersistableException.setContext(context);
             newPersistableException.setMessage(exception.getMessage());
             newPersistableException.setType(this.convertExceptionClassToExceptionType(exception.getClass()));
@@ -54,7 +52,7 @@ public class PersistableExceptionService {
         }
     }
 
-    private <T extends Exception> T inflateException(PersistableException persistableException, Class<T> exceptionClass) {
+    private <T extends Exception> T inflateException(PersistableExceptionEntity persistableException, Class<T> exceptionClass) {
         switch (persistableException.getType()) {
             case TRANSCRIPTION_PLATFORM_EXCEPTION: {
                 // unchecked cast without it
@@ -94,24 +92,24 @@ public class PersistableExceptionService {
         }
     }
 
-    private <T> PersistableException.ExceptionType convertExceptionClassToExceptionType(Class<T> aClass) {
+    private <T> PersistableExceptionEntity.ExceptionType convertExceptionClassToExceptionType(Class<T> aClass) {
         if (aClass.isAssignableFrom(TranscriptionPlatformException.class)) {
-            return PersistableException.ExceptionType.TRANSCRIPTION_PLATFORM_EXCEPTION;
+            return PersistableExceptionEntity.ExceptionType.TRANSCRIPTION_PLATFORM_EXCEPTION;
         }
-        else if (aClass.isAssignableFrom(NotFoundException.class)) {
-            return PersistableException.ExceptionType.NOT_FOUND_EXCEPTION;
+        if (aClass.isAssignableFrom(NotFoundException.class)) {
+            return PersistableExceptionEntity.ExceptionType.NOT_FOUND_EXCEPTION;
         }
-        else if (aClass.isAssignableFrom(IOException.class)) {
-            return PersistableException.ExceptionType.IO_EXCEPTION;
+        if (aClass.isAssignableFrom(IOException.class)) {
+            return PersistableExceptionEntity.ExceptionType.IO_EXCEPTION;
         }
-        else if (aClass.isAssignableFrom(ConversionException.class)) {
-            return PersistableException.ExceptionType.CONVERSION_EXCEPTION;
+        if (aClass.isAssignableFrom(ConversionException.class)) {
+            return PersistableExceptionEntity.ExceptionType.CONVERSION_EXCEPTION;
         }
-        else if (aClass.isAssignableFrom(ConversionImpossibleException.class)) {
-            return PersistableException.ExceptionType.CONVERSION_IMPOSSIBLE_EXCEPTION;
+        if (aClass.isAssignableFrom(ConversionImpossibleException.class)) {
+            return PersistableExceptionEntity.ExceptionType.CONVERSION_IMPOSSIBLE_EXCEPTION;
         }
-        else if (aClass.isAssignableFrom(InterruptedException.class)) {
-            return PersistableException.ExceptionType.INTERRUPTED_EXCEPTION;
+        if (aClass.isAssignableFrom(InterruptedException.class)) {
+            return PersistableExceptionEntity.ExceptionType.INTERRUPTED_EXCEPTION;
         }
         throw new IllegalArgumentException("Class " + aClass.getName() + " cannot be translated");
     }

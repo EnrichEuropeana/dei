@@ -15,11 +15,10 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTransformationState<EuropeanaConversionDataHolder> {
+public class EuropeanaConversionDataHolderTransformerStrategy extends ConversionDataHolderTransformationState<EuropeanaConversionDataHolder> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -30,7 +29,7 @@ public class EuropeanaConversionDataTransformerStrategy extends ConversionDataTr
         Record record = conversionTaskContext.getRecord();
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
-                    EuropeanaConversionDataHolder.ConversionData a = new EuropeanaConversionDataHolder.ConversionData();
+                    ConversionDataHolder.ConversionData a = new EuropeanaConversionDataHolder.ConversionData();
                     a.id = el.getId();
                     a.dimensions = el.getDimension();
                     a.imagePath = el.getImagePath();

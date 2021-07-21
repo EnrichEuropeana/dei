@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class DDBConversionDataTransformerStrategy extends ConversionDataTransformationState<DDBConversionDataHolder> {
+public class DDBConversionDataHolderTransformerStrategy extends ConversionDataHolderTransformationState<DDBConversionDataHolder> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 

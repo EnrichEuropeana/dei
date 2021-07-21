@@ -6,14 +6,16 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
 
 
-
 @Service
-public class TranscribeTaskContextService extends ContextService<TranscribeTaskContext> {
+public class TranscribeTaskContextService implements ContextService<TranscribeTaskContext> {
 
     private final TranscribeTaskContextRepository transcribeTaskContextRepository;
+
+    private final Collection<Record.RecordState> handleable = Arrays.asList(Record.RecordState.T_PENDING, Record.RecordState.T_SENT);
 
     public TranscribeTaskContextService(TranscribeTaskContextRepository transcribeTaskContextRepository) {
         this.transcribeTaskContextRepository = transcribeTaskContextRepository;
@@ -37,7 +39,7 @@ public class TranscribeTaskContextService extends ContextService<TranscribeTaskC
 
     @Override
     public Boolean canHandle(Record record) {
-        return Arrays.asList(Record.RecordState.T_PENDING, Record.RecordState.T_SENT).contains(record.getState());
+        return this.handleable.contains(record.getState());
     }
 
     @Override

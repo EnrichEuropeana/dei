@@ -25,15 +25,15 @@ import java.util.Arrays;
  */
 public class ConversionTask extends Task {
 
-	private ContextMediator contextMediator;
+	private final ContextMediator contextMediator;
 
-	private PersistableExceptionService persistableExceptionService;
+	private final PersistableExceptionService persistableExceptionService;
 
 	Logger logger = LoggerFactory.getLogger(ConversionTask.class);
 
-	private Converter converter;
+	private final Converter converter;
 
-	private TasksQueueService tqs;
+	private final TasksQueueService tqs;
 
 	// Record in JSON-LD
 	private JsonObject recordJson;
@@ -41,13 +41,13 @@ public class ConversionTask extends Task {
 	// Record in JSON
 	private JsonObject recordJsonRaw;
 
-	private TasksFactory tasksFactory;
+	private final TasksFactory tasksFactory;
 
-	private DDBFormatResolver ddbFormatResolver;
+	private final DDBFormatResolver ddbFormatResolver;
 
 	private ConversionTaskContext context;
 
-	private RecordsRepository recordsRepository;
+	private final RecordsRepository recordsRepository;
 
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
 				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, ContextMediator contextMediator, RecordsRepository recordsRepository) {

@@ -1,10 +1,12 @@
 package pl.psnc.dei.model.conversion;
 
-import org.hibernate.annotations.NaturalId;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.queue.task.Task;
 
-import javax.persistence.*;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import java.util.ArrayList;
 
 /**
