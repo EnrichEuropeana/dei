@@ -3,6 +3,7 @@ package pl.psnc.dei.queue.task;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
@@ -65,18 +66,43 @@ public class TranscribeTask extends Task {
 				);
 				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJson(),
 						() -> {
-							recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-							this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
-							this.contextMediator.save(this.transcribeTaskContext);
+							try {
+								recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+								this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
+								this.contextMediator.save(this.transcribeTaskContext);
+							} catch (AggregatorException aggregatorException) {
+								try {
+									queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+									tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
+									tps.updateImportState(record.getAnImport());
+								} catch (NotFoundException nfe) {
+									throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+											+ ", identifier: " + record.getIdentifier(), nfe);
+								}
+								throw new RuntimeException(aggregatorException.getCause());
+							}
 						});
 				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJsonRaw(),
 						() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
 				);
 				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJsonRaw(),
 						() -> {
-							recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
-							this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
-							this.contextMediator.save(this.transcribeTaskContext);
+							try {
+								recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+								this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
+								this.contextMediator.save(this.transcribeTaskContext);
+							} catch (AggregatorException aggregatorException) {
+								try {
+									queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+									tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
+									tps.updateImportState(record.getAnImport());
+								} catch (NotFoundException nfe) {
+									throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+											+ ", identifier: " + record.getIdentifier(), nfe);
+								}
+								throw new RuntimeException(aggregatorException.getCause());
+							}
+
 						});
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
