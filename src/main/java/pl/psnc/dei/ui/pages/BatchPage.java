@@ -15,10 +15,10 @@ import pl.psnc.dei.ui.components.batches.ComplexBatchImportComponent;
 @Route(value = "batch", layout = MainView.class)
 public class BatchPage extends HorizontalLayout {
 
-    private ProjectsRepository projectsRepository;
-    private BatchService batchService;
-    private ImportPackageService importPackageService;
-    private DatasetsRepository datasetsRepository;
+    private final ProjectsRepository projectsRepository;
+    private final BatchService batchService;
+    private final ImportPackageService importPackageService;
+    private final DatasetsRepository datasetsRepository;
 
     private VerticalLayout displayingPlace;
 
@@ -43,7 +43,6 @@ public class BatchPage extends HorizontalLayout {
     }
 
     public void showComplexImportsView() {
-        //TODO: EN-154
         switchPage(new ComplexBatchImportComponent(projectsRepository, datasetsRepository, batchService));
     }
 

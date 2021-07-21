@@ -2,6 +2,7 @@ package pl.psnc.dei.ui.components.batches;
 
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.html.Div;
+import com.vaadin.flow.component.html.Label;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
@@ -12,6 +13,7 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.data.provider.ListDataProvider;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
@@ -19,10 +21,9 @@ import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 public class ComplexBatchImportComponent extends VerticalLayout {
     private final ProjectsRepository projectsRepository;
@@ -66,11 +67,12 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         importName.add(this.nameTextFiled);
         container.add(importName);
 
-        add(container);
-
         HorizontalLayout uploads = new HorizontalLayout();
+        uploads.addClassName("vertically-centered-row");
         uploads.add(this.file);
-        add(uploads);
+        container.add(uploads);
+
+        add(container);
 
         add(this.importButton);
     }
@@ -82,20 +84,21 @@ public class ComplexBatchImportComponent extends VerticalLayout {
     }
 
     private void prepareAggregatorSelect() {
-        this.aggregatorSelect = new Select<>();
-        this.aggregatorSelect.setLabel("Select Aggregator");
-        this.aggregatorSelect.setItems(Arrays.stream(Aggregator.values()).filter(a -> a != Aggregator.UNKNOWN));
+        this.aggregatorSelect = CommonComponentsFactory.getAggregatorSelector();
         this.aggregatorSelect.setValue(Aggregator.getById(0));
         this.aggregatorSelect.setEmptySelectionAllowed(false);
+        this.aggregatorSelect.setValue(Aggregator.EUROPEANA);
+        this.aggregatorSelect.setEnabled(false);
     }
 
     private void prepareProjectSelect() {
         ListDataProvider<Project> projectsProvider = new ListDataProvider<>(this.projectsRepository.findAll());
         this.projectSelect = CommonComponentsFactory.getProjectSelector(projectsProvider);
         this.projectSelect.setEmptySelectionAllowed(false);
+        this.projectSelect.setValue(projectsProvider.getItems().stream().findFirst().orElseGet(null));
         this.projectSelect.addValueChangeListener(event -> {
             Project project = this.projectSelect.getValue();
-            this.datasetSelect.setItems(this.datasetsRepository.findAllByProject(project));
+            this.datasetSelect.setItems(this.batchService.getProjectDataset(project));
         });
     }
 
@@ -103,8 +106,9 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         Project project = this.projectSelect.getValue();
         this.datasetSelect =
                 CommonComponentsFactory.getDatasetSelector(
-                        (List<Dataset>) this.datasetsRepository.findAllByProject(project)
+                    this.batchService.getProjectDataset(project)
                 );
+        this.datasetSelect.setEmptySelectionAllowed(true);
     }
 
     private void initUploads() {
@@ -130,13 +134,15 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         this.file.addFileRejectedListener(
                 event -> Notification.show("File rejected. Reason: " + event.getErrorMessage(), 3000, Notification.Position.MIDDLE)
         );
+        this.file.setDropLabel(new Label("Upload up to one file to make import from"));
+        this.file.addClassName("flex-1");
+        this.file.addClassName("margin-top");
     }
 
     private void prepareNameTextFiled() {
         this.nameTextFiled = new TextField();
         this.nameTextFiled.setLabel("Import name");
         this.nameTextFiled.addClassName("flex-1");
-        this.nameTextFiled.setMinLength(1);
     }
 
     private void prepareImportButton() {
@@ -146,27 +152,42 @@ public class ComplexBatchImportComponent extends VerticalLayout {
                 event -> {
                     try {
                         if (this.validate()) {
+                            String datasetName = this.datasetSelect.getValue() == null ? null : this.datasetSelect.getValue().getName();
                             this.batchService
                                     .makeComplexImport(
                                             this.memoryBuffer.getInputStream(),
                                             this.nameTextFiled.getValue(),
                                             this.projectSelect.getValue().getName(),
-                                            this.datasetSelect.getValue().getName()
+                                            datasetName
                                     );
                             Notification.show("Import Finished!", 3000, Notification.Position.MIDDLE);
                         }
-                        else Notification.show("Missing or wrong input", 3000, Notification.Position.MIDDLE);
                     } catch (IOException e) {
+                        Notification.show("IOException: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
+                        e.printStackTrace();
+                    } catch (NotFoundException e) {
+                        Notification.show("Invalid data: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
                         e.printStackTrace();
                     }
                 });
     }
 
     private Boolean validate() throws IOException {
-        if (this.aggregatorSelect.getValue() == null) return false;
-        else if (this.projectSelect.getValue() == null) return false;
-        else if (this.nameTextFiled.getValue().equals("")) return false;
-        else if (this.memoryBuffer.getInputStream().readAllBytes().length == 0) return false;
-        else return this.datasetSelect.getValue() != null;
+        if (this.aggregatorSelect.getValue() == null){
+            Notification.show("Select Aggregator", 3000, Notification.Position.MIDDLE);
+            return false;
+        }
+        else if (this.projectSelect.getValue() == null) {
+            Notification.show("Select Project", 3000, Notification.Position.MIDDLE);
+            return false;
+        }
+        else if (this.memoryBuffer.getInputStream().readAllBytes().length == 0) {
+            Notification.show("Select File", 3000, Notification.Position.MIDDLE);
+            return false;
+        }
+        if (this.nameTextFiled.getValue().equals("")) {
+            this.nameTextFiled.setValue(ImportNameCreatorUtil.generateImportName(this.projectSelect.getValue().getName()));
+        }
+        return true;
     }
 }
