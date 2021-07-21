@@ -83,12 +83,10 @@ public class EnrichTask extends Task {
 								transcription.setAnnotationId(europeanaAnnotationId.toString());
 							}
 							transcriptions.put(transcription.getTp_id(), transcription);
-							// queueRecordService.saveTranscription(transcription);
 						} catch (IllegalArgumentException e) {
 							logger.error("Transcription was corrupted: " + val.toString());
 						}
 					}
-					System.out.println("aaa");
 					this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
 					this.context.setHasDownloadedEnrichment(true);
 					this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));

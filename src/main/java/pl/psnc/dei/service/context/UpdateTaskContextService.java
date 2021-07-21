@@ -32,12 +32,12 @@ public class UpdateTaskContextService implements ContextService<UpdateTaskContex
     }
 
     @Override
-    public Boolean canHandle(Record record) {
+    public boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.U_PENDING);
     }
 
     @Override
-    public Boolean canHandle(Class<?> aClass) {
+    public boolean canHandle(Class<?> aClass) {
         return aClass.isAssignableFrom(UpdateTaskContext.class);
     }
 }

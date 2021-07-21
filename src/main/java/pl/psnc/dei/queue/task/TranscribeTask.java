@@ -72,8 +72,8 @@ public class TranscribeTask extends Task {
 								this.contextMediator.save(this.transcribeTaskContext);
 							} catch (AggregatorException aggregatorException) {
 								try {
+									this.persistException(aggregatorException);
 									queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-									tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
 									tps.updateImportState(record.getAnImport());
 								} catch (NotFoundException nfe) {
 									throw new AssertionError("Record deleted while being processed, id: " + record.getId()
@@ -92,14 +92,8 @@ public class TranscribeTask extends Task {
 								this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
 								this.contextMediator.save(this.transcribeTaskContext);
 							} catch (AggregatorException aggregatorException) {
-								try {
-									queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-									tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
-									tps.updateImportState(record.getAnImport());
-								} catch (NotFoundException nfe) {
-									throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-											+ ", identifier: " + record.getIdentifier(), nfe);
-								}
+								this.persistException(aggregatorException);
+								tps.updateImportState(record.getAnImport());
 								throw new RuntimeException(aggregatorException.getCause());
 							}
 
@@ -152,34 +146,12 @@ public class TranscribeTask extends Task {
 					this.transcribeTaskContext.setRecord(record);
 					this.contextMediator.delete(this.transcribeTaskContext);
 				} catch (TranscriptionPlatformException e) {
-					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
-							() -> {
-								this.transcribeTaskContext.setHasThrownError(true);
-								this.persistableExceptionService.bind(e, this.transcribeTaskContext);
-								this.contextMediator.save(this.transcribeTaskContext);
-							});
-					ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
-							() -> {
-									try {
-										tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
-										this.transcribeTaskContext.setHasAddedFailure(true);
-										this.contextMediator.save(this.transcribeTaskContext);
-									} catch (NotFoundException e1) {
-										throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-												+ ", identifier: " + record.getIdentifier(), e1);
-									}
-								});
+					this.persistException(e);
 					// deletion must occur before state change or context will never be deleted
 					this.contextMediator.delete(this.transcribeTaskContext);
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
 					tps.updateImportState(record.getAnImport());
 				} catch (NotFoundException e) {
-					ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
-							() -> {
-								this.transcribeTaskContext.setHasThrownError(true);
-								this.persistableExceptionService.bind(e, this.transcribeTaskContext);
-								this.contextMediator.save(this.transcribeTaskContext);
-							});
 					this.contextMediator.delete(this.transcribeTaskContext);
 					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 							+ ", identifier: " + record.getIdentifier(), e);
@@ -188,4 +160,23 @@ public class TranscribeTask extends Task {
 		}
 	}
 
+	private void persistException(Exception exception) {
+		ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
+				() -> {
+					this.transcribeTaskContext.setHasThrownError(true);
+					this.persistableExceptionService.bind(exception, this.transcribeTaskContext);
+					this.contextMediator.save(this.transcribeTaskContext);
+				});
+		ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
+				() -> {
+					try {
+						tps.addFailure(record.getAnImport().getName(), record, exception.getMessage());
+						this.transcribeTaskContext.setHasAddedFailure(true);
+						this.contextMediator.save(this.transcribeTaskContext);
+					} catch (NotFoundException e1) {
+						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+								+ ", identifier: " + record.getIdentifier(), e1);
+					}
+				});
+	}
 }

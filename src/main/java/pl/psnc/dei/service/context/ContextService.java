@@ -14,7 +14,7 @@ public interface ContextService<T> {
 
     void delete(T context);
 
-    Boolean canHandle(Record record);
+    boolean canHandle(Record record);
 
-    Boolean canHandle(Class<?> aClass);
+    boolean canHandle(Class<?> aClass);
 }

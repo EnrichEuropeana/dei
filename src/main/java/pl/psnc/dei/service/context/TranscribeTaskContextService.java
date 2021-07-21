@@ -45,12 +45,12 @@ public class TranscribeTaskContextService implements ContextService<TranscribeTa
     }
 
     @Override
-    public Boolean canHandle(Record record) {
+    public boolean canHandle(Record record) {
         return this.handleable.contains(record.getState());
     }
 
     @Override
-    public Boolean canHandle(Class<?> aClass) {
+    public boolean canHandle(Class<?> aClass) {
         return aClass.isAssignableFrom(TranscribeTaskContext.class);
     }
 }

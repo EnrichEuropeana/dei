@@ -42,12 +42,12 @@ public class EnrichTaskContextService implements ContextService<EnrichTaskContex
     }
 
     @Override
-    public Boolean canHandle(Record record) {
+    public boolean canHandle(Record record) {
         return record.getState().equals(Record.RecordState.E_PENDING);
     }
 
     @Override
-    public Boolean canHandle(Class<?> aClass) {
+    public boolean canHandle(Class<?> aClass) {
         return aClass.isAssignableFrom(EnrichTaskContext.class);
     }
 }
