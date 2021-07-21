@@ -313,11 +313,14 @@ public class BatchService {
 											  String datasetName,
 											  Set<String> recordsIds)
 			throws NotFoundException {
-		Optional<Dataset> optionalDataset = this.datasetsReposotory.findByName(datasetName);
-		if(optionalDataset.isEmpty()) {
-			throw new NotFoundException("Dataset with name: " + datasetName + " not found");
+		String datasetId = null;
+		if (datasetName != null) {
+			Optional<Dataset> optionalDataset = this.datasetsReposotory.findByName(datasetName);
+			if (optionalDataset.isEmpty()) {
+				throw new NotFoundException("Dataset with name: " + datasetName + " not found");
+			}
+			datasetId = optionalDataset.get().getDatasetId();
 		}
-		String datasetId = optionalDataset.get().getDatasetId();
 		Set<Record> records = this.uploadRecords(projectName, datasetId, recordsIds);
 		if (records.size() < recordsIds.size()) {
 			String difference = records
@@ -332,7 +335,7 @@ public class BatchService {
 		return records;
 	}
 
-	public List<Import> makeComplexImport(MultipartFile file, String name, String projectName, String datasetName) throws IOException {
+	public List<Import> makeComplexImport(MultipartFile file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
 		File saved = File.createTempFile("tmp", ".csv");
 		file.transferTo(saved);
 		List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
@@ -340,7 +343,7 @@ public class BatchService {
 		return result;
 	}
 
-	public List<Import> makeComplexImport(InputStream inputStream, String name, String projectName, String datasetName) throws IOException {
+	public List<Import> makeComplexImport(InputStream inputStream, String name, String projectName, String datasetName) throws IOException, NotFoundException {
 		File saved = File.createTempFile("tmp", ".csv");
 		OutputStream os = new FileOutputStream(saved);
 		os.write(inputStream.readAllBytes());
@@ -349,28 +352,23 @@ public class BatchService {
 		return result;
 	}
 
-	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException {
+	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
 		List<Set<String>> records = this.splitImport(file);
 		List<Import> imports = new ArrayList<>();
+		int counter = 0;
+		String importName;
 
-		try {
-			int counter = 0;
-			String importName;
-
-			for(Set<String> identifiers : records) {
-				Set<Record> uploadedRecords = uploadRecordsToProject(projectName, datasetName, identifiers);
-				if (!uploadedRecords.isEmpty()) {
-					if (StringUtils.isBlank(name)) {
-						importName = name;
+		for (Set<String> identifiers : records) {
+			Set<Record> uploadedRecords = uploadRecordsToProject(projectName, datasetName, identifiers);
+			if (!uploadedRecords.isEmpty()) {
+				if (StringUtils.isBlank(name)) {
+					importName = name;
 					} else {
 						importName = name + "_" + counter++;
 					}
 					imports.add(importService.createImport(importName, uploadedRecords.iterator().next().getProject().getProjectId(), uploadedRecords));
 				}
 			}
-		} catch (NotFoundException e) {
-			return new ArrayList<>();
-		}
 		return imports;
 	}
 }

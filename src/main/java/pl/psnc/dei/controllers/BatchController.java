@@ -90,7 +90,12 @@ public class BatchController {
 													@RequestParam(value = "datasetName", required = false) String datasetName,
 													@RequestParam(value = "name", required = false) String name,
 													@RequestBody @RequestParam("file") MultipartFile file) throws IOException {
-		return ResponseEntity.ok(this.batchService.makeComplexImport(file, name, projectName, datasetName));
+		try {
+			return ResponseEntity.ok(this.batchService.makeComplexImport(file, name, projectName, datasetName));
+		} catch (NotFoundException e) {
+			e.printStackTrace();
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
 	}
 
 	@PostMapping(path = "/fix-dimensions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
