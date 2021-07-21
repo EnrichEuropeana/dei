@@ -1,0 +1,178 @@
+.facet-component {
+    margin-top: 0;
+    padding: 16px;
+    background-color: WhiteSmoke;
+    width: 25%;
+    max-width: 250px;
+}
+
+.facet-hidden {
+    visibility: hidden;
+}
+
+.refine-query-label {
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.facet-box {
+    margin-top: 0;
+    margin-left: 10px;
+    text-wrap: avoid;
+}
+
+.selected-facets {
+    flex-wrap: wrap;
+}
+
+.selected-facet-button {
+    font-size: 0.85em;
+    margin: 2px;
+}
+
+.selected-facet-icon {
+    color: darkred;
+}
+
+.search-results-component {
+    margin-left: 0;
+}
+
+.search-result-element {
+    margin-top: 5px;
+    margin-left: 0;
+    margin-bottom: 5px;
+    padding: 0;
+    max-width: 1000px;
+}
+
+.search-result-element-enabled {
+    background-color: lightsteelblue;
+}
+
+.search-result-element-disabled {
+    background-color: lightgray;
+}
+
+.search-result-element-imported {
+    background-color: lightsteelblue;
+    opacity: 0.5;
+}
+
+.search-result-checkbox {
+    margin-left: 30px;
+}
+
+.no-results-label {
+    font-style: italic;
+}
+
+.metadata-label {
+    font-weight: bold;
+}
+
+.metadata-line {
+    margin-top: 0;
+}
+
+.can-transfer-label {
+    font-weight: bold;
+    color: green;
+}
+
+.cannot-transfer-label {
+    font-weight: bold;
+    color: red;
+}
+
+.metadata-image-container {
+    width: 100px;
+    height: fit-content;
+    max-width: 100px;
+    max-height: 100px;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.metadata-image {
+    max-width: 100px;
+    max-height: 100px;
+}
+
+.query-form {
+    max-width: 1000px;
+    max-height: 40px;
+}
+
+.aggregator-selector {
+    margin-top: 0;
+    width: 300px;
+}
+
+.search-field {
+    max-width: 1000px;
+    min-width: 500px;
+}
+
+.navigation-button {
+    width: fit-content;
+    min-width: 42px;
+    height: 36px;
+    margin: 2px;
+    font-size: small;
+    color: #000000;
+}
+
+.navigation-button-current {
+    background-color: darkgray;
+}
+
+.navigation-bar {
+    max-width: 1000px;
+    width: 1000px;
+}
+
+.rows-per-page {
+    margin-left: auto;
+    padding-right: 10px;
+}
+
+.rows-per-page-combobox {
+    width: 80px;
+}
+
+.button-as-text {
+    background: none !important;
+    color: inherit;
+    border: none;
+    font: inherit;
+    border: 0;
+    cursor: pointer;
+}
+
+.confirmation-dialog-title {
+    font-weight: bold;
+    font-size: large;
+}
+
+.import-grid-label {
+    font-weight: bold;
+}
+
+.wide-import-name-input {
+    width: 300px;
+}
+
+.import-switching-buttons {
+    max-width: 100px;
+}
+
+.underlined-item {
+    font-weight: bold;
+    padding-left: 15px !important;
+}
+
+.button-disabled {
+    opacity: 0.5;
+    background-color: lightgray
+}
