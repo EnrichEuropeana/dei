@@ -124,7 +124,7 @@ public class Converter {
 		recordsRepository.save(record);
 	}
 
-	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw, Boolean isRecoverable) throws ConversionImpossibleException {
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw, boolean isRecoverable) throws ConversionImpossibleException {
 		ConversionTaskContext context = null;
 		if (isRecoverable) {
 			context = (ConversionTaskContext) this.contextMediator.get(record);
@@ -144,27 +144,25 @@ public class Converter {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				EuropeanaConversionDataHolder EconversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				EuropeanaConversionDataHolder eConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
 				if (isRecoverable) {
 					context.setHasConverterCreatedDataHolder(true);
 					this.contextMediator.save(context);
-					return this.conversionDataHolderService.save(EconversionDataHolder, context);
+					return this.conversionDataHolderService.save(eConversionDataHolder, context);
 				} else {
-					return EconversionDataHolder;
+					return eConversionDataHolder;
 				}
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
-				DDBConversionDataHolder DconversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				DDBConversionDataHolder dConversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
 				if (isRecoverable) {
 					context.setHasConverterCreatedDataHolder(true);
 					this.contextMediator.save(context);
-					return this.conversionDataHolderService.save(DconversionDataHolder, context);
+					return this.conversionDataHolderService.save(dConversionDataHolder, context);
 				}
-				else {
-					return DconversionDataHolder;
-				}
+				return dConversionDataHolder;
 			default:
 				throw new IllegalStateException("Unsupported aggregator");
 		}

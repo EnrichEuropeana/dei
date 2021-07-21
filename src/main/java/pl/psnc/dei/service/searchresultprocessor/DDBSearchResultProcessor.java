@@ -31,9 +31,9 @@ public class DDBSearchResultProcessor implements AggregatorSearchResultProcessor
 	private static final String LANGUAGE = "language";
 	private static final String LICENSE = "license";
 
-	private final DDBSearchService ddbSearchService;
-	private final DDBFormatResolver ddbFormatResolver;
-	private final RecordDataCache recordDataCache;
+	private DDBSearchService ddbSearchService;
+	private DDBFormatResolver ddbFormatResolver;
+	private RecordDataCache recordDataCache;
 
 	public DDBSearchResultProcessor(DDBSearchService ddbSearchService, DDBFormatResolver ddbFormatResolver, RecordDataCache recordDataCache) {
 		this.ddbSearchService = ddbSearchService;

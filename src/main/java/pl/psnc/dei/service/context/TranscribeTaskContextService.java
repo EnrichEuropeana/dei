@@ -1,6 +1,8 @@
 package pl.psnc.dei.service.context;
 
+import org.hibernate.Hibernate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
@@ -22,8 +24,13 @@ public class TranscribeTaskContextService implements ContextService<TranscribeTa
     }
 
     @Override
+    @Transactional
     public TranscribeTaskContext get(Record record) {
         Optional<TranscribeTaskContext> context = this.transcribeTaskContextRepository.findByRecord(record);
+        if(context.isPresent()) {
+            TranscribeTaskContext transcribeTaskContext = context.get();
+            transcribeTaskContext.getExceptions().forEach(Hibernate::initialize);
+        }
         return context.orElseGet(() -> TranscribeTaskContext.from(record));
     }
 

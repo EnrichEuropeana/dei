@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 
 import java.io.File;
@@ -16,12 +15,12 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
-public class DDBConversionDataHolderTransformerStrategy extends ConversionDataHolderTransformationState<DDBConversionDataHolder> {
+public class DDBConversionDataHolderTransformerStrategy implements ConversionDataHolderTransformationState<DDBConversionDataHolder> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
-    public ConversionDataHolder toConversionDataHolder(ConversionTaskContext conversionTaskContext) throws ConversionImpossibleException {
+    public ConversionDataHolder toConversionDataHolder(ConversionTaskContext conversionTaskContext) {
         JsonObject recordJson = JSON.parse(conversionTaskContext.getRecordJson());
         JsonObject recordJsonRaw = JSON.parse(conversionTaskContext.getRecordJsonRaw());
         Record record = conversionTaskContext.getRecord();
@@ -48,25 +47,5 @@ public class DDBConversionDataHolderTransformerStrategy extends ConversionDataHo
         DDBConversionDataHolder conversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
         conversionDataHolder.fileObjects = convertedData;
         return conversionDataHolder;
-    }
-
-    @Override
-    public List<ConversionData> toDBModel(DDBConversionDataHolder conversionDataHolder) {
-        List<ConversionDataHolder.ConversionData> conversionData = conversionDataHolder.fileObjects;
-        return conversionData.stream()
-                .map(el -> {
-                    ConversionData a = new ConversionData();
-                    a.setId(el.id);
-                    a.setImagePath(el.imagePath);
-                    a.setJson(el.json.toString());
-                    a.setMediaType(el.mediaType);
-                    a.setSrcFilePath(el.srcFile.getAbsolutePath());
-                    a.setSrcFilePath(
-                            el.srcFile == null ? null : el.srcFile.getAbsolutePath()
-                    );
-                    a.setOutFilePath(el.outFile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
-                    a.setDimension(el.dimensions);
-                    return a;
-                }).collect(Collectors.toList());
     }
 }

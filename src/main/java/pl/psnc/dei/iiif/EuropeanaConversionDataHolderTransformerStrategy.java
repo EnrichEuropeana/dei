@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 
 import java.io.File;
@@ -18,7 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Component
-public class EuropeanaConversionDataHolderTransformerStrategy extends ConversionDataHolderTransformationState<EuropeanaConversionDataHolder> {
+public class EuropeanaConversionDataHolderTransformerStrategy implements ConversionDataHolderTransformationState<EuropeanaConversionDataHolder> {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
@@ -29,7 +28,7 @@ public class EuropeanaConversionDataHolderTransformerStrategy extends Conversion
         Record record = conversionTaskContext.getRecord();
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
-                    ConversionDataHolder.ConversionData a = new EuropeanaConversionDataHolder.ConversionData();
+                    ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
                     a.id = el.getId();
                     a.dimensions = el.getDimension();
                     a.imagePath = el.getImagePath();
@@ -62,25 +61,5 @@ public class EuropeanaConversionDataHolderTransformerStrategy extends Conversion
         EuropeanaConversionDataHolder europeanaConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
         europeanaConversionDataHolder.fileObjects = convertedData;
         return europeanaConversionDataHolder;
-    }
-
-    @Override
-    public List<ConversionData> toDBModel(EuropeanaConversionDataHolder conversionDataHolder) {
-        List<ConversionDataHolder.ConversionData> conversionData = conversionDataHolder.fileObjects;
-        return conversionData.stream()
-                .map(el -> {
-                    ConversionData a = new ConversionData();
-                    a.setId(el.id);
-                    a.setImagePath(el.imagePath);
-                    a.setJson(el.json.toString());
-                    a.setMediaType(el.mediaType);
-                    a.setSrcFilePath(el.srcFile.getAbsolutePath());
-                    a.setSrcFilePath(
-                            el.srcFile == null ? null : el.srcFile.getAbsolutePath()
-                    );
-                    a.setOutFilePath(el.outFile.stream().map(File::getAbsolutePath).collect(Collectors.toList()));
-                    a.setDimension(el.dimensions);
-                    return a;
-                }).collect(Collectors.toList());
     }
 }

@@ -34,7 +34,6 @@ public class ConversionTaskContext extends Context{
     private String recordJsonRaw;
     @Column(columnDefinition = "LONGTEXT")
     private String recordJson;
-    private Exception exception;
 
     @OneToMany(mappedBy = "conversionTaskContext", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @Fetch(value = FetchMode.SUBSELECT)
@@ -55,7 +54,6 @@ public class ConversionTaskContext extends Context{
         context.setHasAddedFailure(false);
         context.setRecordJson(null);
         context.setRecordJsonRaw(null);
-        context.setException(null);
         context.setHasAddedFailure(false);
         context.setHasConverterConvertedToIIIF(false);
         context.setHasConverterSavedFiles(false);
@@ -129,14 +127,6 @@ public class ConversionTaskContext extends Context{
 
     public void setRecordJson(String recordJson) {
         this.recordJson = recordJson;
-    }
-
-    public Exception getException() {
-        return exception;
-    }
-
-    public void setException(Exception exception) {
-        this.exception = exception;
     }
 
     public List<ConversionData> getRawConversionData() {
