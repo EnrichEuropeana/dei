@@ -1,6 +1,5 @@
 package pl.psnc.dei.ui.components.facets;
 
-import org.apache.commons.lang3.NotImplementedException;
 import pl.psnc.dei.response.search.Facet;
 import pl.psnc.dei.response.search.FacetField;
 import pl.psnc.dei.response.search.ddb.DDBFacet;
@@ -21,7 +20,7 @@ public class FacetBoxFactory {
 		} else if(facet instanceof DDBFacet) {
 			return new DDBFacetBox(parent, facet);
 		} else {
-			throw new NotImplementedException(facet.getName());
+			throw new UnsupportedOperationException("Unsupported facet type");
 		}
 	}
 

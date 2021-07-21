@@ -43,8 +43,6 @@ public class ConversionTask extends Task {
 
 	private final TasksFactory tasksFactory;
 
-	private final DDBFormatResolver ddbFormatResolver;
-
 	private ConversionTaskContext context;
 
 	private final RecordsRepository recordsRepository;
@@ -57,7 +55,6 @@ public class ConversionTask extends Task {
 		this.contextMediator = contextMediator;
 		this.context = (ConversionTaskContext) this.contextMediator.get(record);
 		this.tqs = tqs;
-		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
 		this.tasksFactory = tasksFactory;
 

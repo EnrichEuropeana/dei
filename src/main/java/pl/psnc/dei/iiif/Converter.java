@@ -168,6 +168,12 @@ public class Converter {
 		}
 	}
 
+	/**
+	 * Fetch data from external server and save to local files
+	 *
+	 * @param dataHolder combined data of record and data fetched from europeana
+	 * @throws ConversionException
+	 */
 	private ConversionDataHolder saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
 		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
 		if (context.isHasConverterSavedFiles()) {
@@ -232,11 +238,19 @@ public class Converter {
 		return filePath.substring(filePath.lastIndexOf('/') + 1).replace(" ", "").replace("%20", "");
 	}
 
-	private String  extractFileName(String name) {
+	private String extractFileName(String name) {
 		int i = name.lastIndexOf('.');
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
+	/**
+	 * Converts images into IIIF
+	 *
+	 * @param dataHolder combined data of record and europeana
+	 * @throws ConversionException
+	 * @throws InterruptedException
+	 * @throws IOException
+	 */
 	private ConversionDataHolder convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
 		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
 		if (context.isHasConverterConvertedToIIIF()) {
