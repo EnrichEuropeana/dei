@@ -27,22 +27,22 @@ public class DDBConversionDataHolderTransformerStrategy implements ConversionDat
 
         List<ConversionDataHolder.ConversionData> convertedData = conversionTaskContext.getRawConversionData().stream()
                 .map(el -> {
-                    ConversionDataHolder.ConversionData a = new ConversionDataHolder.ConversionData();
-                    a.id = el.getId();
-                    a.dimensions = el.getDimension();
-                    a.imagePath = el.getImagePath();
-                    a.json = JSON.parse(el.getJson());
-                    a.mediaType = el.getMediaType();
-                    a.srcFile =
+                    ConversionDataHolder.ConversionData conversionData = new ConversionDataHolder.ConversionData();
+                    conversionData.id = el.getId();
+                    conversionData.dimensions = el.getDimension();
+                    conversionData.imagePath = el.getImagePath();
+                    conversionData.json = JSON.parse(el.getJson());
+                    conversionData.mediaType = el.getMediaType();
+                    conversionData.srcFile =
                             el.getSrcFilePath() == null ? null : new File(el.getSrcFilePath());
                     try {
-                        a.srcFileUrl = new URL(el.getSrcFileUrl());
+                        conversionData.srcFileUrl = new URL(el.getSrcFileUrl());
                     } catch (MalformedURLException e) {
                         logger.error("Incorrect file URL for record: {}, url: {}", record.getIdentifier(), el.getSrcFileUrl(), e);
                     }
-                    a.outFile = el.getOutFilePath().stream()
+                    conversionData.outFile = el.getOutFilePath().stream()
                             .map(File::new).collect(Collectors.toList());
-                    return a;
+                    return conversionData;
                 }).collect(Collectors.toList());
         DDBConversionDataHolder conversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
         conversionDataHolder.fileObjects = convertedData;
