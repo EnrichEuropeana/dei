@@ -73,4 +73,20 @@ public class TranscribeTaskContextServiceTest {
         fetched = this.transcribeTaskContextService.get(this.record);
         assertNull(fetched.getId());
     }
+
+    @Test
+    @Rollback
+    public void canHandleWithClassArgument() {
+        assertTrue(
+                this.transcribeTaskContextService.canHandle(TranscribeTaskContext.class)
+        );
+    }
+
+    @Test
+    @Rollback
+    public void canHandleWithRecordArgument() {
+        assertTrue(
+                this.transcribeTaskContextService.canHandle(this.record)
+        );
+    }
 }
