@@ -14,7 +14,8 @@ public abstract class ConversionDataHolder {
 
 	abstract void initFileUrls(String recordId);
 
-	class ConversionData {
+	public static class ConversionData {
+		Long id;
 		JsonObject json;
 		// file to download and convert
 		URL srcFileUrl;

@@ -6,7 +6,6 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
@@ -14,6 +13,8 @@ import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionTaskContext;
+import pl.psnc.dei.service.context.ContextMediator;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -21,10 +22,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -50,14 +48,17 @@ public class Converter {
 
 	private Record record;
 
-	@Autowired
-	private RecordsRepository recordsRepository;
+	private final RecordsRepository recordsRepository;
+
+	private final ContextMediator contextMediator;
+
+	private final ConversionDataHolderService conversionDataHolderService;
 
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
 
 	@Value("#{${conversion.url.replacements}}")
-	private Map<String,String> urlReplacements;
+	private Map<String, String> urlReplacements;
 
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
@@ -71,6 +72,12 @@ public class Converter {
 	private File srcDir;
 
 	private File outDir;
+
+	public Converter(RecordsRepository recordsRepository, ContextMediator contextMediator, ConversionDataHolderService conversionDataHolderService) {
+		this.recordsRepository = recordsRepository;
+		this.contextMediator = contextMediator;
+		this.conversionDataHolderService = conversionDataHolderService;
+	}
 
 	@PostConstruct
 	private void copyScript() {
@@ -91,9 +98,6 @@ public class Converter {
 	 * @param record record for witch we create IIIF
 	 * @param recordJson record data imported from europeana
 	 * @param recordJsonRaw record data imported from europeana
-	 * @throws ConversionException
-	 * @throws IOException
-	 * @throws InterruptedException
 	 */
 	public synchronized void convertAndGenerateManifest(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionException, IOException, InterruptedException {
 		this.record = record;
@@ -109,34 +113,25 @@ public class Converter {
 		outDir.mkdirs();
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
-		try {
-			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
-			saveFilesInTempDirectory(conversionDataHolder);
-			convertAllFiles(conversionDataHolder);
-			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
-					.filter(e -> e.outFile != null && !e.outFile.isEmpty())
-					.collect(Collectors.toList());
+		ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw, true);
+		conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
+		conversionDataHolder = convertAllFiles(conversionDataHolder);
 
-			record.setIiifManifest(getManifest(convertedFiles).toString());
-			record.setState(Record.RecordState.T_PENDING);
-			recordsRepository.save(record);
-		} catch (Exception e) {
-			FileUtils.deleteQuietly(outDir);
-			throw e;
-		} finally {
-			FileUtils.deleteQuietly(srcDir);
-		}
+		List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
+				.filter(e -> e.outFile != null && !e.outFile.isEmpty())
+				.collect(Collectors.toList());
+		record.setIiifManifest(getManifest(convertedFiles).toString());
+		recordsRepository.save(record);
 	}
 
-	/**
-	 * Combines record data and data fetched from europeana into Dataholder
-	 * @param record record to be combined
-	 * @param recordJson data fetched from europeana to be combined
-	 * @param recordJsonRaw raw data fetched from europeana to be combined
-	 * @return combined data in form of dataholder
-	 * @throws ConversionImpossibleException if some of data are missing
-	 */
-	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw, boolean isRecoverable) throws ConversionImpossibleException {
+		ConversionTaskContext context = null;
+		if (isRecoverable) {
+			context = (ConversionTaskContext) this.contextMediator.get(record);
+			if (context.isHasConverterCreatedDataHolder()) {
+				return context.getConversionDataHolder();
+			}
+		}
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
@@ -145,16 +140,29 @@ public class Converter {
 						.filter(e -> e.get("edm:isShownBy") != null)
 						.findFirst();
 
-				if (!aggregatorData.isPresent()) {
+				if (aggregatorData.isEmpty()) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				EuropeanaConversionDataHolder eConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					return this.conversionDataHolderService.save(eConversionDataHolder, context);
+				} else {
+					return eConversionDataHolder;
+				}
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
-				return new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				DDBConversionDataHolder dConversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					return this.conversionDataHolderService.save(dConversionDataHolder, context);
+				}
+				return dConversionDataHolder;
 			default:
 				throw new IllegalStateException("Unsupported aggregator");
 		}
@@ -162,10 +170,15 @@ public class Converter {
 
 	/**
 	 * Fetch data from external server and save to local files
+	 *
 	 * @param dataHolder combined data of record and data fetched from europeana
 	 * @throws ConversionException
 	 */
-	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+	private ConversionDataHolder saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterSavedFiles()) {
+			return dataHolder;
+		}
 		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
 				continue;
@@ -184,6 +197,9 @@ public class Converter {
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
 			}
 		}
+		context.setHasConverterSavedFiles(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	private void replaceUrl(ConversionDataHolder.ConversionData data) throws MalformedURLException {
@@ -199,7 +215,6 @@ public class Converter {
 	 * Downloads contents pointed in url. If url returns 301 then follow link
 	 * @param url url to fetch
 	 * @param file file to which save contents
-	 * @throws IOException
 	 */
 	private void copyURLToFile(URL url, File file) throws IOException {
 		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -223,24 +238,29 @@ public class Converter {
 		return filePath.substring(filePath.lastIndexOf('/') + 1).replace(" ", "").replace("%20", "");
 	}
 
-	private String  extractFileName(String name) {
+	private String extractFileName(String name) {
 		int i = name.lastIndexOf('.');
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
 	/**
 	 * Converts images into IIIF
+	 *
 	 * @param dataHolder combined data of record and europeana
 	 * @throws ConversionException
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+	private ConversionDataHolder convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterConvertedToIIIF()) {
+			return dataHolder;
+		}
 		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
 
-			if (convData.mediaType.toLowerCase().equals("pdf")) {
+			if (convData.mediaType.equalsIgnoreCase("pdf")) {
 				// PDF
 				try {
 					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
@@ -280,15 +300,19 @@ public class Converter {
 					} else {
 						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + ". Converted file not found.");
 					}
+
 				} catch (ConversionException | InterruptedException | IOException e) {
 					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
 					throw e;
 				}
 			}
 		}
-		if (outDir.listFiles().length == 0) {
+		if (Objects.requireNonNull(outDir.listFiles()).length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
+		context.setHasConverterConvertedToIIIF(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	/**
@@ -374,7 +398,6 @@ public class Converter {
 	/**
 	 * Add information about generated IIIF to manifest
 	 * @param storedFilesData data holder with populated information
-	 * @return
 	 */
 	private JsonArray getSequenceJson(List<ConversionDataHolder.ConversionData> storedFilesData) {
 		JsonArray canvases = new JsonArray();
@@ -422,11 +445,10 @@ public class Converter {
 	 * Adds manifest to json representation of data fetched from european
 	 * @param record record for which changes will be made
 	 * @param jsonObject json to which changes will be made
-	 * @param jsonObjectRaw
 	 */
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
-			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);
+			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw, false);
 			conversionData.initFileUrls(record.getIdentifier());
 			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().toLowerCase().endsWith("pdf"))
 				return;

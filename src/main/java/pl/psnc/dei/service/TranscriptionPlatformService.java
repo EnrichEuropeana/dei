@@ -78,7 +78,7 @@ public class TranscriptionPlatformService {
 	private String authToken;
 
 	private List<Project> availableProjects;
-	private UrlBuilder urlBuilder;
+	private final UrlBuilder urlBuilder;
 	private WebClient webClient;
 
 
@@ -202,7 +202,7 @@ public class TranscriptionPlatformService {
 				.body(BodyInserters.fromObject(recordBody.toString()))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-					logger.info("Error while sending record {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					logger.info("Error while sending record {} {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
 				})
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {

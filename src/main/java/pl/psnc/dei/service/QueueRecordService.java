@@ -13,6 +13,7 @@ import pl.psnc.dei.model.Transcription;
 
 import javax.transaction.Transactional;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ public class QueueRecordService {
 
 	/**
 	 * Returns records that are not in terminal state due to add when QueueRecordService was down or due to system crash during processing them
-	 * @return records 
+	 * @return records
 	 */
 	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNotIn(Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED, Record.RecordState.T_SENT, Record.RecordState.T_FAILED));
@@ -76,6 +77,10 @@ public class QueueRecordService {
 
 	public void saveTranscription(Transcription transcription) {
 		transcriptionRepository.save(transcription);
+	}
+
+	public void saveTranscriptions(Collection<Transcription> transcriptions) {
+		this.transcriptionRepository.saveAll(transcriptions);
 	}
 
 	/**

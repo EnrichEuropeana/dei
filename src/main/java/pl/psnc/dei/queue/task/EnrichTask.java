@@ -6,9 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.conversion.EnrichTaskContext;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -23,11 +26,20 @@ public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
 
-	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+	private final EnrichTaskContext context;
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+	private final ContextMediator contextMediator;
+
+	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.contextMediator = contextMediator;
+		this.context = (EnrichTaskContext) this.contextMediator.get(record);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
+		ContextUtils.executeIfPresent(this.context.getTaskState(),
+				() -> this.state = this.context.getTaskState());
+
 	}
 
 	@Override
@@ -36,15 +48,14 @@ public class EnrichTask extends Task {
 			case E_GET_TRANSCRIPTIONS_FROM_TP:
 				logger.info("Task state: E_GET_TRANSCRIPTIONS_FROM_TP");
 				getTranscriptionsFromTp();
-				state = TaskState.E_HANDLE_TRANSCRIPTIONS;
 			case E_HANDLE_TRANSCRIPTIONS:
 				logger.info("Task state: E_HANDLE_TRANSCRIPTIONS");
 				handleTranscriptions();
-				state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
 			case E_SEND_ANNOTATION_IDS_TO_TP:
 				logger.info("Task state: E_SEND_ANNOTATION_IDS_TO_TP");
 				sendAnnotationIdsAndFinalizeTask();
 		}
+		this.contextMediator.delete(this.context, EnrichTaskContext.class);
 	}
 
 	/**
@@ -52,24 +63,35 @@ public class EnrichTask extends Task {
 	 */
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
-		// fetch transcription from TP
-		for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
-			try {
-				Transcription transcription = new Transcription();
-				transcription.setRecord(record);
-				transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
-				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
-				JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-				if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-					transcription.setAnnotationId(europeanaAnnotationId.toString());
-				}
-				transcriptions.put(transcription.getTp_id(), transcription);
-				queueRecordService.saveTranscription(transcription);
-			} catch (IllegalArgumentException e) {
-				logger.error("Transcription was corrupted: " + val.toString());
-			}
+		if(this.context.isHasDownloadedEnrichment()) {
+					this.context.getSavedTranscriptions().forEach(
+							el -> {
+								transcriptions.put(el.getAnnotationId(), el);
+							}
+					);
 		}
-		// add transcription to record
+		ContextUtils.executeIf(!this.context.isHasDownloadedEnrichment(),
+				() -> {
+					for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
+						try {
+							Transcription transcription = new Transcription();
+							transcription.setRecord(record);
+							transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
+							transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+							JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
+							if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+								transcription.setAnnotationId(europeanaAnnotationId.toString());
+							}
+							transcriptions.put(transcription.getTp_id(), transcription);
+						} catch (IllegalArgumentException e) {
+							logger.error("Transcription was corrupted: " + val.toString());
+						}
+					}
+					this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
+					this.context.setHasDownloadedEnrichment(true);
+					this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
+					this.contextMediator.save(this.context);
+		});
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
@@ -86,6 +108,9 @@ public class EnrichTask extends Task {
 					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
 			}
 		}
+		state = TaskState.E_HANDLE_TRANSCRIPTIONS;
+		this.context.setTaskState(this.state);
+		this.contextMediator.save(this.context);
 	}
 
 	/**
@@ -102,6 +127,7 @@ public class EnrichTask extends Task {
 	 * Fetches annotations id to transcriptions missing it
 	 */
 	private void handleTranscriptions() {
+		// do not saving processed transcriptions in ctx as processed ones cannot become not annotated
 		while (!notAnnotatedTranscriptions.isEmpty()) {
 			Transcription transcription = notAnnotatedTranscriptions.peek();
 			String annotationId = eas.postTranscription(transcription);
@@ -109,10 +135,14 @@ public class EnrichTask extends Task {
 			queueRecordService.saveTranscription(transcription);
 			notAnnotatedTranscriptions.remove(transcription);
 		}
+		state = TaskState.E_SEND_ANNOTATION_IDS_TO_TP;
+		this.context.setTaskState(this.state);
+		this.contextMediator.save(this.context);
 	}
 
 	private void sendAnnotationIdsAndFinalizeTask() {
 		Iterator<Transcription> it = record.getTranscriptions().iterator();
+		// sending annotations is too quick, thus putting it into db makes allover process slower
 		while (it.hasNext()) {
 			Transcription t = it.next();
 			tps.sendAnnotationUrl(t);

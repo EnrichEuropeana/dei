@@ -1,9 +1,9 @@
 package pl.psnc.dei.ui.components.facets;
 
-import pl.psnc.dei.response.search.ddb.DDBFacet;
-import pl.psnc.dei.response.search.FacetField;
-import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.Facet;
+import pl.psnc.dei.response.search.FacetField;
+import pl.psnc.dei.response.search.ddb.DDBFacet;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 
 import java.util.List;
 

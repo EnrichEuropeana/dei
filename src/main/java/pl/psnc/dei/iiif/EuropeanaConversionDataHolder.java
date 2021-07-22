@@ -171,7 +171,7 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 		return type;
 	}
 
-	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
+	public EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
 		createConversionDataHolder(recordId, aggregatorData, record, recordRaw);
 	}
 

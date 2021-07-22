@@ -22,7 +22,7 @@ public class Record {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	private Long id;
 
 	/**
 	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)

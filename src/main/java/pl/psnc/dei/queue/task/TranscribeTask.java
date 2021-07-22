@@ -1,18 +1,21 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
-import pl.psnc.dei.service.EuropeanaAnnotationsService;
-import pl.psnc.dei.service.QueueRecordService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.context.ContextMediator;
+import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
+
+import java.util.Arrays;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.T_SEND_RESULT;
 
@@ -28,49 +31,85 @@ public class TranscribeTask extends Task {
 	// Record in JSON
 	private JsonObject recordJsonRaw;
 
-	private String serverUrl;
+	private final String serverUrl;
 
-	private String serverPath;
+	private final String serverPath;
+
+	private final ContextMediator contextMediator;
+
+	private TranscribeTaskContext transcribeTaskContext;
+
+	private final PersistableExceptionService persistableExceptionService;
 
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.contextMediator = contextMediator;
+		this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
 		this.tqs = tqs;
 		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;
+		ContextUtils.executeIfPresent(this.transcribeTaskContext.getTaskState(),
+				() -> this.state = this.transcribeTaskContext.getTaskState()
+		);
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
+		this.persistableExceptionService = persistableExceptionService;
 	}
 
 	@Override
-	public void process() {
+	public void process() throws Exception {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
-				// fetch data from europeana
-				try {
-					recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
-					recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
-				} catch (AggregatorException aggregatorException) {
-					try {
-						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
-						tps.updateImportState(record.getAnImport());
-					} catch (NotFoundException nfe) {
-						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-								+ ", identifier: " + record.getIdentifier(), nfe);
-					}
-					throw new RuntimeException(aggregatorException.getCause());
-				}
-				// check if fetched data already contains address to iiif
+				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJson(),
+						() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
+				);
+				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJson(),
+						() -> {
+							try {
+								recordJson = ess.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
+								this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
+								this.contextMediator.save(this.transcribeTaskContext);
+							} catch (AggregatorException aggregatorException) {
+								try {
+									this.persistException(aggregatorException);
+									queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+									tps.updateImportState(record.getAnImport());
+								} catch (NotFoundException nfe) {
+									throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+											+ ", identifier: " + record.getIdentifier(), nfe);
+								}
+								throw new RuntimeException(aggregatorException.getCause());
+							}
+						});
+				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJsonRaw(),
+						() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
+				);
+				ContextUtils.executeIfNotPresent(this.transcribeTaskContext.getRecordJsonRaw(),
+						() -> {
+							try {
+								recordJsonRaw = ess.retrieveRecordInJson(record.getIdentifier());
+								this.transcribeTaskContext.setRecordJsonRaw(this.recordJsonRaw.toString());
+								this.contextMediator.save(this.transcribeTaskContext);
+							} catch (AggregatorException aggregatorException) {
+								this.persistException(aggregatorException);
+								tps.updateImportState(record.getAnImport());
+								throw new RuntimeException(aggregatorException.getCause());
+							}
+
+						});
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
+					this.transcribeTaskContext.setTaskState(this.state);
+					this.contextMediator.save(this.transcribeTaskContext);
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
-						// record has no IIIF on europeana, so in previous run was marked as in C_PENDING (see below) and
-						// IIIF was generated, now we need to add manifest to it
+						this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
 						state = T_SEND_RESULT;
+						this.transcribeTaskContext.setTaskState(this.state);
+						this.contextMediator.save(this.transcribeTaskContext);
 					} else {
 						// europeana has no IIIF for this record, thus we generate new and host it on our owns
 						try {
@@ -86,25 +125,58 @@ public class TranscribeTask extends Task {
 				}
 			case T_SEND_RESULT:
 				try {
-					tps.sendRecord(recordJson, record);
+					if (this.transcribeTaskContext.isHasThrownError()) {
+						this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(NotFoundException.class, TranscriptionPlatformException.class), this.transcribeTaskContext);
+					}
+					ContextUtils.executeIfNotPresent(this.recordJson,
+							() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
+					);
+					ContextUtils.executeIfNotPresent(this.recordJsonRaw,
+							() -> this.recordJsonRaw = JSON.parse(this.transcribeTaskContext.getRecordJsonRaw())
+					);
+					ContextUtils.executeIf(!this.transcribeTaskContext.isHasSendRecord(),
+							() -> {
+								tps.sendRecord(recordJson, record);
+								this.transcribeTaskContext.setHasSendRecord(true);
+								this.contextMediator.save(this.transcribeTaskContext);
+							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
 					// check if all records are done
 					tps.updateImportState(record.getAnImport());
+					this.transcribeTaskContext.setRecord(record);
+					this.contextMediator.delete(this.transcribeTaskContext);
 				} catch (TranscriptionPlatformException e) {
+					this.persistException(e);
+					// deletion must occur before state change or context will never be deleted
+					this.contextMediator.delete(this.transcribeTaskContext);
+					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
+					tps.updateImportState(record.getAnImport());
+				} catch (NotFoundException e) {
+					this.contextMediator.delete(this.transcribeTaskContext);
+					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+							+ ", identifier: " + record.getIdentifier(), e);
+				}
+				break;
+		}
+	}
+
+	private void persistException(Exception exception) {
+		ContextUtils.executeIf(!this.transcribeTaskContext.isHasThrownError(),
+				() -> {
+					this.transcribeTaskContext.setHasThrownError(true);
+					this.persistableExceptionService.bind(exception, this.transcribeTaskContext);
+					this.contextMediator.save(this.transcribeTaskContext);
+				});
+		ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
+				() -> {
 					try {
-						// record cannot be send so mark it as faild and fail entire import send
-						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
-						tps.updateImportState(record.getAnImport());
+						tps.addFailure(record.getAnImport().getName(), record, exception.getMessage());
+						this.transcribeTaskContext.setHasAddedFailure(true);
+						this.contextMediator.save(this.transcribeTaskContext);
 					} catch (NotFoundException e1) {
 						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 								+ ", identifier: " + record.getIdentifier(), e1);
 					}
-				} catch (NotFoundException e) {
-					throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-							+ ", identifier: " + record.getIdentifier(), e);
-				}
-		}
+				});
 	}
-
 }

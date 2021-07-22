@@ -2,7 +2,6 @@ package pl.psnc.dei.schema.search;
 
 import lombok.AccessLevel;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import pl.psnc.dei.response.search.Facet;
 

@@ -6,13 +6,12 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class SelectedFacetsComponent extends HorizontalLayout {
-    private FacetComponent facetComponent;
+    private final FacetComponent facetComponent;
 
-    private transient Map<String, Map<String, String>> selectedValues;
+    private final transient Map<String, Map<String, String>> selectedValues;
 
     public SelectedFacetsComponent(FacetComponent facetComponent) {
         selectedValues = new HashMap<>();
