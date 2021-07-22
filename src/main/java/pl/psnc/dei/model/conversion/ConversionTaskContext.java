@@ -133,6 +133,10 @@ public class ConversionTaskContext extends Context{
         return conversionDataHolder;
     }
 
+    public void setRawConversionData(List<ConversionData> conversionData) {
+        this.conversionDataHolder = conversionData;
+    }
+
     public boolean isHasConverterCreatedDataHolder() {
         return hasConverterCreatedDataHolder;
     }

@@ -10,7 +10,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.DAO.TranscribeTaskContextRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.TranscribeTaskContext;
 
@@ -26,9 +25,6 @@ public class TranscribeTaskContextServiceTest {
     private final String RECORD_IDENTIFER = "test-record";
     @Autowired
     private TranscribeTaskContextService transcribeTaskContextService;
-
-    @Autowired
-    private TranscribeTaskContextRepository transcribeTaskContextRepository;
 
     @Autowired
     private RecordsRepository recordsRepository;
