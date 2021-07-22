@@ -240,55 +240,93 @@ public class Converter {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
 
-			if (convData.mediaType.toLowerCase().equals("pdf")) {
-				// PDF
-				try {
-					String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
-					executor.runCommand(Arrays.asList(
-							pdfConversionScript,
-							convData.srcFile.getAbsolutePath(),
-							outDir.getAbsolutePath()));
-
-					prepareImagePaths(convData);
-				} catch (ConversionException | InterruptedException | IOException e) {
-					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier(), e);
-					throw e;
-				}
-
-			} else {
-				// just images
-				try {
-					executor.runCommand(Arrays.asList("vips",
-							"tiffsave",
-							convData.srcFile.getAbsolutePath(),
-							outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
-							"--compression=jpeg",
-							"--Q=75",
-							"--tile",
-							"--tile-width=128",
-							"--tile-height=128",
-							"--pyramid"));
-
-					File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
-					if (convertedFile.exists()) {
-						convData.outFile.add(convertedFile);
-						convData.imagePath.add(record.getProject().getProjectId() + "/"
-								+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
-								+ record.getIdentifier() + "/"
-								+ getTiffFileName(convData.srcFile.getName()));
-						convData.dimensions.add(extractDimensions(convertedFile, MAX_RETRY_COUNT));
-					} else {
-						throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + ". Converted file not found.");
-					}
-				} catch (ConversionException | InterruptedException | IOException e) {
-					logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
-					throw e;
-				}
+			String mediaType = convData.mediaType.toLowerCase();
+			switch (mediaType) {
+				case "pdf":
+					convertPDF(convData);
+					break;
+				case "jp2":
+					convertJP2(convData);
+					break;
+				default:
+					convertImage(convData);
+					break;
 			}
 		}
 		if (outDir.listFiles().length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
+	}
+
+	private void convertPDF(ConversionDataHolder.ConversionData convData) throws ConversionException, InterruptedException, IOException {
+		try {
+			String pdfConversionScript = "./pdf_to_pyramid_tiff.sh";
+			executor.runCommand(Arrays.asList(
+					pdfConversionScript,
+					convData.srcFile.getAbsolutePath(),
+					outDir.getAbsolutePath()));
+
+			prepareImagePaths(convData);
+		} catch (ConversionException | InterruptedException | IOException e) {
+			logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier(), e);
+			throw e;
+		}
+	}
+
+	private void convertJP2(ConversionDataHolder.ConversionData convData) {
+		try {
+			File tempConversionOutDir = getFileDirectoryPath(convData.srcFile);
+			String tiffFileName = getTiffFileName(convData.srcFile.getName());
+			executor.runCommand(Arrays.asList("opj_decompress",
+					"-i", convData.srcFile.getAbsolutePath(),
+					"-o", tempConversionOutDir.getAbsolutePath() + "/" + tiffFileName
+					)
+			);
+			File convertedFile = new File(tempConversionOutDir, tiffFileName);
+			if (convertedFile.exists()) {
+				logger.info("Successfully converted JP2 to TIF {} -> {}", convData.srcFile.getName(), tiffFileName);
+				convData.srcFile = convertedFile;
+				convertImage(convData);
+			} else {
+				throw new ConversionException("Conversion JP2 to TIF failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
+			}
+		} catch (ConversionException | InterruptedException | IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	private void convertImage(ConversionDataHolder.ConversionData convData) throws ConversionException, InterruptedException, IOException{
+		try {
+			executor.runCommand(Arrays.asList("vips",
+					"tiffsave",
+					convData.srcFile.getAbsolutePath(),
+					outDir.getAbsolutePath() + "/" + getTiffFileName(convData.srcFile.getName()),
+					"--compression=jpeg",
+					"--Q=75",
+					"--tile",
+					"--tile-width=128",
+					"--tile-height=128",
+					"--pyramid"));
+
+			File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
+			if (convertedFile.exists()) {
+				convData.outFile.add(convertedFile);
+				convData.imagePath.add(record.getProject().getProjectId() + "/"
+						+ (record.getDataset() != null ? record.getDataset().getDatasetId() + "/" : "")
+						+ record.getIdentifier() + "/"
+						+ getTiffFileName(convData.srcFile.getName()));
+				convData.dimensions.add(extractDimensions(convertedFile, MAX_RETRY_COUNT));
+			} else {
+				throw new ConversionException("Conversion failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + ". Converted file not found.");
+			}
+		} catch (ConversionException | InterruptedException | IOException e) {
+			logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
+			throw e;
+		}
+	}
+
+	private File getFileDirectoryPath(File file) {
+		return file.isDirectory() ? file : file.getParentFile();
 	}
 
 	/**
