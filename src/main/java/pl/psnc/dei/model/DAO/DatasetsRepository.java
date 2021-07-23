@@ -3,9 +3,7 @@ package pl.psnc.dei.model.DAO;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
 
-import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -15,6 +13,5 @@ import java.util.Optional;
 public interface DatasetsRepository extends JpaRepository<Dataset, Long> {
 
     Dataset findDatasetByDatasetId(String datasetID);
-    Collection<Dataset> findAllByProject(Project project);
     Optional<Dataset> findByName(String name);
 }

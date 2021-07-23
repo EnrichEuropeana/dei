@@ -24,6 +24,7 @@ import pl.psnc.dei.ui.components.CommonComponentsFactory;
 import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import java.io.IOException;
+import java.util.List;
 
 public class ComplexBatchImportComponent extends VerticalLayout {
     private final ProjectsRepository projectsRepository;
@@ -153,14 +154,14 @@ public class ComplexBatchImportComponent extends VerticalLayout {
                     try {
                         if (this.validate()) {
                             String datasetName = this.datasetSelect.getValue() == null ? null : this.datasetSelect.getValue().getName();
-                            this.batchService
+                            List<?> imported = this.batchService
                                     .makeComplexImport(
                                             this.memoryBuffer.getInputStream(),
                                             this.nameTextFiled.getValue(),
                                             this.projectSelect.getValue().getName(),
                                             datasetName
                                     );
-                            Notification.show("Import Finished!", 3000, Notification.Position.MIDDLE);
+                            Notification.show("Import Finished! Added " + imported.size() + " imports", 3000, Notification.Position.MIDDLE);
                         }
                     } catch (IOException e) {
                         Notification.show("IOException: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
