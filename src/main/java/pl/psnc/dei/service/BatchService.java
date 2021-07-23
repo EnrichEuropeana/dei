@@ -4,7 +4,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
-import org.apache.jena.atlas.json.JsonString;
 import org.apache.jena.atlas.json.JsonValue;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
@@ -344,20 +343,34 @@ public class BatchService {
 	}
 
 	public List<Import> makeComplexImport(MultipartFile file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
-		File saved = File.createTempFile("tmp", ".csv");
-		file.transferTo(saved);
-		List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
-		saved.delete();
-		return result;
+		File saved = null;
+		try {
+			saved = File.createTempFile("tmp", ".csv");
+			file.transferTo(saved);
+			List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
+			saved.delete();
+			return result;
+		} catch (Exception e) {
+			saved.delete();
+			throw e;
+		}
 	}
 
 	public List<Import> makeComplexImport(InputStream inputStream, String name, String projectName, String datasetName) throws IOException, NotFoundException {
-		File saved = File.createTempFile("tmp", ".csv");
-		OutputStream os = new FileOutputStream(saved);
-		os.write(inputStream.readAllBytes());
-		List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
-		saved.delete();
-		return result;
+		File saved = null;
+		try {
+			saved = File.createTempFile("tmp", ".csv");
+			OutputStream os = new FileOutputStream(saved);
+			os.write(inputStream.readAllBytes());
+			List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
+			saved.delete();
+			return result;
+		} catch (Exception e) {
+			// on failure delete tmp file
+			saved.delete();
+			throw e;
+		}
+
 	}
 
 	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
