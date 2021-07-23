@@ -10,17 +10,21 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionData;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
 
+import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(SpringRunner.class)
 public class ConversionDataHolderTransformerTest {
     private final String RECORD_IDENTIFIER = "/11602/HERBARWUXWUXAUSTRIAX102495";
 
-    private final JsonObject RECORD_JSON = JSON.parse("{ \n" +
+    private final JsonObject EUROPEANA_RECORD_JSON = JSON.parse("{ \n" +
             "  \"@graph\" : [ \n" +
             "      { \n" +
             "        \"@id\" : \"http://data.europeana.eu/aggregation/europeana/11602/HERBARWUXWUXAUSTRIAX102495\" ,\n" +
@@ -194,7 +198,7 @@ public class ConversionDataHolderTransformerTest {
             "  \"iiif_url\" : \"https://fresenia.man.poznan.pl/api/transcription/iiif/manifest?recordId=/11602/HERBARWUXWUXAUSTRIAX102495\"\n" +
             "}");
 
-    private final JsonObject RECORD_JSON_RAW = JSON.parse("{ \n" +
+    private final JsonObject EUROPEANA_RECORD_JSON_RAW = JSON.parse("{ \n" +
             "  \"apikey\" : \"api2demo\" ,\n" +
             "  \"success\" : true ,\n" +
             "  \"statsDuration\" : 160 ,\n" +
@@ -328,10 +332,16 @@ public class ConversionDataHolderTransformerTest {
             "    }\n" +
             "}");
 
-    private final JsonObject AGGREGATOR_DATA = this.RECORD_JSON.get("@graph").getAsArray().stream()
+    private final JsonObject EUROPEANA_AGGREGATOR_DATA = this.EUROPEANA_RECORD_JSON.get("@graph").getAsArray().stream()
             .map(JsonValue::getAsObject)
             .filter(e -> e.get("edm:isShownBy") != null)
             .findFirst().get();
+
+    // this should be filled if integration with DDB will be implemented
+    // so far there is no way to obtain this data from programme runtime
+//    private final JsonObject DDB_RECORD_JSON = null;
+//
+//    private final JsonObject DDB_AGGREGATOR_DATA = this.DDB_RECORD_JSON;
 
     private ConversionDataHolderTransformer conversionDataHolderTransformer;
 
@@ -346,8 +356,8 @@ public class ConversionDataHolderTransformerTest {
         Record record = new Record();
         record.setAggregator(Aggregator.EUROPEANA);
         ConversionTaskContext sampleContext = new ConversionTaskContext();
-        sampleContext.setRecordJson(this.RECORD_JSON.toString());
-        sampleContext.setRecordJsonRaw(this.RECORD_JSON_RAW.toString());
+        sampleContext.setRecordJson(this.EUROPEANA_RECORD_JSON.toString());
+        sampleContext.setRecordJsonRaw(this.EUROPEANA_RECORD_JSON_RAW.toString());
         sampleContext.setRawConversionData(new ArrayList<>());
         sampleContext.setRecord(record);
 
@@ -355,11 +365,62 @@ public class ConversionDataHolderTransformerTest {
         assertEquals(conversionDataHolder.getClass(), EuropeanaConversionDataHolder.class);
     }
 
-    // TODO: discus how to access srcFile property on this dataholder
+    @SneakyThrows
+    @Test
+    public void ifPresentedEuropeanaDH_willReturnCorrectConversionData() {
+        File exampleFile = null;
+        try {
+            exampleFile = File.createTempFile("europeanaDataHolderSrcFileTest-", ".txt");
+            EuropeanaConversionDataHolder dataHolder = new EuropeanaConversionDataHolder(this.RECORD_IDENTIFIER, this.EUROPEANA_AGGREGATOR_DATA, this.EUROPEANA_RECORD_JSON, this.EUROPEANA_RECORD_JSON_RAW);
+            for (ConversionDataHolder.ConversionData el : dataHolder.fileObjects) {
+                el.srcFile = exampleFile;
+            }
+            List<ConversionData> converted = this.conversionDataHolderTransformer.toDBModel(dataHolder);
+            exampleFile.delete();
+            assertNotNull(converted);
+            assertEquals("jpeg", converted.get(0).getMediaType());
+        } catch (Exception e) {
+            if (exampleFile != null) exampleFile.delete();
+            throw e;
+        }
+    }
+
+//    uncomment if integration with DDB will be implemented
+//    remember to fill DDB_RECORD_JSON before run
+//    @SneakyThrows
 //    @Test
-//    public void ifPresentedEuropeanaDH_willTransformCorrectly() {
-//        EuropeanaConversionDataHolder europeanaConversionDataHolder = new EuropeanaConversionDataHolder(this.RECORD_IDENTIFIER, this.AGGREGATOR_DATA, this.RECORD_JSON, this.RECORD_JSON_RAW);
-//        List<ConversionData> conversionData = this.conversionDataHolderTransformer.toDBModel(europeanaConversionDataHolder);
-//        assertNotNull(conversionData);
+//    public void IfPresentedContextWithDDBAggregatorSet_willReturnDDBDH() {
+//        Record record = new Record();
+//        record.setAggregator(Aggregator.DDB);
+//        ConversionTaskContext sampleContext = new ConversionTaskContext();
+//        sampleContext.setRecordJson(this.DDB_RECORD_JSON.toString());
+//        sampleContext.setRecordJsonRaw(this.DDB_RECORD_JSON_RAW.toString());
+//        sampleContext.setRawConversionData(new ArrayList<>());
+//        sampleContext.setRecord(record);
+//
+//        ConversionDataHolder conversionDataHolder = this.conversionDataHolderTransformer.toConversionDataHolder(sampleContext);
+//        assertEquals(conversionDataHolder.getClass(), DDBConversionDataHolder.class);
+//    }
+
+//    uncomment if integration with DDB will be implemented
+//    remember to fill DDB_RECORD_JSON before run
+//    @SneakyThrows
+//    @Test
+//    public void ifPresentedDDBDH_willReturnCorrectConversionData() {
+//        File exampleFile = null;
+//        try {
+//            exampleFile = File.createTempFile("DDBDataHolderSrcFileTest-", ".txt");
+//            DDBConversionDataHolder dataHolder = new DDBConversionDataHolder(this.RECORD_IDENTIFIER, this.DDB_AGGREGATOR_DATA);
+//            for (ConversionDataHolder.ConversionData el : dataHolder.fileObjects) {
+//                el.srcFile = exampleFile;
+//            }
+//            List<ConversionData> converted = this.conversionDataHolderTransformer.toDBModel(dataHolder);
+//            exampleFile.delete();
+//            assertNotNull(converted);
+//            assertEquals("jpeg", converted.get(0).getMediaType());
+//        } catch (Exception e) {
+//            if (exampleFile != null) exampleFile.delete();
+//            throw e;
+//        }
 //    }
 }
