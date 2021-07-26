@@ -1,5 +1,6 @@
 package pl.psnc.dei.service.search;
 
+import org.apache.commons.lang3.NotImplementedException;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.rdf.model.Model;
@@ -42,6 +43,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
 import static pl.psnc.dei.util.DDBConstants.*;
@@ -106,6 +108,11 @@ public class DDBSearchService extends RestRequestExecutor implements AggregatorS
 				.block();
 
 		return convertToJsonLd(xmlRecord);
+	}
+
+	@Override
+	public Set<String> getAllDatasetRecords(String datasetId) {
+		throw new NotImplementedException("Not implemented");
 	}
 
 	private JsonObject convertToJsonLd(String record) {

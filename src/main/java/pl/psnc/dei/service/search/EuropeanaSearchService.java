@@ -1,11 +1,13 @@
 package pl.psnc.dei.service.search;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -16,26 +18,18 @@ import pl.psnc.dei.exception.EuropeanaAggregatorException;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.FACET_SEPARATOR;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.API_KEY_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.CURSOR_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.FIRST_CURSOR;
-import static pl.psnc.dei.util.EuropeanaConstants.FIXED_API_PARAMS;
-import static pl.psnc.dei.util.EuropeanaConstants.QF_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.QUERY_PARAM_NAME;
-import static pl.psnc.dei.util.EuropeanaConstants.ROWS_PARAM_NAME;
+import static pl.psnc.dei.util.EuropeanaConstants.*;
 
 @Service
 public class EuropeanaSearchService extends RestRequestExecutor implements AggregatorSearchService {
@@ -56,6 +50,13 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
     @Value("${europeana.search.api.iiif.query}")
     private String searchApiIiifQuery;
+
+    private static final Map<String, String> ALL_DATASET_RECORDS_QUERY_PARAMS = ImmutableMap.of(
+            "facet", "europeana_id",
+            "profile", "facets",
+            "f.europeana_id.facet.limit", "500000",
+            "rows", "0"
+    );
 
     public EuropeanaSearchService(WebClient.Builder webClientBuilder) {
         configure(webClientBuilder);
@@ -225,5 +226,32 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         otherParams.put(ROWS_PARAM_NAME, String.valueOf(rowsPerPage));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
+    }
+
+    @Override
+    public Set<String> getAllDatasetRecords(String datasetId) {
+        EuropeanaSearchResponse searchResponse = searchForAllDatasetRecords(datasetId).block();
+        EuropeanaFacet idFacet = searchResponse.getFacets().stream()
+                .filter(facet -> "europeana_id".equals(facet.getName()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Error fetching records for dataset " + datasetId));
+        return idFacet.getFields().stream()
+                .map(EuropeanaFacetField::getLabel)
+                .collect(Collectors.toSet());
+    }
+
+    private Mono<EuropeanaSearchResponse> searchForAllDatasetRecords(String datasetId) {
+        return webClient
+                .get()
+                .uri(uriBuilder -> {
+                    uriBuilder.queryParam(API_KEY_PARAM_NAME, apiKey);
+                    uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(String.format("edm_datasetName:%s_*", datasetId), "UTF-8"));
+                    ALL_DATASET_RECORDS_QUERY_PARAMS.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, "UTF-8")));
+                    return uriBuilder.build();
+                })
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .bodyToMono(EuropeanaSearchResponse.class);
     }
 }

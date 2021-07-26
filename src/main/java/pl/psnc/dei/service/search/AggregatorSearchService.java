@@ -5,6 +5,7 @@ import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface AggregatorSearchService {
 
@@ -16,4 +17,6 @@ public interface AggregatorSearchService {
 
 	JsonObject retrieveRecordAndConvertToJsonLd(String recordId);
 
-	}
+	Set<String> getAllDatasetRecords(String datasetId);
+
+}

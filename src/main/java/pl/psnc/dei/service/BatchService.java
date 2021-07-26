@@ -1,5 +1,7 @@
 package pl.psnc.dei.service;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
@@ -9,18 +11,33 @@ import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
+import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
+import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import javax.transaction.Transactional;
 import java.io.*;
-import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
@@ -308,6 +325,80 @@ public class BatchService {
 	}
 
 	/**
+	 * Gets all of the records for specified Europeana dataset (by dataset id)
+	 * and upload them to the local database
+	 * @param request which contains processing settings
+	 * @return set of records for whole Europeana dataset (except excluded records or duplications)
+	 * @throws IllegalArgumentException when missing required params
+	 * @throws NotFoundException when cannot found data in local database
+	 */
+	public Set<Record> uploadDataset(UploadDatasetRequest request)
+			throws IllegalArgumentException, NotFoundException {
+		String projectName = request.getProjectName();
+		String datasetId = request.getDatasetId();
+		if (projectName == null || datasetId == null) {
+			throw new IllegalArgumentException();
+		}
+		Set<String> recordsIds = europeanaSearchService.getAllDatasetRecords(datasetId);
+		Set<String> excludedFiltered = filterExcluded(recordsIds, request.getExcludedRecords());
+		Set<String> numberLimited;
+		if (request.getLimit() > 0) {
+			int recordsToRetrieve = Math.min(excludedFiltered.size(), request.getLimit());
+			numberLimited = excludedFiltered.stream()
+					.limit(recordsToRetrieve)
+					.collect(Collectors.toSet());
+		} else {
+			numberLimited = excludedFiltered;
+		}
+		return uploadRecordsToProject(projectName, request.getDataset(), numberLimited);
+    }
+
+	/**
+	 * Creates import for all records from Europena dataset (by dataset id).
+	 * except excluded records or duplications
+	 * @param request which contains processing settings
+	 * @return created imports
+	 * @throws IllegalArgumentException when missing required params
+	 * @throws NotFoundException when cannot found data in local database
+	 */
+    public List<Import> createImportsFromDataset(CreateImportFromDatasetRequest request)
+			throws IllegalArgumentException, NotFoundException {
+		Set<Record> uploadedDataset = uploadDataset(request);
+		String projectId = uploadedDataset.iterator().next().getProject().getProjectId();
+		int importSize = request.getImportSize();
+		List<Set<Record>> splitRecords;
+		boolean splitImport = importSize > 0;
+		if (splitImport) {
+			splitRecords = new ArrayList<>();
+			Iterables.partition(uploadedDataset, importSize).forEach(part -> splitRecords.add(Set.copyOf(part)));
+		} else {
+			splitRecords = Collections.singletonList(uploadedDataset);
+		}
+		AtomicInteger index = new AtomicInteger(0);
+		return splitRecords.stream()
+				.map(records -> {
+					String importName = generateSplitImportName(request.getImportName(), request.getProjectName(), index.getAndIncrement(), splitImport);
+					return importService.createImport(importName, projectId, records);
+				}).collect(Collectors.toList());
+	}
+
+	private String generateSplitImportName(String importName, String projectName, int counter, boolean doSplitImport) {
+		String importNameBase = StringUtils.isNotBlank(importName) ? importName : ImportNameCreatorUtil.generateImportName(projectName);
+		if (doSplitImport) {
+			return importNameBase.concat(String.format("_%d", counter));
+		}
+		return importNameBase;
+	}
+
+    private Set<String> filterExcluded(Set<String> allRecords, Set<String> toExclude) {
+		if (CollectionUtils.isEmpty(toExclude)) {
+			return allRecords;
+		}
+        allRecords.removeAll(toExclude);
+        return allRecords;
+    }
+
+	/**
 	 * Saves records to DB, and calculate difference of saved and provided ones, as some of them can
 	 * be omitted during persiting process
 	 * @param projectName name of project to which data should be saved
@@ -363,7 +454,6 @@ public class BatchService {
 		} finally {
 			saved.delete();
 		}
-
 	}
 
 	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
