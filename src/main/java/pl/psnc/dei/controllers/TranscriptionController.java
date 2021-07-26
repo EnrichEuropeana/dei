@@ -4,18 +4,20 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.exception.TranscriptionDuplicationException;
 import pl.psnc.dei.queue.task.TasksFactory;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 @RestController
@@ -30,10 +32,13 @@ public class TranscriptionController {
 
 	private TasksFactory tasksFactory;
 
+	private final QueueRecordService qrs;
+
 	@Autowired
-	public TranscriptionController(TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory) {
+	public TranscriptionController(@Qualifier("transcriptionPlatformService") TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory, QueueRecordService queueRecordService) {
 		this.tps = tps;
 		this.tqs = tqs;
+		this.qrs = queueRecordService;
 		this.tasksFactory = tasksFactory;
 	}
 
@@ -52,9 +57,14 @@ public class TranscriptionController {
 		}
 
 		try {
+			this.qrs.throwIfTranscriptionExistFor(recordId);
 			tps.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
-		} catch (Exception e) {
+		} catch (TranscriptionDuplicationException e) {
+			this.logger.warn("Tried to duplicate transcription, by usage of wrong endpoint. Record identifier: " + recordId);
+			return new ResponseEntity<>(recordId, HttpStatus.CONFLICT);
+		} catch (NotFoundException e) {
+			e.printStackTrace();
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
@@ -71,14 +81,22 @@ public class TranscriptionController {
 		}
 
 		Set<String> notFound = new HashSet<>();
+		Set<String> duplicated = new HashSet<>();
 
 		for (String recordId : recordsIds) {
 			logger.info("Creating enrich task for record {}", recordId);
 			try {
+				qrs.throwIfTranscriptionExistFor(recordId);
 				tps.createNewEnrichTask(recordId);
 			} catch (NotFoundException e) {
 				notFound.add(e.getMessage());
+			} catch (TranscriptionDuplicationException e) {
+				this.logger.warn("Tried to duplicate transcription, by usage of wrong endpoint. Record identifier: " + recordId);
+				duplicated.add(e.getMessage());
 			}
+		}
+		if (!duplicated.isEmpty()) {
+			return new ResponseEntity<>(String.join(",", duplicated), HttpStatus.CONFLICT);
 		}
 		if (!notFound.isEmpty()) {
 			return new ResponseEntity<>(String.join(",", notFound), HttpStatus.NOT_FOUND);

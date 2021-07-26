@@ -6,4 +6,5 @@ import pl.psnc.dei.model.Transcription;
 
 @Repository
 public interface TranscriptionRepository extends JpaRepository<Transcription, Long> {
+    boolean existsByRecord_Identifier(String recordId);
 }

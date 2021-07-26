@@ -5,6 +5,7 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.exception.TranscriptionDuplicationException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
@@ -78,10 +79,17 @@ public class QueueRecordService {
 		transcriptionRepository.save(transcription);
 	}
 
+	public void throwIfTranscriptionExistFor(String recordIdentifier) throws TranscriptionDuplicationException {
+		if (this.transcriptionRepository.existsByRecord_Identifier(recordIdentifier)) {
+			throw new TranscriptionDuplicationException(recordIdentifier);
+		}
+	}
+
 	/**
 	 * Adds to json information about newly generated IIIF as manifest
-	 * @param record record to which data should be add
-	 * @param json json to which data shoudl be add
+	 *
+	 * @param record  record to which data should be add
+	 * @param json    json to which data shoudl be add
 	 * @param jsonRaw raw json to which data should be add
 	 */
 	public void fillRecordJsonData(Record record, JsonObject json, JsonObject jsonRaw) {
