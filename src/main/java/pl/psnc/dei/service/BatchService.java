@@ -332,10 +332,10 @@ public class BatchService {
 		if (records.size() < recordsIds.size()) {
 			String difference = records
 					.stream()
-					.filter(record -> !recordsIds.contains(record.getIdentifier()))
-					.map(Record::getIdentifier).collect(Collectors.joining(","));
+					.map(Record::getIdentifier)
+					.filter(identifier -> !recordsIds.contains(identifier)).collect(Collectors.joining(","));
 			if (difference.isEmpty()) {
-				difference = recordsIds.stream().collect(Collectors.joining(","));
+				difference = String.join(",", recordsIds);
 			}
 			log.warn("Following records will not be added to the import: {}", difference);
 		}
@@ -347,12 +347,11 @@ public class BatchService {
 		try {
 			saved = File.createTempFile("tmp", ".csv");
 			file.transferTo(saved);
-			List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
-			saved.delete();
-			return result;
+			return this.makeComplexImport(saved, name, projectName, datasetName);
 		} catch (Exception e) {
-			saved.delete();
 			throw e;
+		} finally {
+			saved.delete();
 		}
 	}
 
@@ -362,13 +361,12 @@ public class BatchService {
 			saved = File.createTempFile("tmp", ".csv");
 			OutputStream os = new FileOutputStream(saved);
 			os.write(inputStream.readAllBytes());
-			List<Import> result = this.makeComplexImport(saved, name, projectName, datasetName);
-			saved.delete();
-			return result;
+			return this.makeComplexImport(saved, name, projectName, datasetName);
 		} catch (Exception e) {
 			// on failure delete tmp file
-			saved.delete();
 			throw e;
+		} finally {
+			saved.delete();
 		}
 
 	}
