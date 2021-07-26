@@ -13,9 +13,10 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.data.provider.ListDataProvider;
+import com.vaadin.flow.dom.DomEvent;
+import com.vaadin.flow.dom.DomEventListener;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
-import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
@@ -28,7 +29,6 @@ import java.util.List;
 
 public class ComplexBatchImportComponent extends VerticalLayout {
     private final ProjectsRepository projectsRepository;
-    private final DatasetsRepository datasetsRepository;
     private final BatchService batchService;
 
     private Select<Project> projectSelect;
@@ -41,9 +41,8 @@ public class ComplexBatchImportComponent extends VerticalLayout {
     private Upload file;
     private MemoryBuffer memoryBuffer;
 
-    public ComplexBatchImportComponent(ProjectsRepository projectsRepository, DatasetsRepository datasetsRepository, BatchService batchService) {
+    public ComplexBatchImportComponent(ProjectsRepository projectsRepository, BatchService batchService) {
         this.projectsRepository = projectsRepository;
-        this.datasetsRepository = datasetsRepository;
         this.batchService = batchService;
         this.init();
     }
@@ -135,9 +134,16 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         this.file.addFileRejectedListener(
                 event -> Notification.show("File rejected. Reason: " + event.getErrorMessage(), 3000, Notification.Position.MIDDLE)
         );
+        this.file.getElement().addEventListener("upload-abort", new DomEventListener() {
+            @Override
+            public void handleEvent(DomEvent domEvent) {
+                memoryBuffer = new MemoryBuffer();
+                file.setReceiver(memoryBuffer);
+            }
+        });
         this.file.setDropLabel(new Label("Upload up to one file to make import from"));
         this.file.addClassName("flex-1");
-        this.file.addClassName("margin-top");
+        this.file.addClassName("margin-top-16px");
     }
 
     private void prepareNameTextFiled() {
@@ -150,45 +156,53 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         this.importButton = new Button();
         this.importButton.setText("Import");
         this.importButton.addClickListener(
-                event -> {
-                    try {
-                        if (this.validate()) {
-                            String datasetName = this.datasetSelect.getValue() == null ? null : this.datasetSelect.getValue().getName();
-                            List<?> imported = this.batchService
-                                    .makeComplexImport(
-                                            this.memoryBuffer.getInputStream(),
-                                            this.nameTextFiled.getValue(),
-                                            this.projectSelect.getValue().getName(),
-                                            datasetName
-                                    );
-                            Notification.show("Import Finished! Added " + imported.size() + " imports", 3000, Notification.Position.MIDDLE);
-                        }
-                    } catch (IOException e) {
-                        Notification.show("IOException: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
-                        e.printStackTrace();
-                    } catch (NotFoundException e) {
-                        Notification.show("Invalid data: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
-                        e.printStackTrace();
-                    }
-                });
+                event -> this.sendImport());
     }
 
     private Boolean validate() throws IOException {
         if (this.aggregatorSelect.getValue() == null){
             Notification.show("Select Aggregator", 3000, Notification.Position.MIDDLE);
             return false;
-        }
-        else if (this.projectSelect.getValue() == null) {
+        } else if (this.projectSelect.getValue() == null) {
             Notification.show("Select Project", 3000, Notification.Position.MIDDLE);
             return false;
-        }
-        else if (this.memoryBuffer.getInputStream().readAllBytes().length == 0) {
+        } else if (this.memoryBuffer.getInputStream().readAllBytes().length == 0) {
             Notification.show("Select File", 3000, Notification.Position.MIDDLE);
             return false;
         }
-        if (this.nameTextFiled.getValue().equals("")) {
-            this.nameTextFiled.setValue(ImportNameCreatorUtil.generateImportName(this.projectSelect.getValue().getName()));
-        }
         return true;
+    }
+
+    private void prepareImportName() {
+        if (this.nameTextFiled.getValue().isBlank()) {
+            this.nameTextFiled.setValue(ImportNameCreatorUtil.generateImportName(this.projectSelect.getValue().getName()));
+        } else {
+            this.nameTextFiled.setValue(
+                    this.nameTextFiled.getValue().strip()
+            );
+        }
+    }
+
+    private void sendImport() {
+        try {
+            this.prepareImportName();
+            if (this.validate()) {
+                String datasetName = this.datasetSelect.getValue() == null ? null : this.datasetSelect.getValue().getName();
+                List<?> imported = this.batchService
+                        .makeComplexImport(
+                                this.memoryBuffer.getInputStream(),
+                                this.nameTextFiled.getValue(),
+                                this.projectSelect.getValue().getName(),
+                                datasetName
+                        );
+                Notification.show("Import Finished! Added " + imported.size() + " imports", 3000, Notification.Position.MIDDLE);
+            }
+        } catch (IOException e) {
+            Notification.show("IOException: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
+            e.printStackTrace();
+        } catch (NotFoundException e) {
+            Notification.show("Invalid data: " + e.getMessage(), 3000, Notification.Position.MIDDLE);
+            e.printStackTrace();
+        }
     }
 }

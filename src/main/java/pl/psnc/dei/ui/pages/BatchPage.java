@@ -3,7 +3,6 @@ package pl.psnc.dei.ui.pages;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.Route;
-import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
@@ -18,16 +17,14 @@ public class BatchPage extends HorizontalLayout {
     private final ProjectsRepository projectsRepository;
     private final BatchService batchService;
     private final ImportPackageService importPackageService;
-    private final DatasetsRepository datasetsRepository;
 
     private VerticalLayout displayingPlace;
 
     public BatchPage(ProjectsRepository projectsRepository, BatchService batchService,
-                     ImportPackageService importPackageService, DatasetsRepository datasetsRepository) {
+                     ImportPackageService importPackageService) {
         this.projectsRepository = projectsRepository;
         this.batchService = batchService;
         this.importPackageService = importPackageService;
-        this.datasetsRepository = datasetsRepository;
         setupComponents();
     }
 
@@ -43,7 +40,7 @@ public class BatchPage extends HorizontalLayout {
     }
 
     public void showComplexImportsView() {
-        switchPage(new ComplexBatchImportComponent(projectsRepository, datasetsRepository, batchService));
+        switchPage(new ComplexBatchImportComponent(projectsRepository, batchService));
     }
 
     private void switchPage(VerticalLayout layout) {
