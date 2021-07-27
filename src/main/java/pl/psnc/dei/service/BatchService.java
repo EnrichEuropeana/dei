@@ -348,8 +348,6 @@ public class BatchService {
 			saved = File.createTempFile("tmp", ".csv");
 			file.transferTo(saved);
 			return this.makeComplexImport(saved, name, projectName, datasetName);
-		} catch (Exception e) {
-			throw e;
 		} finally {
 			saved.delete();
 		}
@@ -362,9 +360,6 @@ public class BatchService {
 			OutputStream os = new FileOutputStream(saved);
 			os.write(inputStream.readAllBytes());
 			return this.makeComplexImport(saved, name, projectName, datasetName);
-		} catch (Exception e) {
-			// on failure delete tmp file
-			throw e;
 		} finally {
 			saved.delete();
 		}

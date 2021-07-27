@@ -85,7 +85,6 @@ public class ComplexBatchImportComponent extends VerticalLayout {
 
     private void prepareAggregatorSelect() {
         this.aggregatorSelect = CommonComponentsFactory.getAggregatorSelector();
-        this.aggregatorSelect.setValue(Aggregator.getById(0));
         this.aggregatorSelect.setEmptySelectionAllowed(false);
         this.aggregatorSelect.setValue(Aggregator.EUROPEANA);
         this.aggregatorSelect.setEnabled(false);
