@@ -13,7 +13,6 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.data.provider.ListDataProvider;
-import com.vaadin.flow.dom.DomEvent;
 import com.vaadin.flow.dom.DomEventListener;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Aggregator;
@@ -133,12 +132,9 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         this.file.addFileRejectedListener(
                 event -> Notification.show("File rejected. Reason: " + event.getErrorMessage(), 3000, Notification.Position.MIDDLE)
         );
-        this.file.getElement().addEventListener("upload-abort", new DomEventListener() {
-            @Override
-            public void handleEvent(DomEvent domEvent) {
-                memoryBuffer = new MemoryBuffer();
-                file.setReceiver(memoryBuffer);
-            }
+        this.file.getElement().addEventListener("upload-abort", (DomEventListener) domEvent -> {
+            memoryBuffer = new MemoryBuffer();
+            file.setReceiver(memoryBuffer);
         });
         this.file.setDropLabel(new Label("Upload up to one file to make import from"));
         this.file.addClassName("flex-1");
@@ -182,10 +178,17 @@ public class ComplexBatchImportComponent extends VerticalLayout {
         }
     }
 
+    private void removeOldImportName() {
+        if (ImportNameCreatorUtil.isMatchingImportTitlePattern(this.nameTextFiled.getValue())) {
+            this.nameTextFiled.setValue("");
+        }
+    }
+
     private void sendImport() {
         try {
-            this.prepareImportName();
             if (this.validate()) {
+                this.removeOldImportName();
+                this.prepareImportName();
                 String datasetName = this.datasetSelect.getValue() == null ? null : this.datasetSelect.getValue().getName();
                 List<?> imported = this.batchService
                         .makeComplexImport(
