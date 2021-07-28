@@ -8,6 +8,7 @@ import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.page.BodySize;
+import com.vaadin.flow.component.page.Push;
 import com.vaadin.flow.component.tabs.Tab;
 import com.vaadin.flow.component.tabs.Tabs;
 import com.vaadin.flow.router.*;
@@ -18,6 +19,7 @@ import pl.psnc.dei.ui.pages.*;
 @Route(value = "")
 @PageTitle("Data Exchange Infrastructure application")
 @BodySize(height = "100%", width = "100%")
+@Push
 public class MainView extends VerticalLayout implements RouterLayout, BeforeEnterObserver {
 
     private final Tabs menuTabs;

@@ -16,6 +16,6 @@ public class ImportNameCreatorUtil {
     }
 
     public static boolean isMatchingImportTitlePattern(String text) {
-        return text.matches("IMPORT_[A-Za-z]+_[0-9]+-[0-9]+-[0-9]+T[0-9]+:[0-9]+:[0-9]+");
+        return text.matches("IMPORT_.+_[0-9]{4}-[0-9]{1,2}-[0-9]{1,2}T[0-9]{1,2}:[0-9]{1,2}:[0-9]{1,2}");
     }
 }
