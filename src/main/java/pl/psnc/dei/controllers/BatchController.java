@@ -93,7 +93,6 @@ public class BatchController {
 		try {
 			return ResponseEntity.ok(this.batchService.makeComplexImport(file, name, projectName, datasetName));
 		} catch (NotFoundException e) {
-			e.printStackTrace();
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
