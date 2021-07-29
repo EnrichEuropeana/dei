@@ -9,13 +9,14 @@ import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.batches.BatchImportComponent;
 import pl.psnc.dei.ui.components.batches.BatchNavigationMenu;
+import pl.psnc.dei.ui.components.batches.ComplexBatchImportComponent;
 
 @Route(value = "batch", layout = MainView.class)
 public class BatchPage extends HorizontalLayout {
 
-    private ProjectsRepository projectsRepository;
-    private BatchService batchService;
-    private ImportPackageService importPackageService;
+    private final ProjectsRepository projectsRepository;
+    private final BatchService batchService;
+    private final ImportPackageService importPackageService;
 
     private VerticalLayout displayingPlace;
 
@@ -39,8 +40,7 @@ public class BatchPage extends HorizontalLayout {
     }
 
     public void showComplexImportsView() {
-        //TODO: EN-154
-        switchPage(new VerticalLayout());
+        switchPage(new ComplexBatchImportComponent(projectsRepository, batchService));
     }
 
     private void switchPage(VerticalLayout layout) {
