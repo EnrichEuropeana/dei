@@ -9,7 +9,6 @@ import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.transaction.annotation.Transactional;
-import pl.psnc.dei.model.DAO.EnrichTaskContextRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
@@ -25,9 +24,6 @@ public class EnrichTaskContextServiceTest {
 
     @Autowired
     private EnrichTaskContextService enrichTaskContextService;
-
-    @Autowired
-    private EnrichTaskContextRepository enrichTaskContextRepository;
 
     @Autowired
     private RecordsRepository recordsRepository;
