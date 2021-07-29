@@ -23,7 +23,7 @@ public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
 
-	private Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
 	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
 		super(record, queueRecordService, tps, ess, eas);
@@ -57,18 +57,20 @@ public class EnrichTask extends Task {
 			try {
 				Transcription transcription = new Transcription();
 				transcription.setRecord(record);
-				transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
+				transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
 				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
 				JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
 				if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
 					transcription.setAnnotationId(europeanaAnnotationId.toString());
 				}
-				transcriptions.put(transcription.getTp_id(), transcription);
-				queueRecordService.saveTranscription(transcription);
+				if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+					transcriptions.put(transcription.getTpId(), transcription);
+				}
 			} catch (IllegalArgumentException e) {
 				logger.error("Transcription was corrupted: " + val.toString());
 			}
 		}
+		this.removeMissingTranscriptions(new ArrayList<>(transcriptions.values()));
 		// add transcription to record
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
@@ -81,7 +83,7 @@ public class EnrichTask extends Task {
 			logger.info("Record already has transcriptions. Processing not annotated.");
 			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions) {
-				Transcription prepared = transcriptions.get(transcription.getTp_id());
+				Transcription prepared = transcriptions.get(transcription.getTpId());
 				if (prepared != null)
 					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
 			}
@@ -96,6 +98,19 @@ public class EnrichTask extends Task {
 				.addAll(record.getTranscriptions().stream()
 						.filter(e -> StringUtils.isBlank(e.getAnnotationId()))
 						.collect(Collectors.toList()));
+	}
+
+	/**
+	 * Removes all transcriptions present in DB but not fetched from TP
+	 *
+	 * @param fetchedTranscriptions transcriptions fetched from TP
+	 */
+	private void removeMissingTranscriptions(List<Transcription> fetchedTranscriptions) {
+		List<Transcription> diff = this.record.getTranscriptions().stream()
+				.filter(el -> !fetchedTranscriptions.contains(el))
+				.collect(Collectors.toList());
+		this.record.getTranscriptions().removeAll(diff);
+		this.queueRecordService.saveRecord(this.record);
 	}
 
 	/**

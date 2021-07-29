@@ -5,56 +5,38 @@ import lombok.*;
 import org.apache.jena.atlas.json.JsonObject;
 
 import javax.persistence.*;
-import java.io.Serializable;
 
 @Entity
+@Data
+@NoArgsConstructor
+/**
+ * This class stores single transcription.
+ * This class seems to be a weak entity as it could be identified by only tpId and annotaionId,
+ * but on creation there not always is annotationId, thus we need to create surrogate id field
+ */
 public class Transcription {
 
-	@EmbeddedId
-	private final TranscriptionPK key;
+	@Id
+	@GeneratedValue
+	@Getter(AccessLevel.NONE)
+	@Setter(AccessLevel.NONE)
+	private long id;
+
+	private String tpId;
+
 	@ManyToOne(fetch = FetchType.LAZY)
-	@Getter
-	@Setter
 	private Record record;
+
 	@Transient
-	@Getter
-	@Setter
 	private JsonObject transcriptionContent;
 
-	public Transcription(String tp_id, Record record, String annotationId) {
-		this.key = new TranscriptionPK(tp_id, annotationId);
-		this.record = record;
-	}
-
-	public Transcription() {
-		this.key = new TranscriptionPK();
-	}
-
-	public String getTp_id() {
-		return this.key.getTp_id();
-	}
-
-	public void setTp_id(String tp_id) {
-		this.key.setTp_id(tp_id);
-	}
-
 	@JsonProperty("EuropeanaAnnotationId")
-	public String getAnnotationId() {
-		return this.key.annotationId;
-	}
+	private String annotationId;
 
-	public void setAnnotationId(String annotationId) {
-		this.key.setAnnotationId(annotationId);
-	}
 
-	@Data
-	@Embeddable
-	@AllArgsConstructor
-	@NoArgsConstructor
-	public static class TranscriptionPK implements Serializable {
-		@Column(length = 120)
-		private String tp_id;
-		@Column(length = 120)
-		private String annotationId;
+	public Transcription(String tpId, Record record, String annotationId) {
+		this.tpId = tpId;
+		this.record = record;
+		this.annotationId = annotationId;
 	}
 }

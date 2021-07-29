@@ -9,7 +9,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.exception.TranscriptionDuplicationException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
@@ -57,14 +56,9 @@ public class TranscriptionController {
 		}
 
 		try {
-			this.qrs.throwIfTranscriptionExistFor(recordId);
 			tps.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
-		} catch (TranscriptionDuplicationException e) {
-			this.logger.warn("Tried to duplicate transcription, by usage of wrong endpoint. Record identifier: " + recordId);
-			return new ResponseEntity<>(recordId, HttpStatus.CONFLICT);
 		} catch (NotFoundException e) {
-			e.printStackTrace();
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
@@ -81,22 +75,14 @@ public class TranscriptionController {
 		}
 
 		Set<String> notFound = new HashSet<>();
-		Set<String> duplicated = new HashSet<>();
 
 		for (String recordId : recordsIds) {
 			logger.info("Creating enrich task for record {}", recordId);
 			try {
-				qrs.throwIfTranscriptionExistFor(recordId);
 				tps.createNewEnrichTask(recordId);
 			} catch (NotFoundException e) {
 				notFound.add(e.getMessage());
-			} catch (TranscriptionDuplicationException e) {
-				this.logger.warn("Tried to duplicate transcription, by usage of wrong endpoint. Record identifier: " + recordId);
-				duplicated.add(e.getMessage());
 			}
-		}
-		if (!duplicated.isEmpty()) {
-			return new ResponseEntity<>(String.join(",", duplicated), HttpStatus.CONFLICT);
 		}
 		if (!notFound.isEmpty()) {
 			return new ResponseEntity<>(String.join(",", notFound), HttpStatus.NOT_FOUND);

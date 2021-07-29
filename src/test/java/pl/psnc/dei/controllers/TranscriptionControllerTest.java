@@ -46,7 +46,7 @@ public class TranscriptionControllerTest {
         this.sampleRecord = this.recordsRepository.save(this.sampleRecord);
 
         this.sampleTranscription = new Transcription();
-        this.sampleTranscription.setTp_id("34rfwe");
+        this.sampleTranscription.setTpId("34rfwe");
         this.sampleTranscription.setAnnotationId("432rdwfd");
         this.sampleTranscription.setRecord(this.sampleRecord);
         this.sampleRecord.setTranscriptions(List.of(this.sampleTranscription));

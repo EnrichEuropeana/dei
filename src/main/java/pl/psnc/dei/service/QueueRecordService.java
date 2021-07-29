@@ -79,6 +79,34 @@ public class QueueRecordService {
 		transcriptionRepository.save(transcription);
 	}
 
+	/**
+	 * Function adds records but not update them
+	 *
+	 * @param transcription transcription to add
+	 * @return true if transcription was added, otherwise false
+	 */
+	public boolean saveTranscriptionIfNotExist(Transcription transcription) {
+		// not all transcriptions have annotationId
+		if (transcription.getAnnotationId() != null) {
+			if (!transcriptionRepository.existsByTpIdAndAnnotationId(transcription.getTpId(), transcription.getAnnotationId())) {
+				this.saveTranscription(transcription);
+				return true;
+			}
+		} else {
+			if (!transcriptionRepository.existsByTpId(transcription.getTpId())) {
+				this.saveTranscription(transcription);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Throws error if given record has any transcription. Useful for exception driven validation
+	 *
+	 * @param recordIdentifier
+	 * @throws TranscriptionDuplicationException
+	 */
 	public void throwIfTranscriptionExistFor(String recordIdentifier) throws TranscriptionDuplicationException {
 		if (this.transcriptionRepository.existsByRecord_Identifier(recordIdentifier)) {
 			throw new TranscriptionDuplicationException(recordIdentifier);
