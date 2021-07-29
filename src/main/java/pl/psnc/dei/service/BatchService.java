@@ -1,28 +1,26 @@
 package pl.psnc.dei.service;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.model.Aggregator;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import javax.transaction.Transactional;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
@@ -43,11 +41,14 @@ public class BatchService {
 
 	private final EuropeanaSearchService europeanaSearchService;
 
-	public BatchService(RecordsRepository recordsRepository, DatasetsRepository datasetsReposotory, ProjectsRepository projectsRepository, EuropeanaSearchService europeanaSearchService) {
+	private final ImportPackageService importService;
+
+	public BatchService(RecordsRepository recordsRepository, DatasetsRepository datasetsReposotory, ProjectsRepository projectsRepository, EuropeanaSearchService europeanaSearchService, ImportPackageService importService) {
 		this.recordsRepository = recordsRepository;
 		this.datasetsReposotory = datasetsReposotory;
 		this.projectsRepository = projectsRepository;
 		this.europeanaSearchService = europeanaSearchService;
+		this.importService = importService;
 	}
 
 	/**
@@ -75,35 +76,37 @@ public class BatchService {
 
 		Set<Record> candidates = new HashSet<>();
 
-		recordIds.stream().filter(r -> r != null && !r.isEmpty()).forEach(recordId -> {
-			Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
-			if (record == null) {
-				// record does not belongs to some project
-				record = recordsRepository.findByIdentifierAndProject(recordId, project);
-				if (record == null) {
-					// record does not exist
-					// new record - get necessary information from Europeana
-					Record newRecord = new Record();
-					newRecord.setIdentifier(recordId);
-					newRecord.setTitle(getTitle(recordId));
-					newRecord.setProject(project);
-					newRecord.setDataset(dataset);
-					newRecord.setAggregator(Aggregator.EUROPEANA);
-					recordsRepository.save(newRecord);
-					candidates.add(newRecord);
-				} else {
-					// record exist but have no dataset assigned
-					record.setDataset(dataset);
-					recordsRepository.save(record);
-					if (record.getAnImport() == null) {
+		recordIds.stream()
+				.filter(r -> r != null && !r.isEmpty())
+				.forEach(recordId -> {
+					Record record = recordsRepository.findByIdentifierAndProjectAndDataset(recordId, project, dataset);
+					if (record == null) {
+						// record does not belongs to some project
+						record = recordsRepository.findByIdentifierAndProject(recordId, project);
+						if (record == null) {
+							// record does not exist
+							// new record - get necessary information from Europeana
+							Record newRecord = new Record();
+							newRecord.setIdentifier(recordId);
+							newRecord.setTitle(getTitle(recordId));
+							newRecord.setProject(project);
+							newRecord.setDataset(dataset);
+							newRecord.setAggregator(Aggregator.EUROPEANA);
+							recordsRepository.save(newRecord);
+							candidates.add(newRecord);
+						} else {
+							// record exist but have no dataset assigned
+							record.setDataset(dataset);
+							recordsRepository.save(record);
+							if (record.getAnImport() == null) {
+								candidates.add(record);
+							}
+						}
+					} else if (record.getAnImport() == null) {
+						// project exist and have data set assigned
 						candidates.add(record);
 					}
-				}
-			} else if (record.getAnImport() == null) {
-				// project exist and have data set assigned
-				candidates.add(record);
-			}
-		});
+				});
 		return candidates;
 	}
 
@@ -113,7 +116,12 @@ public class BatchService {
 	 * @return title
 	 */
 	private String getTitle(String recordId) {
-		JsonObject jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
+		JsonObject jsonObject;
+		try {
+			 jsonObject = europeanaSearchService.retrieveRecordAndConvertToJsonLd(recordId);
+		} catch (RuntimeException e) {
+			throw new RuntimeException("Error fetching data for record " + recordId + ". " + e.getMessage());
+		}
 		if (jsonObject != null) {
 			Optional<JsonObject> title = jsonObject
 					.get("@graph")
@@ -123,13 +131,20 @@ public class BatchService {
 					.filter(obj -> obj.get("dc:title") != null)
 					.findFirst();
 			if (title.isPresent()) {
-				return title.get().getAsObject().get("dc:title").getAsString().value();
+				JsonValue dcTitle = title.get().getAsObject().get("dc:title");
+				if (dcTitle.isObject()) {
+					return dcTitle.getAsObject().get("@value").getAsString().value();
+				}
+				if (dcTitle.isString()) {
+					return dcTitle.getAsString().value();
+				}
+				log.warn("Cannot retrieve title for record " + recordId);
 			}
 		}
 		return recordId;
 	}
 
-	public List<Set<String>> splitImport(MultipartFile file) throws IOException {
+	public List<Set<String>> splitImport(File file) throws IOException {
 		Map<String, List<String>> records = readRecordsFromFile(file);
 		List<Set<String>> result = new ArrayList<>();
 
@@ -138,19 +153,19 @@ public class BatchService {
 
 		records
 				.values().forEach(identifiers -> {
-					if (identifiers.size() == 1) {
-						if (singleRecords.size() == 1000) {
-							result.add(new HashSet<>(singleRecords));
-							singleRecords.clear();
-						}
-						identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(singleRecords::add);
-					} else {
-						if (complexRecords.size() + identifiers.size() >= 1000) {
-							result.add(new HashSet<>(complexRecords));
-							complexRecords.clear();
-						}
-						identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(complexRecords::add);
-					}
+			if (identifiers.size() == 1) {
+				if (singleRecords.size() == 1000) {
+					result.add(new HashSet<>(singleRecords));
+					singleRecords.clear();
+				}
+				identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(singleRecords::add);
+			} else {
+				if (complexRecords.size() + identifiers.size() >= 1000) {
+					result.add(new HashSet<>(complexRecords));
+					complexRecords.clear();
+				}
+				identifiers.stream().map(s -> s.replace(EUROPEANA_ITEM_URL, "")).forEach(complexRecords::add);
+			}
 		});
 		if (!singleRecords.isEmpty()) {
 			result.add(new HashSet<>(singleRecords));
@@ -168,14 +183,14 @@ public class BatchService {
 	 * @return map populated with file contents
 	 * @throws IOException on file read error
 	 */
-	private Map<String, List<String>> readRecordsFromFile(MultipartFile file) throws IOException {
-		if (file.isEmpty()) {
+	private Map<String, List<String>> readRecordsFromFile(File file) throws IOException {
+		if (file.length() == 0) {
 			throw new IllegalArgumentException("Empty file");
 		}
 
 		Map<String, List<String>> records = new HashMap<>();
 
-		BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()));
+		BufferedReader reader = new BufferedReader(new FileReader(file));
 		while (reader.ready()) {
 			String line = reader.readLine();
 			String[] parts = line.split(",");
@@ -284,5 +299,90 @@ public class BatchService {
 			}
 		}
 		return allDimensions;
+	}
+
+	public List<Dataset> getProjectDataset(Project project) {
+		Project currentProject = projectsRepository.findByProjectId(project.getProjectId());
+		Hibernate.initialize(currentProject.getDatasets());
+		return currentProject.getDatasets();
+	}
+
+	/**
+	 * Saves records to DB, and calculate difference of saved and provided ones, as some of them can
+	 * be omitted during persiting process
+	 * @param projectName name of project to which data should be saved
+	 * @param datasetName name of dataset from which data comes
+	 * @param recordsIds id of data to save
+	 * @return saved records
+	 * @throws NotFoundException
+	 */
+	public Set<Record> uploadRecordsToProject(String projectName,
+											  String datasetName,
+											  Set<String> recordsIds)
+			throws NotFoundException {
+		String datasetId = null;
+		if (datasetName != null) {
+			Optional<Dataset> optionalDataset = this.datasetsReposotory.findByName(datasetName);
+			if (optionalDataset.isEmpty()) {
+				throw new NotFoundException("Dataset with name: " + datasetName + " not found");
+			}
+			datasetId = optionalDataset.get().getDatasetId();
+		}
+		Set<Record> records = this.uploadRecords(projectName, datasetId, recordsIds);
+		if (records.size() < recordsIds.size()) {
+			String difference = records
+					.stream()
+					.map(Record::getIdentifier)
+					.filter(identifier -> !recordsIds.contains(identifier)).collect(Collectors.joining(","));
+			if (difference.isEmpty()) {
+				difference = String.join(",", recordsIds);
+			}
+			log.warn("Following records will not be added to the import: {}", difference);
+		}
+		return records;
+	}
+
+	public List<Import> makeComplexImport(MultipartFile file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
+		File saved = null;
+		try {
+			saved = File.createTempFile("tmp", ".csv");
+			file.transferTo(saved);
+			return this.makeComplexImport(saved, name, projectName, datasetName);
+		} finally {
+			saved.delete();
+		}
+	}
+
+	public List<Import> makeComplexImport(InputStream inputStream, String name, String projectName, String datasetName) throws IOException, NotFoundException {
+		File saved = null;
+		try {
+			saved = File.createTempFile("tmp", ".csv");
+			OutputStream os = new FileOutputStream(saved);
+			os.write(inputStream.readAllBytes());
+			return this.makeComplexImport(saved, name, projectName, datasetName);
+		} finally {
+			saved.delete();
+		}
+
+	}
+
+	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException, NotFoundException {
+		List<Set<String>> records = this.splitImport(file);
+		List<Import> imports = new ArrayList<>();
+		int counter = 0;
+		String importName;
+
+		for (Set<String> identifiers : records) {
+			Set<Record> uploadedRecords = uploadRecordsToProject(projectName, datasetName, identifiers);
+			if (!uploadedRecords.isEmpty()) {
+				if (StringUtils.isBlank(name)) {
+					importName = name;
+					} else {
+						importName = name + "_" + counter++;
+					}
+					imports.add(importService.createImport(importName, uploadedRecords.iterator().next().getProject().getProjectId(), uploadedRecords));
+				}
+			}
+		return imports;
 	}
 }

@@ -176,3 +176,25 @@
     opacity: 0.5;
     background-color: lightgray
 }
+
+#batch-import-component {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+#batch-import-component > *:not(:last-child) {
+    margin-bottom: 16px;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.vertically-centered-row {
+    display: flex;
+    align-items: center
+}
+
+.margin-top-16px {
+    margin-top: 16px;
+}
