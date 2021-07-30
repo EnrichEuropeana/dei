@@ -199,6 +199,10 @@
     margin-top: 16px;
 }
 
+.padding-top-6px {
+    padding-top: 6px;
+}
+
 .margin-left-6px {
     margin-left: 6px;
 }
@@ -206,4 +210,12 @@
 .flex-column {
     display: inline-flex;
     flex-direction: column;
+}
+
+.align-flex-end {
+    align-self: flex-end;
+}
+
+.records-text-area {
+    min-height: 150px;
 }

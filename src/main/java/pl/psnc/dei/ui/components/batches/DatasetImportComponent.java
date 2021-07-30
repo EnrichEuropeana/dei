@@ -115,7 +115,7 @@ public class DatasetImportComponent extends VerticalLayout {
         europeanaDatasetIdTextField.setLabel("Europeana Dataset ID");
         Button button = new Button();
         button.setText("Check dataset");
-        button.getStyle().set("align-self", "flex-end");
+        button.addClassName("align-flex-end");
         button.addClickListener(event -> checkDataset());
         horizontalLayout.add(europeanaDatasetIdTextField, button);
         return horizontalLayout;
@@ -149,7 +149,7 @@ public class DatasetImportComponent extends VerticalLayout {
     private TextField prepareImportNameInputField() {
         importNameTextField = new TextField();
         importNameTextField.setLabel("Import name");
-        importNameTextField.getStyle().set("padding-top", "6px");
+        importNameTextField.addClassName("padding-top-6px");
         return importNameTextField;
     }
 
@@ -199,8 +199,8 @@ public class DatasetImportComponent extends VerticalLayout {
 
     private TextArea prepareExcludedTextArea() {
         excludeSelectedTextArea = new TextArea();
-        excludeSelectedTextArea.setMinHeight("150px");
         excludeSelectedTextArea.addClassName("flex-1");
+        excludeSelectedTextArea.addClassName("records-text-area");
         excludeSelectedTextArea.setHelperText("Enter each Europeana ID in separate line or put JSON structured array of record IDs.");
         excludeSelectedTextArea.setEnabled(doExcludeSelected);
         return excludeSelectedTextArea;
