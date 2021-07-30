@@ -151,7 +151,7 @@ public class TranscriptionPlatformServiceTest {
 
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
 
@@ -167,7 +167,7 @@ public class TranscriptionPlatformServiceTest {
                         .withFixedDelay(3000)));
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
     }
@@ -181,7 +181,7 @@ public class TranscriptionPlatformServiceTest {
                         .withFixedDelay(2000)));
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
 

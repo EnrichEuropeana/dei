@@ -9,6 +9,11 @@ import javax.persistence.*;
 @Entity
 @Data
 @NoArgsConstructor
+/**
+ * This class stores single transcription.
+ * This class seems to be a weak entity as it could be identified by only tpId and annotaionId,
+ * but on creation there not always is annotationId, thus we need to create surrogate id field
+ */
 public class Transcription {
 
 	@Id
@@ -17,7 +22,7 @@ public class Transcription {
 	@Setter(AccessLevel.NONE)
 	private long id;
 
-	private String tp_id;
+	private String tpId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Record record;
@@ -29,8 +34,8 @@ public class Transcription {
 	private String annotationId;
 
 
-	public Transcription(String tp_id, Record record, String annotationId) {
-		this.tp_id = tp_id;
+	public Transcription(String tpId, Record record, String annotationId) {
+		this.tpId = tpId;
 		this.record = record;
 		this.annotationId = annotationId;
 	}
