@@ -4,36 +4,40 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.queue.task.TasksFactory;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
 
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 
 @RestController
 @RequestMapping("/api/transcription")
 public class TranscriptionController {
 
-	private Logger logger = LoggerFactory.getLogger(TranscriptionController.class);
+	private final Logger logger = LoggerFactory.getLogger(TranscriptionController.class);
 
-	private TranscriptionPlatformService tps;
+	private final TranscriptionPlatformService tps;
 
-	private TasksQueueService tqs;
+	private final TasksQueueService tqs;
 
-	private TasksFactory tasksFactory;
+	private final TasksFactory tasksFactory;
+
+	private final QueueRecordService qrs;
 
 	@Autowired
-	public TranscriptionController(TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory) {
+	public TranscriptionController(@Qualifier("transcriptionPlatformService") TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory, QueueRecordService queueRecordService) {
 		this.tps = tps;
 		this.tqs = tqs;
+		this.qrs = queueRecordService;
 		this.tasksFactory = tasksFactory;
 	}
 
@@ -54,7 +58,7 @@ public class TranscriptionController {
 		try {
 			tps.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
-		} catch (Exception e) {
+		} catch (NotFoundException e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}

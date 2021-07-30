@@ -330,7 +330,7 @@ public class TranscriptionPlatformService {
 				})
 				.block();
 
-		final String currentTranscription = retrieveCurrentTranscription(transcription.getTp_id(), response);
+		final String currentTranscription = retrieveCurrentTranscription(transcription.getTpId(), response);
 		if (currentTranscription != null) {
 			return JSON.parse(currentTranscription);
 		}
