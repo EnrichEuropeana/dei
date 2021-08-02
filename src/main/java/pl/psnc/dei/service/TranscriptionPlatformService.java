@@ -30,7 +30,13 @@ import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.*;
+import pl.psnc.dei.model.Dataset;
+import pl.psnc.dei.model.Import;
+import pl.psnc.dei.model.ImportFailure;
+import pl.psnc.dei.model.ImportStatus;
+import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
@@ -38,7 +44,12 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Service responsible for communication with Transcription Platform.
@@ -73,6 +84,9 @@ public class TranscriptionPlatformService {
 
 	@Autowired
 	private TasksFactory tasksFactory;
+
+	@Autowired
+	private ImportProgressService importProgressService;
 
 	@Value("${europeana.api.tp.authorization-token}")
 	private String authToken;
@@ -401,21 +415,28 @@ public class TranscriptionPlatformService {
 	 * @throws NotFoundException thrown if import was not found
 	 */
 	public void sendImport(String importName) throws NotFoundException {
-		Optional<Import> anImport = importsRepository.findImportByName(importName);
-		if (!anImport.isPresent()) {
+		Optional<Import> importOptional = importsRepository.findImportByName(importName);
+		if (importOptional.isEmpty()) {
 			throw new NotFoundException("Import " + importName + " not found");
 		}
+		Import anImport = importOptional.get();
 		// sending import can be done only for imports that are in progress
-		if (ImportStatus.IN_PROGRESS.equals(anImport.get().getStatus())) {
+		if (ImportStatus.IN_PROGRESS.equals(anImport.getStatus())) {
 			// We have to start the process of sending records by setting record state to T_PENDING and creating TranscribeTask
 			// Only records in NORMAL or T_FAILED state are considered
-			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport.get(), Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED, Record.RecordState.C_FAILED));
+			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED, Record.RecordState.C_FAILED));
+			initializeImportProgress(anImport, toSend.size());
 			toSend.forEach(record -> {
 				record.setState(Record.RecordState.T_PENDING);
 				recordsRepository.save(record);
 				taskQueueService.addTaskToQueue(tasksFactory.getTask(record));
 			});
 		}
+	}
+
+	private void initializeImportProgress(Import anImport, int records) {
+		anImport.setProgress(importProgressService.initImportProgress(records));
+		importsRepository.save(anImport);
 	}
 
 	/**
@@ -434,10 +455,11 @@ public class TranscriptionPlatformService {
 				} else {
 					anImport.setStatus(ImportStatus.SENT);
 				}
+				anImport.setProgress(null);
 				importsRepository.save(anImport);
 			}
 		}
-		logger.info("Import status updated to" + anImport.getStatus());
+		logger.info("Import status updated to " + anImport.getStatus());
 	}
 
 	/**
@@ -451,7 +473,7 @@ public class TranscriptionPlatformService {
 	 */
 	public void addFailure(String importName, Record record, String message) throws NotFoundException {
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
-		if (!anImport.isPresent()) {
+		if (anImport.isEmpty()) {
 			throw new NotFoundException("Import " + importName + " not found!");
 		}
 		ImportFailure importFailure = new ImportFailure();

@@ -44,7 +44,7 @@ public class Record {
 	private Dataset dataset;
 
 	@JsonIgnore
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@ManyToOne(fetch = FetchType.EAGER)
 	private Import anImport;
 
 	@JsonIgnore
