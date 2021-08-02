@@ -53,7 +53,7 @@ public class BatchServiceTest {
     @Test
     public void shouldRejectMissingDatasetIdUploadDataset() throws NotFoundException {
         UploadDatasetRequest request = prepareUploadDatasetRequest();
-        request.setDatasetId(null);
+        request.setEuropeanaDatasetId(null);
         exceptionRule.expect(IllegalArgumentException.class);
         batchService.uploadDataset(request);
     }
@@ -128,7 +128,7 @@ public class BatchServiceTest {
     private CreateImportFromDatasetRequest prepareCreateImportFromDatasetRequest() {
         CreateImportFromDatasetRequest request = new CreateImportFromDatasetRequest();
         request.setProjectName(PROJECT_NAME);
-        request.setDatasetId(DATASET_ID);
+        request.setEuropeanaDatasetId(DATASET_ID);
         return request;
     }
 

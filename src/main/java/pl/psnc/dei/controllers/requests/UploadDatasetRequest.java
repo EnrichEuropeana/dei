@@ -8,7 +8,7 @@ import java.util.Set;
 @Data
 public class UploadDatasetRequest {
 
-    private @NotNull String datasetId;
+    private @NotNull String europeanaDatasetId;
     private @NotNull String projectName;
     private String dataset;
     private int limit;

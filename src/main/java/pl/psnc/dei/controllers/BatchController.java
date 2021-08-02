@@ -110,6 +110,9 @@ public class BatchController {
 	public ResponseEntity<Set<Record>> datasetUpload(@RequestBody UploadDatasetRequest request) {
 		try {
 			Set<Record> records = batchService.uploadDataset(request);
+			if (records.isEmpty()) {
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			}
 			return ResponseEntity.ok(records);
 		} catch (NotFoundException nfe) {
 			logger.error(nfe.getMessage());
@@ -124,6 +127,9 @@ public class BatchController {
 	public ResponseEntity<List<Import>> createImportFromDataset(@RequestBody CreateImportFromDatasetRequest request) {
 		try {
 			List<Import> imports = batchService.createImportsFromDataset(request);
+			if (imports.isEmpty()) {
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			}
 			return ResponseEntity.ok(imports);
 		} catch (NotFoundException nfe) {
 			logger.error(nfe.getMessage());

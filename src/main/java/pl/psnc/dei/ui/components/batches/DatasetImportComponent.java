@@ -273,7 +273,7 @@ public class DatasetImportComponent extends VerticalLayout {
         CreateImportFromDatasetRequest request = new CreateImportFromDatasetRequest();
         request.setProjectName(project.getName());
         request.setDataset(dataset == null ? null : dataset.getName());
-        request.setDatasetId(europeanaDatasetId);
+        request.setEuropeanaDatasetId(europeanaDatasetId);
         if (doLimitNumberOfRecordsToRetrieve) {
             request.setLimit(limitRecordsToRetrieveIntegerField.getValue());
         }
@@ -293,7 +293,11 @@ public class DatasetImportComponent extends VerticalLayout {
         UploadDatasetRequest request = prepareRequest(excludedRecords);
         try {
             Set<Record> records = batchService.uploadDataset(request);
-            showNotification("Successfully uploaded " + records.size() + " records from Dataset ID"  + europeanaDatasetId);
+            if (records.isEmpty()) {
+                showNotification("No records found to upload!");
+            } else {
+                showNotification("Successfully uploaded " + records.size() + " records from Dataset ID"  + europeanaDatasetId);
+            }
         } catch (Exception e) {
             showNotification("Error: " + e.getMessage());
         }
@@ -303,7 +307,11 @@ public class DatasetImportComponent extends VerticalLayout {
         CreateImportFromDatasetRequest request = prepareRequest(excludedRecords);
         try {
             List<Import> imports = batchService.createImportsFromDataset(request);
-            showNotification(prepareSuccessNotificationMessage(imports));
+            if (imports.isEmpty()) {
+                showNotification("No records found for creating an import!");
+            } else {
+                showNotification(prepareSuccessNotificationMessage(imports));
+            }
         } catch (Exception e) {
             showNotification("Error: " + e.getMessage());
         }
@@ -338,7 +346,7 @@ public class DatasetImportComponent extends VerticalLayout {
     private void checkDataset() {
         EuropeanaSearchResponse searchResponse = searchForDataset();
         if (searchResponse.getItems().isEmpty() || Boolean.FALSE.equals(searchResponse.getSuccess())) {
-            showNotification("Cannot found dataset with given ID");
+            showNotification("Cannot find dataset with given ID");
             return;
         }
         String datasetName = extractDatasetName(searchResponse.getItems().get(0));

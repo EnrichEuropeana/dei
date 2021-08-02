@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -15,7 +14,7 @@ import org.springframework.web.util.UriUtils;
 import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.exception.EuropeanaAggregatorException;
-import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
@@ -229,8 +228,11 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
     }
 
     @Override
-    public Set<String> getAllDatasetRecords(String datasetId) {
+    public Set<String> getAllDatasetRecords(String datasetId) throws NotFoundException {
         EuropeanaSearchResponse searchResponse = searchForAllDatasetRecords(datasetId).block();
+        if (searchResponse.getFacets() == null) {
+            throw new NotFoundException("Not found records for Europeana Dataset ID " + datasetId);
+        }
         EuropeanaFacet idFacet = searchResponse.getFacets().stream()
                 .filter(facet -> "europeana_id".equals(facet.getName()))
                 .findFirst()
