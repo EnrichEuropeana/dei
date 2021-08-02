@@ -8,6 +8,7 @@ import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
+import pl.psnc.dei.service.ImportProgressService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -32,14 +33,18 @@ public class TranscribeTask extends Task {
 
 	private String serverPath;
 
+	private ImportProgressService importProgressService;
+
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url,
+				   String serverPath, ImportProgressService ips, TasksFactory tasksFactory) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.tqs = tqs;
 		this.serverPath = serverPath;
 		this.state = TaskState.T_RETRIEVE_RECORD;
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
+		this.importProgressService = ips;
 	}
 
 	@Override
@@ -64,6 +69,7 @@ public class TranscribeTask extends Task {
 				// check if fetched data already contains address to iiif
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
+					importProgressService.reportProgress(record);
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
 						// record has no IIIF on europeana, so in previous run was marked as in C_PENDING (see below) and
@@ -76,6 +82,7 @@ public class TranscribeTask extends Task {
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
 							record.setState(Record.RecordState.C_PENDING);
+							importProgressService.reportProgress(record);
 							tqs.addTaskToQueue(tasksFactory.getTask(record));
 							return;
 						} catch (NotFoundException e) {
@@ -88,6 +95,7 @@ public class TranscribeTask extends Task {
 				try {
 					tps.sendRecord(recordJson, record);
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
+					importProgressService.reportProgress(record);
 					// check if all records are done
 					tps.updateImportState(record.getAnImport());
 				} catch (TranscriptionPlatformException e) {
