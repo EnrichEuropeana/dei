@@ -147,7 +147,7 @@ public class BatchImportComponent extends VerticalLayout {
 
     private TextArea prepareRecordsTextArea() {
         recordsTextArea = new TextArea();
-        recordsTextArea.setMinHeight("150px");
+        recordsTextArea.addClassName("records-text-area");
         recordsTextArea.setWidthFull();
         recordsTextArea.addClassName("query-form");
         recordsTextArea.setHelperText("Enter each Europeana ID in separate line or put JSON structured array of record IDs.");
