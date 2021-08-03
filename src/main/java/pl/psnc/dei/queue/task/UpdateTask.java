@@ -11,12 +11,13 @@ import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class UpdateTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(UpdateTask.class);
+
+	private int totalTranscriptionsSend = 0;
 
 	/**
 	 * It is possible that there will be more than 1 transcription update pending, so it has to be list, that situation
@@ -48,12 +49,7 @@ public class UpdateTask extends Task {
 					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
 		// assemble transcription onece more
-		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
-		record.getTranscriptions().add(newTranscription);
-		queueRecordService.saveRecord(record);
-
-		transcriptions = Arrays.asList(newTranscription);
-
+		transcriptions = List.of(new Transcription(transcriptionId, record, annotationId));
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 	}
@@ -73,11 +69,10 @@ public class UpdateTask extends Task {
 				for (Transcription t : transcriptions) {
 					// send updated transcription to europeana
 					eas.updateTranscription(t);
-					record.getTranscriptions().remove(t);
-					queueRecordService.saveRecord(record);
+					this.totalTranscriptionsSend++;
 				}
 
-				if (record.getTranscriptions().isEmpty()) {
+				if (this.totalTranscriptionsSend == this.transcriptions.size()) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
 					} catch (NotFoundException e) {
