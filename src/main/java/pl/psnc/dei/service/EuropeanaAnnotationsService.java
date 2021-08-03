@@ -1,6 +1,7 @@
 package pl.psnc.dei.service;
 
 import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +14,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
+import pl.psnc.dei.util.TranscriptionConverter;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
@@ -95,10 +97,11 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return
      */
     public String updateTranscription(Transcription transcription) {
+        JsonObject convertedTranscription = TranscriptionConverter.convert(transcription.getTranscriptionContent());
         String annotationResponse = webClient.put()
-                .uri(b -> b.path(annotationApiEndpoint + (annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId()).build())
+                .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId()).build())
                 .header("Authorization", "Bearer " + userToken)
-                .body(BodyInserters.fromObject(transcription.getTranscriptionContent()))
+                .body(BodyInserters.fromObject(convertedTranscription.toString()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
