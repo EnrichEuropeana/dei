@@ -19,8 +19,8 @@ create table conversion_task_context
     has_converter_created_data_holder bit    not null,
     has_converter_saved_files         bit    not null,
     has_thrown_exception              bit    not null,
-    record_json                       longtext null,
-    record_json_raw                   longtext null,
+    record_json                       mediumtext null,
+    record_json_raw                   mediumtext null,
     constraint UK_qwfgbudr8tm79eoc525fap3nd
         unique (record_id)
 ) engine = MyISAM;
@@ -119,8 +119,8 @@ create table transcribe_task_context
     has_added_failure bit    not null,
     has_send_record   bit    not null,
     has_thrown_error  bit    not null,
-    record_json       longtext null,
-    record_json_raw   longtext null,
+    record_json       mediumtext null,
+    record_json_raw   mediumtext null,
     constraint UK_kiqfan5kgnlppn6393mut42k0
         unique (record_id)
 ) engine = MyISAM;

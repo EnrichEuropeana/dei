@@ -30,9 +30,9 @@ public class ConversionTaskContext extends Context{
     private boolean hasConverterCreatedDataHolder;
 
     // PROCESSING DATA STORAGE
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJsonRaw;
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJson;
 
     @OneToMany(mappedBy = "conversionTaskContext", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
