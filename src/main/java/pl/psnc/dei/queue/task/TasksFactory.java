@@ -38,6 +38,9 @@ public class TasksFactory {
 	@Autowired
 	private Converter converter;
 
+	@Autowired
+	private ImportProgressService ips;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -54,11 +57,11 @@ public class TasksFactory {
 			case E_PENDING:
 				return new EnrichTask(record, qrs, tps, ess, eas);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this);
+				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, ips, this);
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas);
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, this);
+				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, ips, this);
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
