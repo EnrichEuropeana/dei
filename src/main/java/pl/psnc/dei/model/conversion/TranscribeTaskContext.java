@@ -20,9 +20,9 @@ public class TranscribeTaskContext extends Context{
     private boolean hasAddedFailure;
 
     // PROCESSING DATA STORAGE
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJsonRaw;
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJson;
     @Enumerated(EnumType.STRING)
     private Task.TaskState taskState;
