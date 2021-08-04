@@ -5,6 +5,7 @@ import org.springframework.stereotype.Repository;
 import pl.psnc.dei.model.Transcription;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TranscriptionRepository extends JpaRepository<Transcription, Long> {
@@ -15,4 +16,6 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     boolean existsByTpId(String tpId);
 
     boolean existsByTpIdAndAnnotationId(String tpId, String annotationId);
+
+    Optional<Transcription> findByTpId(String tpId);
 }
