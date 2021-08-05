@@ -1,5 +1,6 @@
 package pl.psnc.dei.ui.components.batches;
 
+import com.google.common.collect.ImmutableMap;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.accordion.AccordionPanel;
 import com.vaadin.flow.component.button.Button;
@@ -17,27 +18,38 @@ import com.vaadin.flow.data.provider.ListDataProvider;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
+import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.exception.ParseRecordsException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Dataset;
+import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.Record;
 import pl.psnc.dei.response.search.europeana.EuropeanaItem;
 import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import pl.psnc.dei.service.BatchService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.ui.components.CheckboxWithIntegerInput;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
+import pl.psnc.dei.util.InputRecordsParser;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
 
 public class DatasetImportComponent extends VerticalLayout {
 
     //Injected beans
     private final ProjectsRepository projectsRepository;
     private final BatchService batchService;
+    private final EuropeanaSearchService europeanaSearchService;
 
     //UI components
     private Select<Aggregator> aggregatorsSelect;
@@ -63,14 +75,20 @@ public class DatasetImportComponent extends VerticalLayout {
     //Class fields
     private Project project;
     private Dataset dataset;
-    private boolean doCreateImport = true;
-    private boolean doExcludeSelected = false;
+    private String europeanaDatasetId;
     private boolean doLimitNumberOfRecordsToRetrieve = false;
+    private boolean doExcludeSelected = false;
+    private boolean doCreateImport = true;
     private boolean doSplitRecords = false;
 
-    public DatasetImportComponent(ProjectsRepository projectsRepository, BatchService batchService) {
+    //Constants
+    private final String QUERY_FORMAT = "edm_datasetName:%s_*";
+
+    public DatasetImportComponent(ProjectsRepository projectsRepository, BatchService batchService,
+                                  EuropeanaSearchService europeanaSearchService) {
         this.projectsRepository = projectsRepository;
         this.batchService = batchService;
+        this.europeanaSearchService = europeanaSearchService;
         initLayout();
     }
 
@@ -113,6 +131,9 @@ public class DatasetImportComponent extends VerticalLayout {
         europeanaDatasetIdTextField = new TextField();
         europeanaDatasetIdTextField.addClassName("flex-1");
         europeanaDatasetIdTextField.setLabel("Europeana Dataset ID");
+        europeanaDatasetIdTextField.addValueChangeListener(event ->
+                europeanaDatasetId = event.getValue()
+        );
         Button button = new Button();
         button.setText("Check dataset");
         button.addClassName("align-flex-end");
@@ -228,19 +249,106 @@ public class DatasetImportComponent extends VerticalLayout {
         return grid;
     }
 
-    private void checkDataset() {
-        //TODO: EN-162
-        showNotification("Not implemented yet");
-        setupDatasetPreview();
-    }
-
     private void uploadRecords() {
-        //TODO: EN-162 records sending
-        showNotification("To do");
+        if (!validateInputs()) {
+            return;
+        }
+        Set<String> excludedRecords = null;
+        try {
+            if (doExcludeSelected) {
+                excludedRecords = InputRecordsParser.parseRecords(excludeSelectedTextArea.getValue());
+            }
+        } catch (ParseRecordsException pre) {
+            showNotification(pre.getMessage());
+            return;
+        }
+        if (doCreateImport) {
+            createImportFromDataset(excludedRecords);
+        } else {
+            uploadDatasetRecords(excludedRecords);
+        }
     }
 
-    private void setupDatasetPreview() {
+    private CreateImportFromDatasetRequest prepareRequest(Set<String> excludedRecords) {
+        CreateImportFromDatasetRequest request = new CreateImportFromDatasetRequest();
+        request.setProjectName(project.getName());
+        request.setDataset(dataset == null ? null : dataset.getName());
+        request.setEuropeanaDatasetId(europeanaDatasetId);
+        if (doLimitNumberOfRecordsToRetrieve) {
+            request.setLimit(limitRecordsToRetrieveIntegerField.getValue());
+        }
+        if (excludedRecords != null) {
+            request.setExcludedRecords(excludedRecords);
+        }
+        if (doCreateImport) {
+            request.setImportName(importNameTextField.getValue());
+        }
+        if (doSplitRecords) {
+            request.setImportSize(splitRecordsIntegerField.getValue());
+        }
+        return request;
+    }
+
+    private void uploadDatasetRecords(Set<String> excludedRecords) {
+        UploadDatasetRequest request = prepareRequest(excludedRecords);
+        try {
+            Set<Record> records = batchService.uploadDataset(request);
+            if (records.isEmpty()) {
+                showNotification("No records found to upload!");
+            } else {
+                showNotification("Successfully uploaded " + records.size() + " records from Dataset ID"  + europeanaDatasetId);
+            }
+        } catch (Exception e) {
+            showNotification("Error: " + e.getMessage());
+        }
+    }
+
+    private void createImportFromDataset(Set<String> excludedRecords) {
+        CreateImportFromDatasetRequest request = prepareRequest(excludedRecords);
+        try {
+            List<Import> imports = batchService.createImportsFromDataset(request);
+            if (imports.isEmpty()) {
+                showNotification("No records found for creating an import!");
+            } else {
+                showNotification(prepareSuccessNotificationMessage(imports));
+            }
+        } catch (Exception e) {
+            showNotification("Error: " + e.getMessage());
+        }
+    }
+
+    private String prepareSuccessNotificationMessage(List<Import> imports) {
+        StringBuilder messageBuilder = new StringBuilder("Successfully created " + imports.size() + " import(s) from Dataset ID" + europeanaDatasetId);
+        imports.forEach(anImport -> messageBuilder.append("\n").append(anImport.getName()));
+        return messageBuilder.toString();
+    }
+
+    private boolean validateInputs() {
+        if (europeanaDatasetId == null || europeanaDatasetId.isBlank()) {
+            showNotification("No Europeana Dataset ID specified!");
+            return false;
+        }
+        if (project == null) {
+            showNotification("No project specified");
+            return false;
+        }
+        if (doLimitNumberOfRecordsToRetrieve && limitRecordsToRetrieveIntegerField.isEmpty()) {
+            showNotification("Missing number of records to retrieve!");
+            return false;
+        }
+        if (doSplitRecords && splitRecordsIntegerField.isEmpty()) {
+            showNotification("Missing size of records to split!");
+            return false;
+        }
+        return true;
+    }
+
+    private void checkDataset() {
         EuropeanaSearchResponse searchResponse = searchForDataset();
+        if (searchResponse.getItems().isEmpty() || Boolean.FALSE.equals(searchResponse.getSuccess())) {
+            showNotification("Cannot find dataset with given ID");
+            return;
+        }
         String datasetName = extractDatasetName(searchResponse.getItems().get(0));
         int totalRecords = searchResponse.getTotalResults();
         List<RecordSample> recordSamples = searchResponse.getItems().stream()
@@ -262,28 +370,11 @@ public class DatasetImportComponent extends VerticalLayout {
     }
 
     private EuropeanaSearchResponse searchForDataset() {
-        //TODO: Mock response, implement in EN-162
-        String datasetId = europeanaDatasetIdTextField.getValue();
-        EuropeanaSearchResponse response = new EuropeanaSearchResponse();
-        response.setTotalResults(170);
-        List<EuropeanaItem> items = Arrays.asList(
-                mockedEuropeanaItem(datasetId + "/111111", "mocked title", datasetId),
-                mockedEuropeanaItem(datasetId + "/222222", "mocked title", datasetId),
-                mockedEuropeanaItem(datasetId + "/333333", "mocked title", datasetId),
-                mockedEuropeanaItem(datasetId + "/444444", "mocked title", datasetId),
-                mockedEuropeanaItem(datasetId + "/555555", "mocked title", datasetId)
+        String query = String.format(QUERY_FORMAT, europeanaDatasetId);
+        Map<String, String> requestParams = ImmutableMap.of(
+                ONLY_IIIF_PARAM_NAME, "false"
         );
-        response.setItems(items);
-        return response;
-    }
-
-    //TODO: To remove with EN-162
-    private EuropeanaItem mockedEuropeanaItem(String recordId, String title, String datasetId) {
-        EuropeanaItem europeanaItem = new EuropeanaItem();
-        europeanaItem.setId(recordId);
-        europeanaItem.setTitle(Collections.singletonList(title));
-        europeanaItem.setEdmDatasetName(Collections.singletonList(datasetId));
-        return europeanaItem;
+        return (EuropeanaSearchResponse) europeanaSearchService.search(query, requestParams, 5).block();
     }
 
     private void showNotification(String message) {
