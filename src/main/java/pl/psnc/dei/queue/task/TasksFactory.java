@@ -46,6 +46,9 @@ public class TasksFactory {
 	private Converter converter;
 
 	@Autowired
+	private ImportProgressService ips;
+
+	@Autowired
 	private PersistableExceptionService pes;
 
 	@Autowired
@@ -67,7 +70,7 @@ public class TasksFactory {
 			case E_PENDING:
 				return new EnrichTask(record, qrs, tps, ess, eas, ctxm);
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes);
+				return new TranscribeTask(record, qrs, tps, eas, tqs, serverUrl, serverPath, this, ctxm, pes);
 			case U_PENDING:
 				return new UpdateTask(record, qrs, tps, ess, eas, ctxm);
 			case C_PENDING:

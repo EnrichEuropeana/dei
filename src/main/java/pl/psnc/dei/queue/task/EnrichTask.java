@@ -63,6 +63,7 @@ public class EnrichTask extends Task {
 	 */
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
+		// fetch transcription from TP
 		if(this.context.isHasDownloadedEnrichment()) {
 					this.context.getSavedTranscriptions().forEach(
 							el -> {
@@ -76,11 +77,14 @@ public class EnrichTask extends Task {
 						try {
 							Transcription transcription = new Transcription();
 							transcription.setRecord(record);
-							transcription.setTp_id(val.getAsObject().get("AnnotationId").toString());
+							transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
 							transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
 							JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
 							if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
 								transcription.setAnnotationId(europeanaAnnotationId.toString());
+							}
+							if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+								transcriptions.put(transcription.getTpId(), transcription);
 							}
 							transcriptions.put(transcription.getTp_id(), transcription);
 						} catch (IllegalArgumentException e) {
@@ -92,6 +96,8 @@ public class EnrichTask extends Task {
 					this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
 					this.contextMediator.save(this.context);
 		});
+		this.removeMissingTranscriptions(new ArrayList<>(transcriptions.values()));
+		// add transcription to record
 		if (record.getTranscriptions().isEmpty()) {
 			logger.info("Transcriptions for record are empty. Adding and saving record.");
 			record.getTranscriptions().addAll(transcriptions.values());
@@ -103,7 +109,7 @@ public class EnrichTask extends Task {
 			logger.info("Record already has transcriptions. Processing not annotated.");
 			fillQueue();
 			for (Transcription transcription : notAnnotatedTranscriptions) {
-				Transcription prepared = transcriptions.get(transcription.getTp_id());
+				Transcription prepared = transcriptions.get(transcription.getTpId());
 				if (prepared != null)
 					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
 			}
@@ -121,6 +127,19 @@ public class EnrichTask extends Task {
 				.addAll(record.getTranscriptions().stream()
 						.filter(e -> StringUtils.isBlank(e.getAnnotationId()))
 						.collect(Collectors.toList()));
+	}
+
+	/**
+	 * Removes all transcriptions present in DB but not fetched from TP
+	 *
+	 * @param fetchedTranscriptions transcriptions fetched from TP
+	 */
+	private void removeMissingTranscriptions(List<Transcription> fetchedTranscriptions) {
+		List<Transcription> diff = this.record.getTranscriptions().stream()
+				.filter(el -> !fetchedTranscriptions.contains(el))
+				.collect(Collectors.toList());
+		this.record.getTranscriptions().removeAll(diff);
+		this.queueRecordService.saveRecord(this.record);
 	}
 
 	/**

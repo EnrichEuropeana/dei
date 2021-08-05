@@ -12,6 +12,11 @@ import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
+import pl.psnc.dei.service.EuropeanaAnnotationsService;
+import pl.psnc.dei.service.ImportProgressService;
+import pl.psnc.dei.service.QueueRecordService;
+import pl.psnc.dei.service.TasksQueueService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
 
@@ -41,8 +46,10 @@ public class TranscribeTask extends Task {
 
 	private final PersistableExceptionService persistableExceptionService;
 
+	private ImportProgressService importProgressService;
+
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService, ImportProgressService ips) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
@@ -54,6 +61,7 @@ public class TranscribeTask extends Task {
 		);
 		this.serverUrl = url;
 		this.tasksFactory = tasksFactory;
+		this.importProgressService = ips;
 		this.persistableExceptionService = persistableExceptionService;
 	}
 
@@ -61,6 +69,7 @@ public class TranscribeTask extends Task {
 	public void process() throws Exception {
 		switch (state) {
 			case T_RETRIEVE_RECORD:
+				// fetch data from europeana
 				ContextUtils.executeIfPresent(this.transcribeTaskContext.getRecordJson(),
 						() -> this.recordJson = JSON.parse(this.transcribeTaskContext.getRecordJson())
 				);
@@ -98,12 +107,16 @@ public class TranscribeTask extends Task {
 							}
 
 						});
+				// check if fetched data already contains address to iiif
 				if (IiifChecker.checkIfIiif(recordJson, Aggregator.EUROPEANA)) { //todo add ddb
 					state = T_SEND_RESULT;
+					importProgressService.reportProgress(record);
 					this.transcribeTaskContext.setTaskState(this.state);
 					this.contextMediator.save(this.transcribeTaskContext);
 				} else {
 					if (StringUtils.isNotBlank(record.getIiifManifest())) {
+						// record has no IIIF on europeana, so in previous run was marked as in C_PENDING (see below) and
+						// IIIF was generated, now we need to add manifest to it
 						this.transcribeTaskContext = (TranscribeTaskContext) this.contextMediator.get(record);
 						recordJson.put("iiif_url", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 						queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
@@ -115,6 +128,7 @@ public class TranscribeTask extends Task {
 						try {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
 							record.setState(Record.RecordState.C_PENDING);
+							importProgressService.reportProgress(record);
 							tqs.addTaskToQueue(tasksFactory.getTask(record));
 							return;
 						} catch (NotFoundException e) {
@@ -141,6 +155,7 @@ public class TranscribeTask extends Task {
 								this.contextMediator.save(this.transcribeTaskContext);
 							});
 					queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_SENT);
+					importProgressService.reportProgress(record);
 					// check if all records are done
 					tps.updateImportState(record.getAnImport());
 					this.transcribeTaskContext.setRecord(record);

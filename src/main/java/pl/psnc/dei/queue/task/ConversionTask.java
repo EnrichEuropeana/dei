@@ -47,8 +47,11 @@ public class ConversionTask extends Task {
 
 	private final RecordsRepository recordsRepository;
 
+	private ImportProgressService importProgressService;
+
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, ContextMediator contextMediator, RecordsRepository recordsRepository) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr,
+				   TasksQueueService tqs, Converter converter, ImportProgressService ips, TasksFactory tasksFactory) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.persistableExceptionService = persistableExceptionService;
 		this.recordsRepository = recordsRepository;
@@ -57,6 +60,7 @@ public class ConversionTask extends Task {
 		this.tqs = tqs;
 		this.converter = converter;
 		this.tasksFactory = tasksFactory;
+		this.importProgressService = ips;
 
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
@@ -109,6 +113,9 @@ public class ConversionTask extends Task {
 					try {
 						this.persistableExceptionService.findFirstOfAndThrow(Arrays.asList(ConversionImpossibleException.class, NotFoundException.class, ConversionException.class, InterruptedException.class), this.context);
 						converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
+						importProgressService.reportProgress(record);
+						// readd task to queue for further processing
+						// previously processing ended with state C_PENDIGN due to IIIF creation
 						// refetch context as converter.convertAndGenerateManifest(...) will override it
 						this.context = (ConversionTaskContext) this.contextMediator.get(this.record);
 						this.context.setHasConverted(true);
@@ -141,12 +148,14 @@ public class ConversionTask extends Task {
 							// never come here
 							this.contextMediator.delete(this.context);
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
+							// fail import due to change in import state from IN_PROGRESS to FAILED
 							tps.updateImportState(record.getAnImport());
 						} catch (NotFoundException ex) {
 							throw new AssertionError("Record deleted while being processed, id: " + record.getId()
 									+ ", identifier: " + record.getIdentifier(), e);
 						}
 					} catch (ConversionException | InterruptedException | IOException e) {
+						// same as previous
 						logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 						try {
 							ContextUtils.executeIf(!this.context.isHasThrownException(),

@@ -57,7 +57,7 @@ public class UrlBuilder {
 	}
 
     public String urlForTranscription(Transcription transcription) {
-        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + TRANSCRIPTION_SUFFIX + "/" + transcription.getTp_id();
+        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + TRANSCRIPTION_SUFFIX + "/" + transcription.getTpId();
     }
 
     public String urlForProjectDatasets(Project project) {

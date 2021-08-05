@@ -5,6 +5,7 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.exception.TranscriptionDuplicationException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
@@ -84,9 +85,44 @@ public class QueueRecordService {
 	}
 
 	/**
+	 * Function adds records but not update them
+	 *
+	 * @param transcription transcription to add
+	 * @return true if transcription was added, otherwise false
+	 */
+	public boolean saveTranscriptionIfNotExist(Transcription transcription) {
+		// not all transcriptions have annotationId
+		if (transcription.getAnnotationId() != null) {
+			if (!transcriptionRepository.existsByTpIdAndAnnotationId(transcription.getTpId(), transcription.getAnnotationId())) {
+				this.saveTranscription(transcription);
+				return true;
+			}
+		} else {
+			if (!transcriptionRepository.existsByTpId(transcription.getTpId())) {
+				this.saveTranscription(transcription);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Throws error if given record has any transcription. Useful for exception driven validation
+	 *
+	 * @param recordIdentifier
+	 * @throws TranscriptionDuplicationException
+	 */
+	public void throwIfTranscriptionExistFor(String recordIdentifier) throws TranscriptionDuplicationException {
+		if (this.transcriptionRepository.existsByRecord_Identifier(recordIdentifier)) {
+			throw new TranscriptionDuplicationException(recordIdentifier);
+		}
+	}
+
+	/**
 	 * Adds to json information about newly generated IIIF as manifest
-	 * @param record record to which data should be add
-	 * @param json json to which data shoudl be add
+	 *
+	 * @param record  record to which data should be add
+	 * @param json    json to which data shoudl be add
 	 * @param jsonRaw raw json to which data should be add
 	 */
 	public void fillRecordJsonData(Record record, JsonObject json, JsonObject jsonRaw) {

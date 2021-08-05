@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.queue.task.TasksFactory;
+import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TasksQueueService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.EuropeanaRecordIdValidator;
@@ -30,10 +31,13 @@ public class TranscriptionController {
 
 	private final TasksFactory tasksFactory;
 
+	private final QueueRecordService qrs;
+
 	@Autowired
-	public TranscriptionController(@Qualifier("transcriptionPlatformService") TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory) {
+	public TranscriptionController(@Qualifier("transcriptionPlatformService") TranscriptionPlatformService tps, TasksQueueService tqs, TasksFactory tasksFactory, QueueRecordService queueRecordService) {
 		this.tps = tps;
 		this.tqs = tqs;
+		this.qrs = queueRecordService;
 		this.tasksFactory = tasksFactory;
 	}
 
@@ -55,7 +59,7 @@ public class TranscriptionController {
 		try {
 			tps.createNewEnrichTask(recordId);
 			return new ResponseEntity<>(HttpStatus.OK);
-		} catch (Exception e) {
+		} catch (NotFoundException e) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 	}
