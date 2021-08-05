@@ -32,6 +32,7 @@ public class BatchNavigationMenu extends VerticalLayout {
         layout.add(label);
         layout.add(createMenuItem("Upload records", e -> batchPage.showBatchImportsView()));
         layout.add(createMenuItem("Complex upload", e -> batchPage.showComplexImportsView()));
+        layout.add(createMenuItem("Dataset upload", e -> batchPage.showDatasetUploadPage()));
         return layout;
     }
 

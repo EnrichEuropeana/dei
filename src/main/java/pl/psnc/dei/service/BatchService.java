@@ -1,5 +1,6 @@
 package pl.psnc.dei.service;
 
+import com.google.common.collect.Iterables;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonArray;
@@ -9,17 +10,40 @@ import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
+import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
+import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
 import pl.psnc.dei.exception.NotFoundException;
-import pl.psnc.dei.model.*;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
+import pl.psnc.dei.model.Dataset;
+import pl.psnc.dei.model.Import;
+import pl.psnc.dei.model.Project;
+import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.ImportNameCreatorUtil;
 
 import javax.transaction.Transactional;
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
@@ -32,6 +56,8 @@ public class BatchService {
 	private static final String CHANGING_DIMENSION_MSG = "Changing %s from %d to %d";
 
 	private static final String UPDATING_DIMENSIONS_MSG = "Updating dimensions for %s";
+
+	private static final int MAX_IMPORT_RECORDS_LIMIT = 1000;
 
 	private final RecordsRepository recordsRepository;
 
@@ -308,6 +334,86 @@ public class BatchService {
 	}
 
 	/**
+	 * Gets all of the records for specified Europeana dataset (by dataset id)
+	 * and upload them to the local database
+	 * @param request which contains processing settings
+	 * @return set of records for whole Europeana dataset (except excluded records or duplications)
+	 * @throws IllegalArgumentException when missing required params
+	 * @throws NotFoundException when cannot found data in local database
+	 */
+	public Set<Record> uploadDataset(UploadDatasetRequest request)
+			throws IllegalArgumentException, NotFoundException {
+		String projectName = request.getProjectName();
+		String europeanaDatasetId = request.getEuropeanaDatasetId();
+		if (projectName == null || europeanaDatasetId == null) {
+			throw new IllegalArgumentException();
+		}
+		Set<String> recordsIds = europeanaSearchService.getAllDatasetRecords(europeanaDatasetId);
+		Set<String> excludedFiltered = filterExcluded(recordsIds, request.getExcludedRecords());
+		Set<String> numberLimited;
+		if (request.getLimit() > 0) {
+			numberLimited = excludedFiltered.stream()
+					.limit(Math.min(excludedFiltered.size(), request.getLimit()))
+					.collect(Collectors.toSet());
+		} else {
+			numberLimited = excludedFiltered;
+		}
+		return uploadRecordsToProject(projectName, request.getDataset(), numberLimited);
+    }
+
+	/**
+	 * Creates import for all records from Europena dataset (by dataset id).
+	 * except excluded records or duplications
+	 * @param request which contains processing settings
+	 * @return created imports
+	 * @throws IllegalArgumentException when missing required params
+	 * @throws NotFoundException when cannot found data in local database
+	 */
+    public List<Import> createImportsFromDataset(CreateImportFromDatasetRequest request)
+			throws IllegalArgumentException, NotFoundException {
+		Set<Record> uploadedDataset = uploadDataset(request);
+		if (uploadedDataset.isEmpty()) {
+			return Collections.emptyList();
+		}
+		String projectId = uploadedDataset.iterator().next().getProject().getProjectId();
+		int importSize = calcImportSize(uploadedDataset.size(), request.getImportSize());
+		List<Set<Record>> splitRecords = new ArrayList<>();
+		Iterables.partition(uploadedDataset, importSize)
+				.forEach(part -> splitRecords.add(Set.copyOf(part)));
+		AtomicInteger index = new AtomicInteger(0);
+		return splitRecords.stream()
+				.map(records -> {
+					String importName = generateSplitImportName(request.getImportName(), request.getProjectName(), index.getAndIncrement(), splitRecords.size() > 1);
+					return importService.createImport(importName, projectId, records);
+				}).collect(Collectors.toList());
+	}
+
+	private int calcImportSize(int setSize, int userLimit) {
+		List<Integer> minCandidates = new ArrayList<>(List.of(setSize, MAX_IMPORT_RECORDS_LIMIT));
+		if (userLimit > 0) {
+			int bottomLimitation = (int) (0.1 * setSize);
+			minCandidates.add(Math.max(userLimit, bottomLimitation));
+		}
+		return Collections.min(minCandidates);
+	}
+
+	private String generateSplitImportName(String importName, String projectName, int counter, boolean isImportDivided) {
+		String importNameBase = StringUtils.isNotBlank(importName) ? importName : ImportNameCreatorUtil.generateImportName(projectName);
+		if (isImportDivided) {
+			return importNameBase.concat(String.format("_%d", counter));
+		}
+		return importNameBase;
+	}
+
+	private Set<String> filterExcluded(Set<String> allRecords, Set<String> toExclude) {
+		if (CollectionUtils.isEmpty(toExclude)) {
+			return allRecords;
+		}
+        allRecords.removeAll(toExclude);
+        return allRecords;
+    }
+
+	/**
 	 * Saves records to DB, and calculate difference of saved and provided ones, as some of them can
 	 * be omitted during persiting process
 	 * @param projectName name of project to which data should be saved
@@ -363,7 +469,6 @@ public class BatchService {
 		} finally {
 			saved.delete();
 		}
-
 	}
 
 	public List<Import> makeComplexImport(File file, String name, String projectName, String datasetName) throws IOException, NotFoundException {

@@ -7,6 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
+import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Record;
@@ -102,5 +104,39 @@ public class BatchController {
 													 @RequestBody @RequestParam("file") MultipartFile file) throws IOException {
 		Set<String> fileToDimension = batchService.fixDimensions(fix, file);
 		return ResponseEntity.ok(fileToDimension);
+	}
+
+	@PostMapping(path = "/datasets/records", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<Set<Record>> datasetUpload(@RequestBody UploadDatasetRequest request) {
+		try {
+			Set<Record> records = batchService.uploadDataset(request);
+			if (records.isEmpty()) {
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			}
+			return ResponseEntity.ok(records);
+		} catch (NotFoundException nfe) {
+			logger.error(nfe.getMessage());
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		} catch (IllegalArgumentException iae) {
+			logger.error(iae.getMessage());
+			return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+		}
+	}
+
+	@PostMapping(path = "/datasets/imports", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<Import>> createImportFromDataset(@RequestBody CreateImportFromDatasetRequest request) {
+		try {
+			List<Import> imports = batchService.createImportsFromDataset(request);
+			if (imports.isEmpty()) {
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			}
+			return ResponseEntity.ok(imports);
+		} catch (NotFoundException nfe) {
+			logger.error(nfe.getMessage());
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		} catch (IllegalArgumentException iae) {
+			logger.error(iae.getMessage());
+			return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
+		}
 	}
 }

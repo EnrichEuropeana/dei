@@ -1,9 +1,5 @@
 package pl.psnc.dei.ui.components.batches;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.vaadin.flow.component.Component;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.checkbox.Checkbox;
@@ -29,16 +25,11 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.components.CommonComponentsFactory;
-import pl.psnc.dei.util.EuropeanaRecordIdValidator;
+import pl.psnc.dei.util.InputRecordsParser;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 public class BatchImportComponent extends VerticalLayout {
 
@@ -143,15 +134,11 @@ public class BatchImportComponent extends VerticalLayout {
         return importNameTextField;
     }
 
-    private boolean inputSeemsToBeJSON(String input) {
-        char firstChar = input.trim().charAt(0);
-        List<Character> jsonChars = Arrays.asList('[', '\"', '{');
-        return jsonChars.contains(firstChar);
-    }
+
 
     private TextArea prepareRecordsTextArea() {
         recordsTextArea = new TextArea();
-        recordsTextArea.setMinHeight("150px");
+        recordsTextArea.addClassName("records-text-area");
         recordsTextArea.setWidthFull();
         recordsTextArea.addClassName("query-form");
         recordsTextArea.setHelperText("Enter each Europeana ID in separate line or put JSON structured array of record IDs.");
@@ -164,7 +151,7 @@ public class BatchImportComponent extends VerticalLayout {
         }
         Set<String> retrievedRecords;
         try {
-            retrievedRecords = retrieveRecords();
+            retrievedRecords = InputRecordsParser.parseRecords(recordsTextArea.getValue());
         } catch (ParseRecordsException ex) {
             showNotification(ex.getMessage());
             return;
@@ -187,47 +174,6 @@ public class BatchImportComponent extends VerticalLayout {
         } catch (Exception e) {
             showNotification(e.getMessage());
         }
-    }
-
-    private Set<String> retrieveRecords() throws ParseRecordsException {
-        String rawInput = recordsTextArea.getValue();
-        ObjectMapper mapper = new ObjectMapper();
-        Set<String> parsedRecords;
-        try {
-            parsedRecords = mapper.readValue(rawInput, new TypeReference<LinkedHashSet<String>>() {
-            });
-        } catch (JsonParseException | JsonMappingException jsonProcessingException) {
-            if (inputSeemsToBeJSON(rawInput)) {
-                throw new ParseRecordsException("Invalid JSON array structure!");
-            } else {
-                parsedRecords = readLines(rawInput);
-            }
-        } catch (IOException e) {
-            logger.error("Unable to retrieve input records. " + e.getMessage());
-            throw new ParseRecordsException("Cannot read records!");
-        }
-        Set<String> normalizedRecords = normalizeRecords(parsedRecords);
-        normalizedRecords.forEach(record -> {
-            if (!isValidRecord(record)) {
-                throw new ParseRecordsException("Invalid record: " + record);
-            }
-        });
-        return normalizedRecords;
-    }
-
-    private Set<String> readLines(String input) {
-        String[] split = input.split("\n");
-        return new LinkedHashSet<>(Arrays.asList(split));
-    }
-
-    private Set<String> normalizeRecords(Set<String> records) {
-        return records.stream()
-                .map(String::trim)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-    }
-
-    private boolean isValidRecord(String s) {
-        return EuropeanaRecordIdValidator.validate(s);
     }
 
     private boolean areInputsValid() {
