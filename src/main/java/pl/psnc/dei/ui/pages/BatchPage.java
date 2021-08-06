@@ -6,10 +6,12 @@ import com.vaadin.flow.router.Route;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.ui.MainView;
 import pl.psnc.dei.ui.components.batches.BatchImportComponent;
 import pl.psnc.dei.ui.components.batches.BatchNavigationMenu;
 import pl.psnc.dei.ui.components.batches.ComplexBatchImportComponent;
+import pl.psnc.dei.ui.components.batches.DatasetImportComponent;
 
 @Route(value = "batch", layout = MainView.class)
 public class BatchPage extends HorizontalLayout {
@@ -17,14 +19,16 @@ public class BatchPage extends HorizontalLayout {
     private final ProjectsRepository projectsRepository;
     private final BatchService batchService;
     private final ImportPackageService importPackageService;
+    private final EuropeanaSearchService europeanaSearchService;
 
     private VerticalLayout displayingPlace;
 
     public BatchPage(ProjectsRepository projectsRepository, BatchService batchService,
-                     ImportPackageService importPackageService) {
+                     ImportPackageService importPackageService, EuropeanaSearchService europeanaSearchService) {
         this.projectsRepository = projectsRepository;
         this.batchService = batchService;
         this.importPackageService = importPackageService;
+        this.europeanaSearchService = europeanaSearchService;
         setupComponents();
     }
 
@@ -41,6 +45,10 @@ public class BatchPage extends HorizontalLayout {
 
     public void showComplexImportsView() {
         switchPage(new ComplexBatchImportComponent(projectsRepository, batchService));
+    }
+
+    public void showDatasetUploadPage() {
+        switchPage(new DatasetImportComponent(projectsRepository, batchService, europeanaSearchService));
     }
 
     private void switchPage(VerticalLayout layout) {
