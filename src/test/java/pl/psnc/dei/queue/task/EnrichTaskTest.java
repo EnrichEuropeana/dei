@@ -110,6 +110,7 @@ public class EnrichTaskTest {
 
     @Test
     @Rollback
+    @Transactional
     public void whenPostedTwice_notDuplicateRecords() {
         // if post method is called this task will be created
         EnrichTask enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas);
