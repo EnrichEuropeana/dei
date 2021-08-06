@@ -35,6 +35,10 @@ public class Import {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
     private Set<ImportFailure> failures;
 
+    @JsonIgnore
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    private ImportProgress progress;
+
     public static Import from(String name, Date date) {
         Import anImport = new Import();
         anImport.setName(name);

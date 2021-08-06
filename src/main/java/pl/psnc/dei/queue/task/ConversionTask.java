@@ -35,13 +35,17 @@ public class ConversionTask extends Task {
 
 	private DDBFormatResolver ddbFormatResolver;
 
+	private ImportProgressService importProgressService;
+
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr, TasksQueueService tqs, Converter converter, TasksFactory tasksFactory) {
+				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr,
+				   TasksQueueService tqs, Converter converter, ImportProgressService ips, TasksFactory tasksFactory) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.tqs = tqs;
 		this.ddbFormatResolver = ddbfr;
 		this.converter = converter;
 		this.tasksFactory = tasksFactory;
+		this.importProgressService = ips;
 
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
@@ -62,6 +66,7 @@ public class ConversionTask extends Task {
 	public void process() throws Exception {
 		try {
 			converter.convertAndGenerateManifest(record, recordJson, recordJsonRaw);
+			importProgressService.reportProgress(record);
 			// readd task to queue for further processing
 			// previously processing ended with state C_PENDIGN due to IIIF creation
 			tqs.addTaskToQueue(tasksFactory.getTask(record));
