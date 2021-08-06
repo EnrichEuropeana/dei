@@ -29,7 +29,7 @@ public class ConversionTask extends Task {
 
 	private final PersistableExceptionService persistableExceptionService;
 
-	Logger logger = LoggerFactory.getLogger(ConversionTask.class);
+	final Logger logger = LoggerFactory.getLogger(ConversionTask.class);
 
 	private final Converter converter;
 
@@ -47,11 +47,11 @@ public class ConversionTask extends Task {
 
 	private final RecordsRepository recordsRepository;
 
-	private ImportProgressService importProgressService;
+	private final ImportProgressService importProgressService;
 
 	ConversionTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
 				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, DDBFormatResolver ddbfr,
-				   TasksQueueService tqs, Converter converter, ImportProgressService ips, TasksFactory tasksFactory) {
+				   TasksQueueService tqs, Converter converter, ImportProgressService ips, TasksFactory tasksFactory, PersistableExceptionService persistableExceptionService, RecordsRepository recordsRepository, ContextMediator contextMediator) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.persistableExceptionService = persistableExceptionService;
 		this.recordsRepository = recordsRepository;
@@ -101,7 +101,7 @@ public class ConversionTask extends Task {
 	}
 
 	@Override
-	public void process() throws Exception {
+	public void process() {
 		ContextUtils.executeIf(this.context.isHasConverted(),
 				() -> {
 					record.setState(Record.RecordState.T_PENDING);

@@ -12,11 +12,6 @@ import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
-import pl.psnc.dei.service.EuropeanaAnnotationsService;
-import pl.psnc.dei.service.ImportProgressService;
-import pl.psnc.dei.service.QueueRecordService;
-import pl.psnc.dei.service.TasksQueueService;
-import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.IiifChecker;
 
@@ -28,7 +23,7 @@ public class TranscribeTask extends Task {
 
 	private final TasksFactory tasksFactory;
 
-	private TasksQueueService tqs;
+	private final TasksQueueService tqs;
 
 	// Record in JSON-LD
 	private JsonObject recordJson;
@@ -46,7 +41,7 @@ public class TranscribeTask extends Task {
 
 	private final PersistableExceptionService persistableExceptionService;
 
-	private ImportProgressService importProgressService;
+	private final ImportProgressService importProgressService;
 
 	TranscribeTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
 				   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url, String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator, PersistableExceptionService persistableExceptionService, ImportProgressService ips) {
@@ -194,4 +189,5 @@ public class TranscribeTask extends Task {
 					}
 				});
 	}
+
 }

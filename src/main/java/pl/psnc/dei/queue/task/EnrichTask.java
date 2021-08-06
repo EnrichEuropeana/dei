@@ -54,8 +54,12 @@ public class EnrichTask extends Task {
 			case E_SEND_ANNOTATION_IDS_TO_TP:
 				logger.info("Task state: E_SEND_ANNOTATION_IDS_TO_TP");
 				sendAnnotationIdsAndFinalizeTask();
+			case E_FINALIZE:
+				record.setState(Record.RecordState.NORMAL);
+				queueRecordService.saveRecord(record);
+				this.contextMediator.delete(this.context, EnrichTaskContext.class);
 		}
-		this.contextMediator.delete(this.context, EnrichTaskContext.class);
+
 	}
 
 	/**
@@ -64,9 +68,9 @@ public class EnrichTask extends Task {
 	private void getTranscriptionsFromTp() {
 		Map<String, Transcription> transcriptions = new HashMap<>();
 		// fetch transcription from TP
-		if(this.context.isHasDownloadedEnrichment()) {
-					this.context.getSavedTranscriptions().forEach(
-							el -> {
+		if (this.context.isHasDownloadedEnrichment()) {
+			this.context.getSavedTranscriptions().forEach(
+					el -> {
 								transcriptions.put(el.getAnnotationId(), el);
 							}
 					);
@@ -86,7 +90,7 @@ public class EnrichTask extends Task {
 							if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
 								transcriptions.put(transcription.getTpId(), transcription);
 							}
-							transcriptions.put(transcription.getTp_id(), transcription);
+							transcriptions.put(transcription.getTpId(), transcription);
 						} catch (IllegalArgumentException e) {
 							logger.error("Transcription was corrupted: " + val.toString());
 						}
@@ -160,15 +164,21 @@ public class EnrichTask extends Task {
 	}
 
 	private void sendAnnotationIdsAndFinalizeTask() {
+		// sending process is not cached
+		// for situations in which we send a transcription and app crash before we receive response
+		// we do not know in which state sending was, thus either we risk transcription loss if we do not decide
+		// to resend, or make overhead reading transcription from db and sending it once more
+		// moreover crash rate is low enough that saving and reading transcriptions to and from db make more penalty
+		// than we gain during not resending already send records after rare crash
 		Iterator<Transcription> it = record.getTranscriptions().iterator();
-		// sending annotations is too quick, thus putting it into db makes allover process slower
 		while (it.hasNext()) {
 			Transcription t = it.next();
 			tps.sendAnnotationUrl(t);
 			it.remove();
 		}
-		record.setState(Record.RecordState.NORMAL);
-		queueRecordService.saveRecord(record);
+		state = TaskState.E_FINALIZE;
+		this.context.setTaskState(this.state);
+		this.contextMediator.save(this.context);
 	}
 
 }

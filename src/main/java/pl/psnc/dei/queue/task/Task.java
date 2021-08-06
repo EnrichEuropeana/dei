@@ -9,11 +9,11 @@ import pl.psnc.dei.service.search.EuropeanaSearchService;
 public abstract class Task {
 
 	protected TaskState state;
-	protected Record record;
-	QueueRecordService queueRecordService;
-	TranscriptionPlatformService tps;
-	EuropeanaSearchService ess;
-	EuropeanaAnnotationsService eas;
+	protected final Record record;
+	final QueueRecordService queueRecordService;
+	final TranscriptionPlatformService tps;
+	final EuropeanaSearchService ess;
+	final EuropeanaAnnotationsService eas;
 
 	Task(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
 		this.record = record;
@@ -43,6 +43,7 @@ public abstract class Task {
 		E_GET_TRANSCRIPTIONS_FROM_TP,
 		E_HANDLE_TRANSCRIPTIONS,
 		E_SEND_ANNOTATION_IDS_TO_TP,
+		E_FINALIZE,
 
 		T_RETRIEVE_RECORD,
 		T_SEND_RESULT,

@@ -125,7 +125,7 @@ public class Converter {
 					.collect(Collectors.toList());
 
 			record.setIiifManifest(getManifest(convertedFiles).toString());
-			record.setState(Record.RecordState.T_PENDING);
+			// record should be changed after context update which is made in Conversion Task
 			recordsRepository.save(record);
 		} catch (Exception e) {
 			FileUtils.deleteQuietly(outDir);
@@ -159,7 +159,7 @@ public class Converter {
 						.filter(e -> e.get("edm:isShownBy") != null)
 						.findFirst();
 
-				if (!aggregatorData.isPresent()) {
+				if (aggregatorData.isEmpty()) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
@@ -167,6 +167,17 @@ public class Converter {
 				if (isRecoverable) {
 					context.setHasConverterCreatedDataHolder(true);
 					this.contextMediator.save(context);
+					// there is known problem if system will crash after context save and before conversion data holder save
+					// then context will keep information that conversion data was saved to db and could be recovered
+					// but in fact this never happend as code was never executed
+					// so far there is no simple solution as move of save function of conversion data before context save
+					// is the worst thing, as during each restart new set of conversion data will be saved to db, because
+					// after creation conversion data do not contain id's, that mean HB will generate one for them, thus
+					// duplicating already existing records
+					// hopefully system do not crash so ofter and probability of crash in this specific place is almost
+					// not possible
+					// simplest solution for mentioned problem will be pregeneration of id, e.g. usage of UUID, but
+					// such thing will create huge overhead, that is not what we want
 					return this.conversionDataHolderService.save(eConversionDataHolder, context);
 				} else {
 					return eConversionDataHolder;
@@ -293,7 +304,7 @@ public class Converter {
 					break;
 			}
 		}
-		if (outDir.listFiles().length == 0) {
+		if (Objects.requireNonNull(outDir.listFiles()).length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
 		context.setHasConverterConvertedToIIIF(true);
@@ -363,13 +374,16 @@ public class Converter {
 		} catch (ConversionException | InterruptedException | IOException e) {
 			logger.error("Conversion failed for file: " + convData.srcFile.getName() + " from record: " + record.getIdentifier() + "cause " + e.getMessage());
 			throw e;
+		}
 	}
 
 	private File getFileDirectoryPath(File file) {
 		return file.isDirectory() ? file : file.getParentFile();
+	}
 
 	/**
 	 * Create paths for images contained in conversion Data
+	 *
 	 * @param convData data for which paths should be created
 	 */
 	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {

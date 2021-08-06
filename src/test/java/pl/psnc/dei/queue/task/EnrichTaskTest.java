@@ -15,6 +15,7 @@ import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.util.ArrayList;
@@ -284,6 +285,9 @@ public class EnrichTaskTest {
     @Autowired
     private TranscriptionRepository transcriptionRepository;
 
+    @Autowired
+    private ContextMediator contextMediator;
+
 //    @Qualifier("transcriptionPlatformService")
 //    @Autowired
 //    private TranscriptionPlatformService tps;
@@ -302,8 +306,9 @@ public class EnrichTaskTest {
         this.record = new Record();
         this.record.setIdentifier("/2020601/https___1914_1918_europeana_eu_contributions_17173");
         this.record.setTranscriptions(new ArrayList<>());
+        this.record.setState(Record.RecordState.E_PENDING);
         this.qrs.saveRecord(this.record);
-        this.enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas);
+        this.enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
     }
 
     @Test
