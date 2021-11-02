@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import pl.psnc.dei.exception.DownloadFileException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
@@ -21,7 +22,9 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -166,7 +169,9 @@ public class Converter {
 	 * @throws ConversionException
 	 */
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
-		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
+		Iterator<ConversionDataHolder.ConversionData> dataIterator = dataHolder.fileObjects.iterator();
+		while(dataIterator.hasNext()) {
+			ConversionDataHolder.ConversionData data = dataIterator.next();
 			if (data.srcFileUrl == null)
 				continue;
 
@@ -179,10 +184,16 @@ public class Converter {
 
 				copyURLToFile(data.srcFileUrl, tempFile);
 				data.srcFile = tempFile;
-			} catch (IOException e) {
-				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
-				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
+			} catch (DownloadFileException dfe) {
+				logger.warn(dfe.getMessage());
+				dataIterator.remove();
+			} catch (IOException ioe) {
+				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), ioe);
+				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), ioe);
 			}
+		}
+		if (dataHolder.fileObjects.isEmpty()) {
+			throw new ConversionException("Record does not contain any valid file URL!");
 		}
 	}
 
@@ -197,12 +208,18 @@ public class Converter {
 
 	/**
 	 * Downloads contents pointed in url. If url returns 301 then follow link
-	 * @param url url to fetch
+	 *
+	 * @param url  url to fetch
 	 * @param file file to which save contents
 	 * @throws IOException
 	 */
-	private void copyURLToFile(URL url, File file) throws IOException {
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	private void copyURLToFile(URL url, File file) throws IOException, DownloadFileException {
+		HttpURLConnection connection;
+		URLConnection urlConnection = url.openConnection();
+		if (!(urlConnection instanceof HttpURLConnection)) {
+			throw new DownloadFileException(url.getPath());
+		}
+		connection = (HttpURLConnection) urlConnection;
 		connection.setConnectTimeout(500);
 		connection.setReadTimeout(5000);
 		connection.setInstanceFollowRedirects(true);
