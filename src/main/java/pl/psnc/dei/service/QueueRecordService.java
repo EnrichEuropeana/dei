@@ -14,6 +14,7 @@ import pl.psnc.dei.model.Transcription;
 
 import javax.transaction.Transactional;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -77,6 +78,15 @@ public class QueueRecordService {
 
 	public void saveTranscription(Transcription transcription) {
 		transcriptionRepository.save(transcription);
+	}
+
+	/**
+	 * Deletes all transcriptions
+	 *
+	 * @param transcriptions transcriptions to delete
+	 */
+	public void deleteAllTranscriptions(Collection<Transcription> transcriptions) {
+		this.transcriptionRepository.deleteAll(transcriptions);
 	}
 
 	/**

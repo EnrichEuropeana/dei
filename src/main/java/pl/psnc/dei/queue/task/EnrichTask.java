@@ -110,6 +110,7 @@ public class EnrichTask extends Task {
 				.filter(el -> !fetchedTranscriptions.contains(el))
 				.collect(Collectors.toList());
 		this.record.getTranscriptions().removeAll(diff);
+		this.queueRecordService.deleteAllTranscriptions(diff);
 		this.queueRecordService.saveRecord(this.record);
 	}
 
