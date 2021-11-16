@@ -15,6 +15,7 @@ import pl.psnc.dei.exception.DownloadFileException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.service.IIIFMappingService;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -42,19 +43,16 @@ import java.util.stream.Collectors;
 public class Converter {
 
 	private static final Logger logger = LoggerFactory.getLogger(Converter.class);
-
 	private static final CommandExecutor executor = new CommandExecutor();
-
 	private static final Pattern DIMENSIONS_PATTERN = Pattern.compile("Image size\\s*:\\s*(\\d*)\\s*x\\s*(\\d*)");
-
 	private static final int DEFAULT_DIMENSION = 6000;
-
 	private static final int MAX_RETRY_COUNT = 3;
-
-	private Record record;
 
 	@Autowired
 	private RecordsRepository recordsRepository;
+
+	@Autowired
+	private IIIFMappingService iiifMappingService;
 
 	@Value("${conversion.directory}")
 	private String conversionDirectory;
@@ -75,6 +73,8 @@ public class Converter {
 
 	private File outDir;
 
+	private Record record;
+
 	@PostConstruct
 	private void copyScript() {
 		try {
@@ -86,7 +86,6 @@ public class Converter {
 		} catch (IOException e) {
 			logger.info("Cannot find file.. ", e);
 		}
-
 	}
 
 	/**
@@ -123,6 +122,7 @@ public class Converter {
 			record.setIiifManifest(getManifest(convertedFiles).toString());
 			record.setState(Record.RecordState.T_PENDING);
 			recordsRepository.save(record);
+			iiifMappingService.saveMappings(record, convertedFiles);
 		} catch (Exception e) {
 			FileUtils.deleteQuietly(outDir);
 			throw e;
@@ -457,7 +457,7 @@ public class Converter {
 				JsonObject resource = new JsonObject();
 				image.put("resource", resource);
 
-				resource.put("@id", iiifImageServerUrl + "/fcgi-bin/iipsrv.fcgi?IIIF=" + imagePath + "/full/full/0/default.jpg");
+				resource.put("@id", iiifMappingService.getResourceImagePath(imagePath));
 				resource.put("@type", "dctypes:Image");
 				resource.put("width", data.dimensions.get(i).width);
 				resource.put("height", data.dimensions.get(i).height);

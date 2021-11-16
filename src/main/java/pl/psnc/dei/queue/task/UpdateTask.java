@@ -68,7 +68,7 @@ public class UpdateTask extends Task {
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
 					// send updated transcription to europeana
-					eas.updateTranscription(t);
+					eas.updateTranscription(record, t);
 					this.totalTranscriptionsSend++;
 				}
 
