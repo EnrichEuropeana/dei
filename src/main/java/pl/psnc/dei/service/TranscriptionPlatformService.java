@@ -401,10 +401,10 @@ public class TranscriptionPlatformService {
 	 *
 	 * @param importName       import name
 	 * @param record 			record
-	 * @param message          failure reason
+	 * @param cause          failure reason
 	 * @throws NotFoundException when import not found
 	 */
-	public void addFailure(String importName, Record record, String message) throws NotFoundException {
+	public void addFailure(String importName, Record record, Throwable cause) throws NotFoundException {
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
 		if (!anImport.isPresent()) {
 			throw new NotFoundException("Import " + importName + " not found!");
@@ -412,7 +412,7 @@ public class TranscriptionPlatformService {
 		ImportFailure importFailure = new ImportFailure();
 		importFailure.setAnImport(anImport.get());
 		importFailure.setOccurenceDate(new Date());
-		importFailure.setReason("Sending record " + record.getTitle() + " failed. Reason: " + message);
+		importFailure.buildReason(record.getTitle(), cause);
 		Hibernate.initialize(anImport.get().getFailures());
 		anImport.get().getFailures().add(importFailure);
 		importsRepository.save(anImport.get());

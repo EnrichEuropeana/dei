@@ -9,6 +9,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Aggregator;
@@ -21,10 +23,8 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.net.URLConnection;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -144,19 +144,15 @@ public class Converter {
 	}
 
 	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+		logger.info("Downloading files for record {}", record.getIdentifier());
 		for (ConversionDataHolder.ConversionData data : dataHolder.fileObjects) {
 			if (data.srcFileUrl == null)
 				continue;
 
 			try {
-				String fileName = getFileName(data);
-				File tempFile = new File(srcDir, fileName);
-
 				// temporary solution for records from Portugal
 				replaceUrl(data);
-
-				copyURLToFile(data.srcFileUrl, tempFile);
-				data.srcFile = tempFile;
+				data.srcFile = copyURLToFile(data);
 			} catch (IOException e) {
 				logger.error("Couldn't get file: {}", data.srcFileUrl.toString(), e);
 				throw new ConversionException("Couldn't get file " + data.srcFileUrl.toString(), e);
@@ -173,17 +169,38 @@ public class Converter {
 		}
 	}
 
-	private void copyURLToFile(URL url, File file) throws IOException {
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+	private File copyURLToFile(ConversionDataHolder.ConversionData data) throws IOException {
+		URLConnection urlConnection = data.srcFileUrl.openConnection();
+		HttpURLConnection connection = (HttpURLConnection) urlConnection;
 		connection.setConnectTimeout(500);
 		connection.setReadTimeout(5000);
 		connection.setInstanceFollowRedirects(true);
 		int code = connection.getResponseCode();
-		if (code == HttpStatus.MOVED_PERMANENTLY.value() ||
-				code == HttpStatus.SEE_OTHER.value()) {
+		if (isResponseRedirected(code)) {
 			connection = (HttpURLConnection) new URL(connection.getHeaderField("Location")).openConnection();
 		}
-		FileUtils.copyInputStreamToFile(connection.getInputStream(), file);
+		String fileName = getResourceFileName(connection, data);
+		File tempFile = new File(srcDir, fileName);
+		logger.info("Saving file {}", fileName);
+		FileUtils.copyInputStreamToFile(connection.getInputStream(), tempFile);
+		return tempFile;
+	}
+
+	private boolean isResponseRedirected(int httpStatus) {
+		HttpStatus status = HttpStatus.valueOf(httpStatus);
+		return status.equals(HttpStatus.SEE_OTHER)
+				|| status.equals(HttpStatus.MOVED_PERMANENTLY)
+				|| status.equals(HttpStatus.FOUND);
+	}
+
+	private String getResourceFileName(HttpURLConnection connection, ConversionDataHolder.ConversionData conversionData) {
+		String contendDispositionRaw = connection.getHeaderField(HttpHeaders.CONTENT_DISPOSITION);
+		if (contendDispositionRaw != null && !contendDispositionRaw.isEmpty()) {
+			ContentDisposition contentDisposition = ContentDisposition.parse(contendDispositionRaw);
+			return contentDisposition.getFilename();
+		} else {
+			return getFileName(conversionData);
+		}
 	}
 
 	private String getFileName(ConversionDataHolder.ConversionData data) {

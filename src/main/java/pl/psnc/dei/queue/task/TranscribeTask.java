@@ -74,7 +74,7 @@ public class TranscribeTask extends Task {
 				} catch (TranscriptionPlatformException e) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+						tps.addFailure(record.getAnImport().getName(), record, e);
 						tps.updateImportState(record.getAnImport());
 					} catch (NotFoundException e1) {
 						throw new AssertionError("Record deleted while being processed, id: " + record.getId()

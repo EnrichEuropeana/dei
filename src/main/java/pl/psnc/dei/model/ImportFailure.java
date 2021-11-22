@@ -53,4 +53,13 @@ public class ImportFailure {
     public void setAnImport(Import anImport) {
         this.anImport = anImport;
     }
+
+    public void buildReason(String recordName, Throwable exception) {
+        String reason = "Failed record: " + recordName +
+                ", message: " + exception.getMessage();
+        if (exception.getCause() != null) {
+            reason += ", caused by: " + exception.getCause().getMessage();
+        }
+        setReason(reason);
+    }
 }
