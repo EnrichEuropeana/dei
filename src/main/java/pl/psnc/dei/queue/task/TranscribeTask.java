@@ -58,7 +58,7 @@ public class TranscribeTask extends Task {
 				} catch (AggregatorException aggregatorException) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, aggregatorException.getMessage());
+						tps.addFailure(record.getAnImport().getName(), record, aggregatorException);
 						tps.updateImportState(record.getAnImport());
 					} catch (NotFoundException nfe) {
 						throw new AssertionError("Record deleted while being processed, id: " + record.getId()
@@ -102,7 +102,7 @@ public class TranscribeTask extends Task {
 					try {
 						// record cannot be send so mark it as faild and fail entire import send
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
-						tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+						tps.addFailure(record.getAnImport().getName(), record, e);
 						tps.updateImportState(record.getAnImport());
 					} catch (NotFoundException e1) {
 						throw new AssertionError("Record deleted while being processed, id: " + record.getId()

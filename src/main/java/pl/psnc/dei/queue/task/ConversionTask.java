@@ -76,7 +76,7 @@ public class ConversionTask extends Task {
 				// if IIIF generation failed then failure must be added to record and entire Import Sending ends with failure
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
 				// update record
-				tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+				tps.addFailure(record.getAnImport().getName(), record, e);
 				// fail import due to change in import state from IN_PROGRESS to FAILED
 				tps.updateImportState(record.getAnImport());
 
@@ -89,7 +89,7 @@ public class ConversionTask extends Task {
 			logger.info("Error while converting record {} {} ", record.getIdentifier(), e);
 			try {
 				queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_FAILED);
-				tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+				tps.addFailure(record.getAnImport().getName(), record, e);
 				tps.updateImportState(record.getAnImport());
 
 			} catch (NotFoundException ex) {
