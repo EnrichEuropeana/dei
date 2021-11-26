@@ -18,6 +18,7 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -28,6 +29,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
@@ -49,6 +51,9 @@ public class UpdateTaskTest {
 
     @Mock
     private TranscriptionPlatformService tps;
+
+    @Mock
+    private EnrichmentNotifierService ens;
 
     @Autowired
     private TranscriptionRepository transcriptionRepository;
@@ -96,13 +101,14 @@ public class UpdateTaskTest {
         this.prepareTpsMock();
         this.initTranscriptions();
         this.initRecord();
+        doNothing().when(ens).notifyPublishers(any());
     }
 
     @Test
     @Rollback
     @Transactional
     public void willUpdateFromRestoreConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.ens);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -115,7 +121,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromNormalConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.ens);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -129,7 +135,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void areUpdatesIdempotent() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.ens);
         updateTask.process();
         updateTask.process();
         updateTask.process();

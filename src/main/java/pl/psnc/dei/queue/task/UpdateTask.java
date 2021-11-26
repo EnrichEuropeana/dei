@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -17,6 +18,8 @@ public class UpdateTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(UpdateTask.class);
 
+	private final EnrichmentNotifierService ens;
+
 	private int totalTranscriptionsSend = 0;
 
 	/**
@@ -25,10 +28,10 @@ public class UpdateTask extends Task {
 	 */
 	private List<Transcription> transcriptions;
 
-	UpdateTask(Record record, QueueRecordService queueRecordService,
-			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+	UpdateTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
+			   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens) {
 		super(record, queueRecordService, tps, ess, eas);
-
+		this.ens = ens;
 		// someone is pushing update to transcription that is not present
 		// ignore request
 		if (record.getTranscriptions().isEmpty()) {
@@ -46,8 +49,11 @@ public class UpdateTask extends Task {
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) throws NotFoundException {
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps,
+					  EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens)
+			throws NotFoundException {
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
+		this.ens = ens;
 		// assemble transcription onece more
 		transcriptions = List.of(new Transcription(transcriptionId, record, annotationId));
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
@@ -71,7 +77,7 @@ public class UpdateTask extends Task {
 					eas.updateTranscription(t);
 					this.totalTranscriptionsSend++;
 				}
-
+				ens.notifyPublishers(record);
 				if (this.totalTranscriptionsSend == this.transcriptions.size()) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);

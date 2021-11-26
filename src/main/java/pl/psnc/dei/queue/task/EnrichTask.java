@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -25,8 +26,12 @@ public class EnrichTask extends Task {
 
 	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+	private final EnrichmentNotifierService ens;
+
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
+			   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens) {
 		super(record, queueRecordService, tps, ess, eas);
+		this.ens = ens;
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
 	}
 
@@ -134,6 +139,7 @@ public class EnrichTask extends Task {
 			tps.sendAnnotationUrl(t);
 			it.remove();
 		}
+		ens.notifyPublishers(record);
 		record.setState(Record.RecordState.NORMAL);
 		queueRecordService.saveRecord(record);
 	}

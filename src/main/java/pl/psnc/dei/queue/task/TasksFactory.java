@@ -41,6 +41,9 @@ public class TasksFactory {
 	@Autowired
 	private ImportProgressService ips;
 
+	@Autowired
+	private EnrichmentNotifierService ens;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -55,11 +58,11 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas);
+				return new EnrichTask(record, qrs, tps, ess, eas, ens);
 			case T_PENDING:
 				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, ips, this);
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ess, eas);
+				return new UpdateTask(record, qrs, tps, ess, eas, ens);
 			case C_PENDING:
 				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, converter, ips, this);
 
@@ -69,7 +72,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ens);
 	}
 
 	/**
