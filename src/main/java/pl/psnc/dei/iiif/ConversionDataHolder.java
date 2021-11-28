@@ -1,5 +1,7 @@
 package pl.psnc.dei.iiif;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.apache.jena.atlas.json.JsonObject;
 
 import java.io.File;
@@ -14,7 +16,9 @@ public abstract class ConversionDataHolder {
 
 	abstract void initFileUrls(String recordId);
 
-	class ConversionData {
+	@Getter
+	@Setter
+	public static class ConversionData {
 		JsonObject json;
 		// file to download and convert
 		URL srcFileUrl;

@@ -22,12 +22,14 @@ import java.util.stream.Collectors;
 public class EnrichTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(EnrichTask.class);
-
 	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+	private final TranscriptionConverter transcriptionConverter;
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas) {
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
+			   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TranscriptionConverter tc) {
 		super(record, queueRecordService, tps, ess, eas);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
+		this.transcriptionConverter = tc;
 	}
 
 	@Override
@@ -58,7 +60,7 @@ public class EnrichTask extends Task {
 				Transcription transcription = new Transcription();
 				transcription.setRecord(record);
 				transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-				transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+				transcription.setTranscriptionContent(transcriptionConverter.convert(record, val.getAsObject()));
 				JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
 				if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
 					transcription.setAnnotationId(europeanaAnnotationId.toString());

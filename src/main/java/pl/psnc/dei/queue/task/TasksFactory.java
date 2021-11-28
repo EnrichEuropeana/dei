@@ -9,6 +9,7 @@ import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.TranscriptionConverter;
 
 /**
  * Factory used to convert records into tasks based on state they are in
@@ -41,6 +42,9 @@ public class TasksFactory {
 	@Autowired
 	private ImportProgressService ips;
 
+	@Autowired
+	private TranscriptionConverter tc;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -55,7 +59,7 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas);
+				return new EnrichTask(record, qrs, tps, ess, eas, tc);
 			case T_PENDING:
 				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, ips, this);
 			case U_PENDING:

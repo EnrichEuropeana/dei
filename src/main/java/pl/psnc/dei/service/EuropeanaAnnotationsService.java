@@ -5,6 +5,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -12,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
+import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.util.TranscriptionConverter;
@@ -32,14 +34,19 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     private final AccessTokenManager accessTokenManager;
 
+    private final TranscriptionConverter transcriptionConverter;
+
     @Value("${europeana.api.annotations.endpoint}")
     private String annotationApiEndpoint;
 
     @Value("${api.userToken}")
     private String userToken;
 
-    public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder, AccessTokenManager accessTokenManager) {
+    @Autowired
+    public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder, AccessTokenManager accessTokenManager,
+                                       TranscriptionConverter transcriptionConverter) {
         this.accessTokenManager = accessTokenManager;
+        this.transcriptionConverter = transcriptionConverter;
         configure(webClientBuilder);
     }
 
@@ -96,8 +103,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @param transcription
      * @return
      */
-    public String updateTranscription(Transcription transcription) {
-        JsonObject convertedTranscription = TranscriptionConverter.convert(transcription.getTranscriptionContent());
+    public String updateTranscription(Record record, Transcription transcription) {
+        JsonObject convertedTranscription = transcriptionConverter.convert(record, transcription.getTranscriptionContent());
         String annotationResponse = webClient.put()
                 .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId()).build())
                 .header("Authorization", "Bearer " + userToken)
@@ -120,7 +127,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .block();
         if (annotationResponse == null || annotationResponse.isEmpty()) {
             userToken = accessTokenManager.getAccessTokenWithRefreshToken();
-            return updateTranscription(transcription);
+            return updateTranscription(record, transcription);
         }
         return extractAnnotationId(annotationResponse);
     }
