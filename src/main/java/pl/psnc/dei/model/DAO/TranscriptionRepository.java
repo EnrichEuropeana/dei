@@ -18,4 +18,6 @@ public interface TranscriptionRepository extends JpaRepository<Transcription, Lo
     boolean existsByTpIdAndAnnotationId(String tpId, String annotationId);
 
     Optional<Transcription> findByTpId(String tpId);
+
+    List<Transcription> findAllByRecordId(long record_id);
 }
