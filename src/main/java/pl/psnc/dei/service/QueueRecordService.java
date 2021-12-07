@@ -85,6 +85,15 @@ public class QueueRecordService {
 	}
 
 	/**
+	 * Deletes all transcriptions
+	 *
+	 * @param transcriptions transcriptions to delete
+	 */
+	public void deleteAllTranscriptions(Collection<Transcription> transcriptions) {
+		this.transcriptionRepository.deleteAll(transcriptions);
+	}
+
+	/**
 	 * Function adds records but not update them
 	 *
 	 * @param transcription transcription to add

@@ -31,12 +31,14 @@ public class EnrichTask extends Task {
 	private final ContextMediator contextMediator;
 
 	private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+	private final TranscriptionConverter transcriptionConverter;
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator, TranscriptionConverter tc) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.context = (EnrichTaskContext) this.contextMediator.get(record);
 		state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
+		this.transcriptionConverter = tc;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
 				() -> this.state = this.context.getTaskState());
 
@@ -90,7 +92,7 @@ public class EnrichTask extends Task {
 							if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
 								transcriptions.put(transcription.getTpId(), transcription);
 							}
-							transcriptions.put(transcription.getTpId(), transcription);
+							// transcriptions.put(transcription.getTpId(), transcription);
 						} catch (IllegalArgumentException e) {
 							logger.error("Transcription was corrupted: " + val.toString());
 						}
@@ -143,6 +145,7 @@ public class EnrichTask extends Task {
 				.filter(el -> !fetchedTranscriptions.contains(el))
 				.collect(Collectors.toList());
 		this.record.getTranscriptions().removeAll(diff);
+		this.queueRecordService.deleteAllTranscriptions(diff);
 		this.queueRecordService.saveRecord(this.record);
 	}
 

@@ -14,12 +14,13 @@ import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
-import java.util.Arrays;
 import java.util.List;
 
 public class UpdateTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(UpdateTask.class);
+
+	private int totalTranscriptionsSend = 0;
 
 	/**
 	 * It is possible that there will be more than 1 transcription update pending, so it has to be list, that situation
@@ -94,12 +95,12 @@ public class UpdateTask extends Task {
 				this.contextMediator.save(this.context);
 			case U_HANDLE_TRANSCRIPTION:
 				for (Transcription t : transcriptions) {
-					// TODO: not working as editing iterated collection on-go
-					eas.updateTranscription(t);
-					record.getTranscriptions().remove(t);
-					queueRecordService.saveRecord(record);
+					// send updated transcription to europeana
+					eas.updateTranscription(record, t);
+					this.totalTranscriptionsSend++;
 				}
-				if (record.getTranscriptions().isEmpty()) {
+
+				if (this.totalTranscriptionsSend == this.transcriptions.size()) {
 					try {
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
 					} catch (NotFoundException e) {

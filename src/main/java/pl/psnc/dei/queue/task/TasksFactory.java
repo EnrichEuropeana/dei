@@ -12,6 +12,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.TranscriptionConverter;
 
 /**
  * Factory used to convert records into tasks based on state they are in
@@ -54,6 +55,9 @@ public class TasksFactory {
 	@Autowired
 	private RecordsRepository rr;
 
+	@Autowired
+	private TranscriptionConverter tc;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -68,7 +72,7 @@ public class TasksFactory {
 	public Task getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas, ctxm);
+				return new EnrichTask(record, qrs, tps, ess, eas, ctxm, tc);
 			case T_PENDING:
 				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes, ips);
 			case U_PENDING:
