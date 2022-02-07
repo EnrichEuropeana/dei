@@ -61,10 +61,10 @@ import java.util.Set;
 @Transactional
 public class TranscriptionPlatformService {
 
-	public static final int READ_TIMEOUT_IN_SECONDS = 15;
+	public static final int READ_TIMEOUT_IN_SECONDS = 100;
 	private static final Logger logger = LoggerFactory.getLogger(TranscriptionPlatformService.class);
-	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
-	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 2;
+	private static final int WRITE_TIMEOUT_IN_SECONDS = 100;
+	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 100;
 
 	@Autowired
 	private ProjectsRepository projectsRepository;
