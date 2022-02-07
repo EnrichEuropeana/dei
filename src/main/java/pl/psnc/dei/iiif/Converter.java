@@ -6,6 +6,7 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ContentDisposition;
@@ -263,8 +264,9 @@ public class Converter {
 			throw new DownloadFileException(data.srcFileUrl.getPath());
 		}
 		connection = (HttpURLConnection) urlConnection;
-		connection.setConnectTimeout(500);
-		connection.setReadTimeout(5000);
+		// europeana can be really slow here
+		connection.setConnectTimeout(100000);
+		connection.setReadTimeout(100000);
 		connection.setInstanceFollowRedirects(true);
 		int code = connection.getResponseCode();
 		if (isResponseRedirected(code)) {
