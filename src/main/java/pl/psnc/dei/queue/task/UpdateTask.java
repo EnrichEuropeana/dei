@@ -14,6 +14,7 @@ import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
+import java.util.Arrays;
 import java.util.List;
 
 public class UpdateTask extends Task {
@@ -102,13 +103,14 @@ public class UpdateTask extends Task {
 
 				if (this.totalTranscriptionsSend == this.transcriptions.size()) {
 					try {
+						this.context.setTaskState(this.state);
+						this.contextMediator.save(this.context);
 						queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.NORMAL);
 					} catch (NotFoundException e) {
 //						Actually, this is not possible
 					}
 				}
-				this.context.setTaskState(this.state);
-				this.contextMediator.save(this.context);
+				this.contextMediator.delete(this.context);
 		}
 	}
 }
