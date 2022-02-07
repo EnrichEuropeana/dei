@@ -6,6 +6,8 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Dataset;
 import pl.psnc.dei.model.Project;
@@ -18,6 +20,7 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 @DataJpaTest
+@ActiveProfiles("integration")
 public class RecordsRepositoryTest {
 
     /** This is just to ensure that the test is running successfully. Bean of this class is needed. */
