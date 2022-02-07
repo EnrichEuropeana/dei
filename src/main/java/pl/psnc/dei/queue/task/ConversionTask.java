@@ -136,7 +136,7 @@ public class ConversionTask extends Task {
 							ContextUtils.executeIf(!this.context.isHasAddedFailure(),
 									() -> {
 										try {
-											tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+											tps.addFailure(record.getAnImport().getName(), record, e);
 											this.context.setHasAddedFailure(true);
 											this.contextMediator.save(this.context);
 										} catch (NotFoundException notFoundException) {
@@ -168,7 +168,7 @@ public class ConversionTask extends Task {
 									() -> {
 										try {
 
-											tps.addFailure(record.getAnImport().getName(), record, e.getMessage());
+											tps.addFailure(record.getAnImport().getName(), record, e);
 											this.context.setHasAddedFailure(true);
 											this.contextMediator.save(this.context);
 										} catch (NotFoundException notFoundException) {

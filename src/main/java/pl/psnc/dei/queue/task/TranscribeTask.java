@@ -180,7 +180,7 @@ public class TranscribeTask extends Task {
 		ContextUtils.executeIf(!this.transcribeTaskContext.isHasAddedFailure(),
 				() -> {
 					try {
-						tps.addFailure(record.getAnImport().getName(), record, exception.getMessage());
+						tps.addFailure(record.getAnImport().getName(), record, exception);
 						this.transcribeTaskContext.setHasAddedFailure(true);
 						this.contextMediator.save(this.transcribeTaskContext);
 					} catch (NotFoundException e1) {
