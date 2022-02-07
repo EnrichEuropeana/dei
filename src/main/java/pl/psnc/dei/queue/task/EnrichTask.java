@@ -84,7 +84,7 @@ public class EnrichTask extends Task {
 							Transcription transcription = new Transcription();
 							transcription.setRecord(record);
 							transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-							transcription.setTranscriptionContent(TranscriptionConverter.convert(val.getAsObject()));
+							transcription.setTranscriptionContent(transcriptionConverter.convert(record, val.getAsObject()));
 							JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
 							if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
 								transcription.setAnnotationId(europeanaAnnotationId.toString());
