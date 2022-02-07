@@ -17,8 +17,8 @@ import pl.psnc.dei.exception.DownloadFileException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.IIIFMappingService;
 import pl.psnc.dei.model.conversion.ConversionTaskContext;
+import pl.psnc.dei.service.IIIFMappingService;
 import pl.psnc.dei.service.context.ContextMediator;
 
 import javax.annotation.PostConstruct;
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.*;
 import java.net.URLConnection;
 import java.util.*;
 import java.util.regex.Matcher;

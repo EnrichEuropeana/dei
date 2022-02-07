@@ -30,13 +30,7 @@ import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Import;
-import pl.psnc.dei.model.ImportFailure;
-import pl.psnc.dei.model.ImportStatus;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
@@ -44,12 +38,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Service responsible for communication with Transcription Platform.
