@@ -1,10 +1,12 @@
 package pl.psnc.dei.queue.task;
 
 import lombok.SneakyThrows;
+import org.apache.jena.atlas.json.JSON;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
@@ -34,6 +36,9 @@ public class TaskFactoryTest {
     // MARIA VON STUTTERHEIM DOKUMENTIERT DEN KRIEG
     private final String C_PENDING_RECORD_IDENTIFIER = "/2020601/https___1914_1918_europeana_eu_contributions_12746";
 
+    @Value("classpath:queue/update-response.json")
+    private org.springframework.core.io.Resource updateResponseJson;
+
     @Autowired
     private TasksFactory tasksFactory;
 
@@ -50,12 +55,15 @@ public class TaskFactoryTest {
     private RecordsRepository recordsRepository;
 
     @Before
+    @SneakyThrows
     public void prepareRecords() {
         this.T_PENDINGRecord = new Record();
         this.T_PENDINGRecord.setState(Record.RecordState.T_PENDING);
+        this.T_PENDINGRecord = this.recordsRepository.save(this.T_PENDINGRecord);
 
         this.E_PENDINGRecord = new Record();
         this.E_PENDINGRecord.setState(Record.RecordState.E_PENDING);
+        this.E_PENDINGRecord = this.recordsRepository.save(this.E_PENDINGRecord);
 
         this.U_PENDINGRecord = new Record();
         this.U_PENDINGRecord.setIdentifier(this.U_PENDING_RECORD_IDENTIFIER);
@@ -66,6 +74,7 @@ public class TaskFactoryTest {
         transcription.setAnnotationId(this.ANNOTATION_ID);
         transcription.setTpId(this.TP_ID);
         transcription.setRecord(this.U_PENDINGRecord);
+        transcription.setTranscriptionContent(JSON.parse(this.updateResponseJson.getInputStream()));
         this.transcriptionRepository.save(transcription);
         this.U_PENDINGRecord.getTranscriptions().add(transcription);
         this.U_PENDINGRecord = this.recordsRepository.save(U_PENDINGRecord);
@@ -74,9 +83,11 @@ public class TaskFactoryTest {
         this.C_PENDINGRecord.setIdentifier(this.C_PENDING_RECORD_IDENTIFIER);
         this.C_PENDINGRecord.setAggregator(Aggregator.EUROPEANA);
         this.C_PENDINGRecord.setState(Record.RecordState.C_PENDING);
+        this.C_PENDINGRecord = this.recordsRepository.save(this.C_PENDINGRecord);
 
         this.T_SENTRecord = new Record();
         this.T_SENTRecord.setState(Record.RecordState.T_SENT);
+        this.T_SENTRecord = this.recordsRepository.save(this.T_SENTRecord);
     }
 
     @Test

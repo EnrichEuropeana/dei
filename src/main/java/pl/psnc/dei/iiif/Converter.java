@@ -17,7 +17,9 @@ import pl.psnc.dei.exception.DownloadFileException;
 import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.conversion.ConversionTaskContext;
 import pl.psnc.dei.service.IIIFMappingService;
+import pl.psnc.dei.service.context.ContextMediator;
 
 import javax.annotation.PostConstruct;
 import java.io.File;
@@ -46,8 +48,13 @@ public class Converter {
 	private static final int DEFAULT_DIMENSION = 6000;
 	private static final int MAX_RETRY_COUNT = 3;
 
-	@Autowired
-	private RecordsRepository recordsRepository;
+	private Record record;
+
+	private final RecordsRepository recordsRepository;
+
+	private final ContextMediator contextMediator;
+
+	private final ConversionDataHolderService conversionDataHolderService;
 
 	@Autowired
 	private IIIFMappingService iiifMappingService;
@@ -56,7 +63,7 @@ public class Converter {
 	private String conversionDirectory;
 
 	@Value("#{${conversion.url.replacements}}")
-	private Map<String,String> urlReplacements;
+	private Map<String, String> urlReplacements;
 
 	@Value("${conversion.iiif.server.url}")
 	private String iiifImageServerUrl;
@@ -71,7 +78,11 @@ public class Converter {
 
 	private File outDir;
 
-	private Record record;
+	public Converter(RecordsRepository recordsRepository, ContextMediator contextMediator, ConversionDataHolderService conversionDataHolderService) {
+		this.recordsRepository = recordsRepository;
+		this.contextMediator = contextMediator;
+		this.conversionDataHolderService = conversionDataHolderService;
+	}
 
 	@PostConstruct
 	private void copyScript() {
@@ -110,15 +121,15 @@ public class Converter {
 		logger.info("Output dir created: " + outDir.getAbsolutePath());
 
 		try {
-			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw);
-			saveFilesInTempDirectory(conversionDataHolder);
-			convertAllFiles(conversionDataHolder);
+			ConversionDataHolder conversionDataHolder = createDataHolder(record, recordJson, recordJsonRaw, true);
+			conversionDataHolder = saveFilesInTempDirectory(conversionDataHolder);
+			conversionDataHolder = convertAllFiles(conversionDataHolder);
 			List<ConversionDataHolder.ConversionData> convertedFiles = conversionDataHolder.fileObjects.stream()
 					.filter(e -> e.outFile != null && !e.outFile.isEmpty())
 					.collect(Collectors.toList());
 
 			record.setIiifManifest(getManifest(convertedFiles).toString());
-			record.setState(Record.RecordState.T_PENDING);
+			// record should be changed after context update which is made in Conversion Task
 			recordsRepository.save(record);
 			iiifMappingService.saveMappings(record, convertedFiles);
 		} catch (Exception e) {
@@ -137,7 +148,14 @@ public class Converter {
 	 * @return combined data in form of dataholder
 	 * @throws ConversionImpossibleException if some of data are missing
 	 */
-	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw) throws ConversionImpossibleException {
+	private ConversionDataHolder createDataHolder(Record record, JsonObject recordJson, JsonObject recordJsonRaw, boolean isRecoverable) throws ConversionImpossibleException {
+		ConversionTaskContext context = null;
+		if (isRecoverable) {
+			context = (ConversionTaskContext) this.contextMediator.get(record);
+			if (context.isHasConverterCreatedDataHolder()) {
+				return context.getConversionDataHolder();
+			}
+		}
 		Aggregator aggregator = record.getAggregator();
 		switch (aggregator) {
 			case EUROPEANA:
@@ -146,16 +164,40 @@ public class Converter {
 						.filter(e -> e.get("edm:isShownBy") != null)
 						.findFirst();
 
-				if (!aggregatorData.isPresent()) {
+				if (aggregatorData.isEmpty()) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
 
-				return new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				EuropeanaConversionDataHolder eConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					// there is known problem if system will crash after context save and before conversion data holder save
+					// then context will keep information that conversion data was saved to db and could be recovered
+					// but in fact this never happend as code was never executed
+					// so far there is no simple solution as move of save function of conversion data before context save
+					// is the worst thing, as during each restart new set of conversion data will be saved to db, because
+					// after creation conversion data do not contain id's, that mean HB will generate one for them, thus
+					// duplicating already existing records
+					// hopefully system do not crash so ofter and probability of crash in this specific place is almost
+					// not possible
+					// simplest solution for mentioned problem will be pregeneration of id, e.g. usage of UUID, but
+					// such thing will create huge overhead, that is not what we want
+					return this.conversionDataHolderService.save(eConversionDataHolder, context);
+				} else {
+					return eConversionDataHolder;
+				}
 			case DDB:
 				if (recordJson == null) {
 					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
 				}
-				return new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				DDBConversionDataHolder dConversionDataHolder = new DDBConversionDataHolder(record.getIdentifier(), recordJson);
+				if (isRecoverable) {
+					context.setHasConverterCreatedDataHolder(true);
+					this.contextMediator.save(context);
+					return this.conversionDataHolderService.save(dConversionDataHolder, context);
+				}
+				return dConversionDataHolder;
 			default:
 				throw new IllegalStateException("Unsupported aggregator");
 		}
@@ -163,10 +205,15 @@ public class Converter {
 
 	/**
 	 * Fetch data from external server and save to local files
+	 *
 	 * @param dataHolder combined data of record and data fetched from europeana
 	 * @throws ConversionException
 	 */
-	private void saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+	private ConversionDataHolder saveFilesInTempDirectory(ConversionDataHolder dataHolder) throws ConversionException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterSavedFiles()) {
+			return dataHolder;
+		}
 		logger.info("Downloading files for record {}", record.getIdentifier());
 		Iterator<ConversionDataHolder.ConversionData> dataIterator = dataHolder.fileObjects.iterator();
 		while(dataIterator.hasNext()) {
@@ -189,6 +236,9 @@ public class Converter {
 		if (dataHolder.fileObjects.isEmpty()) {
 			throw new ConversionException("Record does not contain any valid file URL!");
 		}
+		context.setHasConverterSavedFiles(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	private void replaceUrl(ConversionDataHolder.ConversionData data) throws MalformedURLException {
@@ -213,8 +263,9 @@ public class Converter {
 			throw new DownloadFileException(data.srcFileUrl.getPath());
 		}
 		connection = (HttpURLConnection) urlConnection;
-		connection.setConnectTimeout(500);
-		connection.setReadTimeout(5000);
+		// europeana can be really slow here
+		connection.setConnectTimeout(100000);
+		connection.setReadTimeout(100000);
 		connection.setInstanceFollowRedirects(true);
 		int code = connection.getResponseCode();
 		if (isResponseRedirected(code)) {
@@ -253,19 +304,24 @@ public class Converter {
 		return filePath.substring(filePath.lastIndexOf('/') + 1).replace(" ", "").replace("%20", "");
 	}
 
-	private String  extractFileName(String name) {
+	private String extractFileName(String name) {
 		int i = name.lastIndexOf('.');
 		return i != -1 ? name.substring(0, i) : name;
 	}
 
 	/**
 	 * Converts images into IIIF
+	 *
 	 * @param dataHolder combined data of record and europeana
 	 * @throws ConversionException
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
-	private void convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+	private ConversionDataHolder convertAllFiles(ConversionDataHolder dataHolder) throws ConversionException, InterruptedException, IOException {
+		ConversionTaskContext context = (ConversionTaskContext) this.contextMediator.get(this.record);
+		if (context.isHasConverterConvertedToIIIF()) {
+			return dataHolder;
+		}
 		for (ConversionDataHolder.ConversionData convData : dataHolder.fileObjects) {
 			if (convData.srcFile == null || convData.mediaType == null)
 				continue;
@@ -286,9 +342,12 @@ public class Converter {
 					break;
 			}
 		}
-		if (outDir.listFiles().length == 0) {
+		if (Objects.requireNonNull(outDir.listFiles()).length == 0) {
 			throw new ConversionImpossibleException("Couldn't convert any file, conversion not possible");
 		}
+		context.setHasConverterConvertedToIIIF(true);
+		this.contextMediator.save(context);
+		return this.conversionDataHolderService.save(dataHolder, context);
 	}
 
 	private void convertPDF(ConversionDataHolder.ConversionData convData) throws ConversionException, InterruptedException, IOException {
@@ -320,7 +379,6 @@ public class Converter {
 				logger.info("Successfully converted JP2 to TIF {} -> {}", convData.srcFile.getName(), tiffFileName);
 				convData.srcFile = convertedFile;
 				convertImage(convData);
-			} else {
 				throw new ConversionException("Conversion JP2 to TIF failed for file " + convData.srcFile.getName() + " from record: " + record.getIdentifier());
 			}
 		} catch (ConversionException | InterruptedException | IOException e) {
@@ -340,7 +398,6 @@ public class Converter {
 					"--tile-width=128",
 					"--tile-height=128",
 					"--pyramid"));
-
 			File convertedFile = new File(outDir, getTiffFileName(convData.srcFile.getName()));
 			if (convertedFile.exists()) {
 				convData.outFile.add(convertedFile);
@@ -364,6 +421,7 @@ public class Converter {
 
 	/**
 	 * Create paths for images contained in conversion Data
+	 *
 	 * @param convData data for which paths should be created
 	 */
 	private void prepareImagePaths(ConversionDataHolder.ConversionData convData) {
@@ -497,7 +555,7 @@ public class Converter {
 	 */
 	public void fillJsonData(Record record, JsonObject jsonObject, JsonObject jsonObjectRaw) {
 		try {
-			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw);
+			ConversionDataHolder conversionData = createDataHolder(record, jsonObject, jsonObjectRaw, false);
 			conversionData.initFileUrls(record.getIdentifier());
 			if(!conversionData.fileObjects.isEmpty() && conversionData.fileObjects.get(0).srcFileUrl.toString().toLowerCase().endsWith("pdf"))
 				return;

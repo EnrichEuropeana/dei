@@ -19,6 +19,7 @@ import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.service.*;
+import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.util.Set;
@@ -92,6 +93,12 @@ public class TranscribeTaskTest {
     @Autowired
     private DDBFormatResolver ddbfr;
 
+    @Autowired
+    private ContextMediator contextMediator;
+
+    @Autowired
+    private PersistableExceptionService persistableExceptionService;
+
     @Before
     public void prepareDatasets() {
         this.nonIiifDataset = this.datasetsRepository.findAll().get(0);
@@ -107,6 +114,8 @@ public class TranscribeTaskTest {
         this.recordWithoutIIIF.setAggregator(Aggregator.EUROPEANA);
         this.recordWithoutIIIF.setProject(this.project);
         this.recordWithoutIIIF.setDataset(this.nonIiifDataset);
+        this.recordWithoutIIIF.setState(Record.RecordState.T_PENDING);
+        this.recordWithoutIIIF = this.recordsRepository.save(this.recordWithoutIIIF);
         this.nonIiifImport = this.importPackageService.createImport(this.NON_IIIF_IMPORT_NAME, this.nonIiifDataset.getProject().getProjectId(), Set.of(this.recordWithoutIIIF));
         this.nonIiifImport.setProgress(this.importProgressService.initImportProgress(1));
         this.nonIiifImport = this.importsRepository.save(this.nonIiifImport);
@@ -121,6 +130,8 @@ public class TranscribeTaskTest {
         this.recordWithIIIF.setAggregator(Aggregator.EUROPEANA);
         this.recordWithIIIF.setProject(this.project);
         this.recordWithIIIF.setDataset(this.iiifDataset);
+        this.recordWithIIIF.setState(Record.RecordState.T_PENDING);
+        this.recordWithIIIF = this.recordsRepository.save(this.recordWithIIIF);
         this.iiifImport = this.importPackageService.createImport(this.IIIF_IMPORT_NAME, this.iiifDataset.getProject().getProjectId(), Set.of(this.recordWithIIIF));
         this.iiifImport.setProgress(this.importProgressService.initImportProgress(1));
         this.iiifImport = this.importsRepository.save(this.iiifImport);
@@ -133,21 +144,21 @@ public class TranscribeTaskTest {
     @Rollback
     @Transactional
     public void transcribeRecordWithoutIIIFPresent() {
-        TranscribeTask transcribeTask = new TranscribeTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.importProgressService, this.tasksFactory);
+        TranscribeTask transcribeTask = new TranscribeTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.tasksFactory, this.contextMediator, this.persistableExceptionService, this.importProgressService);
         transcribeTask.process();
         assertEquals(
                 Record.RecordState.C_PENDING,
                 this.recordsRepository.findByIdentifier(this.NON_IIIF_RECORD_IDENTIFIER).get().getState()
         );
 
-        ConversionTask conversionTask = new ConversionTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.ddbfr, this.tqs, this.converter, this.importProgressService, this.tasksFactory);
+        ConversionTask conversionTask = new ConversionTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.ddbfr, this.tqs, this.converter, this.importProgressService, this.tasksFactory, this.persistableExceptionService, this.recordsRepository, this.contextMediator);
         conversionTask.process();
         assertEquals(
                 Record.RecordState.T_PENDING,
                 this.recordsRepository.findByIdentifier(this.NON_IIIF_RECORD_IDENTIFIER).get().getState()
         );
 
-        transcribeTask = new TranscribeTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.importProgressService, this.tasksFactory);
+        transcribeTask = new TranscribeTask(this.recordWithoutIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.tasksFactory, this.contextMediator, this.persistableExceptionService, this.importProgressService);
         transcribeTask.process();
         assertEquals(
                 Record.RecordState.T_SENT,
@@ -158,8 +169,8 @@ public class TranscribeTaskTest {
     @Test
     @Rollback
     @Transactional
-    public void transcribeRecordWithIIIFPresent() {
-        TranscribeTask transcribeTask = new TranscribeTask(this.recordWithIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.importProgressService, this.tasksFactory);
+    public void transcribeRecordWithIIIFPresent() throws Exception {
+        TranscribeTask transcribeTask = new TranscribeTask(this.recordWithIIIF, this.qrs, this.tps, this.ess, this.eas, this.tqs, this.serverUrl, this.serverPath, this.tasksFactory, this.contextMediator, this.persistableExceptionService, this.importProgressService);
         transcribeTask.process();
         assertEquals(
                 Record.RecordState.T_SENT,

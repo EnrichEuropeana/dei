@@ -7,7 +7,6 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.psnc.dei.iiif.ConversionDataHolder;
 import pl.psnc.dei.model.DAO.IIIFMappingsRepository;

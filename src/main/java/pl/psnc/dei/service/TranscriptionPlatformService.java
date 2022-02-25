@@ -30,13 +30,7 @@ import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
-import pl.psnc.dei.model.Dataset;
-import pl.psnc.dei.model.Import;
-import pl.psnc.dei.model.ImportFailure;
-import pl.psnc.dei.model.ImportStatus;
-import pl.psnc.dei.model.Project;
-import pl.psnc.dei.model.Record;
-import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
@@ -44,12 +38,7 @@ import reactor.netty.http.client.HttpClient;
 import reactor.netty.tcp.TcpClient;
 
 import javax.transaction.Transactional;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Service responsible for communication with Transcription Platform.
@@ -61,10 +50,10 @@ import java.util.Set;
 @Transactional
 public class TranscriptionPlatformService {
 
-	public static final int READ_TIMEOUT_IN_SECONDS = 15;
+	public static final int READ_TIMEOUT_IN_SECONDS = 100;
 	private static final Logger logger = LoggerFactory.getLogger(TranscriptionPlatformService.class);
-	private static final int WRITE_TIMEOUT_IN_SECONDS = 5;
-	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 2;
+	private static final int WRITE_TIMEOUT_IN_SECONDS = 100;
+	private static final int CONNECTION_TIMEOUT_IN_SECONDS = 100;
 
 	@Autowired
 	private ProjectsRepository projectsRepository;
@@ -92,7 +81,7 @@ public class TranscriptionPlatformService {
 	private String authToken;
 
 	private List<Project> availableProjects;
-	private UrlBuilder urlBuilder;
+	private final UrlBuilder urlBuilder;
 	private WebClient webClient;
 
 
@@ -216,7 +205,7 @@ public class TranscriptionPlatformService {
 				.body(BodyInserters.fromObject(recordBody.toString()))
 				.retrieve()
 				.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-					logger.info("Error while sending record {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+					logger.info("Error while sending record {} {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
 					return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
 				})
 				.onStatus(HttpStatus::is5xxServerError, clientResponse -> {

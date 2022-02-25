@@ -19,6 +19,7 @@ public abstract class ConversionDataHolder {
 	@Getter
 	@Setter
 	public static class ConversionData {
+		Long id;
 		JsonObject json;
 		// file to download and convert
 		URL srcFileUrl;

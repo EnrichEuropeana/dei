@@ -43,6 +43,7 @@ public class TranscriptionController {
 
 	/**
 	 * Notify server about set of newly available transcription
+	 *
 	 * @param recordId
 	 * @return
 	 */

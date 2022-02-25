@@ -21,6 +21,7 @@ import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
 import java.util.ArrayList;
@@ -62,8 +63,11 @@ public class UpdateTaskTest {
     @Autowired
     private EuropeanaSearchService ess;
 
-    @Autowired
+    @Mock
     private EuropeanaAnnotationsService eas;
+
+    @Autowired
+    private ContextMediator contextMediator;
 
     @SneakyThrows
     private void prepareTpsMock() {
@@ -71,18 +75,24 @@ public class UpdateTaskTest {
         when(this.tps.fetchTranscriptionUpdate(any())).thenReturn(response);
     }
 
+    private void prepareEasMock() {
+        when(this.eas.updateTranscription(any(), any())).thenReturn("21");
+    }
+
+    @SneakyThrows
     private void initTranscriptions() {
         this.transcriptionList = new ArrayList<>();
         Transcription transcription = new Transcription();
         transcription.setTpId(this.TP_ID);
         transcription.setAnnotationId(this.ANNOTATION_ID);
+        transcription.setTranscriptionContent(JSON.parse(this.updateResponseJson.getInputStream()));
         transcription = this.transcriptionRepository.save(transcription);
         this.transcriptionList.add(transcription);
     }
 
     private void initRecord() {
         this.record = new Record();
-        this.record.setId(93274589);
+        this.record.setId(93274589L);
         this.record.setIdentifier(this.RECORD_IDENTIFIER);
         this.record.setState(Record.RecordState.U_PENDING);
         this.record.setTranscriptions(this.transcriptionList);
@@ -93,6 +103,7 @@ public class UpdateTaskTest {
 
     @Before
     public void init() {
+        this.prepareEasMock();
         this.prepareTpsMock();
         this.initTranscriptions();
         this.initRecord();
@@ -102,7 +113,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromRestoreConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -115,7 +126,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromNormalConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -129,7 +140,9 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void areUpdatesIdempotent() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
+        updateTask.process();
+        updateTask.process();
         updateTask.process();
         updateTask.process();
         updateTask.process();
@@ -137,8 +150,9 @@ public class UpdateTaskTest {
                 Record.RecordState.NORMAL,
                 this.recordsRepository.findByIdentifier(this.RECORD_IDENTIFIER).get().getState()
         );
+        // two as one annotation is forced to be created in @Before for earlier test and second in this test
         assertEquals(
-                1,
+                2,
                 this.transcriptionRepository.findAllByTpId(this.TP_ID).size()
         );
     }

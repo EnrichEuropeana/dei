@@ -33,7 +33,7 @@ public class QueueRecordService {
 
 	/**
 	 * Returns records that are not in terminal state due to add when QueueRecordService was down or due to system crash during processing them
-	 * @return records 
+	 * @return records
 	 */
 	public List<Record> getRecordsToProcess() {
 		return recordsRepository.findAllByStateIsNotIn(Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED, Record.RecordState.T_SENT, Record.RecordState.T_FAILED));
@@ -78,6 +78,10 @@ public class QueueRecordService {
 
 	public void saveTranscription(Transcription transcription) {
 		transcriptionRepository.save(transcription);
+	}
+
+	public void saveTranscriptions(Collection<Transcription> transcriptions) {
+		this.transcriptionRepository.saveAll(transcriptions);
 	}
 
 	/**

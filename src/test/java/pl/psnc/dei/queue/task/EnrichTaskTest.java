@@ -21,6 +21,7 @@ import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
+import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -57,11 +58,18 @@ public class EnrichTaskTest {
     private TranscriptionRepository transcriptionRepository;
 
     @Autowired
+    private ContextMediator contextMediator;
+
+//    @Qualifier("transcriptionPlatformService")
+//    @Autowired
+//    private TranscriptionPlatformService tps;
+    @Autowired
     private TranscriptionConverter tc;
 
     @Mock
     // mocked as Transcribathon dev platform not always work, sometimes drop records, or returns 5xx codes
     private TranscriptionPlatformService tps;
+    private EnrichTask enrichTask;
 
     @SneakyThrows
     @Before
@@ -81,7 +89,9 @@ public class EnrichTaskTest {
         this.record = new Record();
         this.record.setIdentifier("/2020601/https___1914_1918_europeana_eu_contributions_17173");
         this.record.setTranscriptions(new ArrayList<>());
+        this.record.setState(Record.RecordState.E_PENDING);
         this.qrs.saveRecord(this.record);
+        this.enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator, this.tc);
     }
 
     @SneakyThrows
@@ -101,7 +111,7 @@ public class EnrichTaskTest {
 
         this.record = this.qrs.getRecord(this.record.getIdentifier());
 
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
         enrichTask.process();
         assertTrue(
                 this.transcriptionRepository.findByTpId(transcription.getTpId()).isEmpty()
@@ -113,7 +123,7 @@ public class EnrichTaskTest {
     @Transactional
     public void whenPostedTwice_notDuplicateRecords() {
         // if post method is called this task will be created
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
         enrichTask.process();
         enrichTask.process();
         List<Transcription> transcriptionsFound = this.transcriptionRepository.findAllByTpId("203544");

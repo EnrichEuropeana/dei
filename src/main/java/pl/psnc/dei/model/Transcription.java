@@ -1,8 +1,10 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.*;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.converter.JsonObjectToStringConverter;
 
 import javax.persistence.*;
 
@@ -18,16 +20,15 @@ public class Transcription {
 
 	@Id
 	@GeneratedValue
-	@Getter(AccessLevel.NONE)
-	@Setter(AccessLevel.NONE)
-	private long id;
+	private Long id;
 
 	private String tpId;
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	private Record record;
 
-	@Transient
+	@Convert(converter = JsonObjectToStringConverter.class)
+	@Column(columnDefinition = "LONGTEXT")
 	private JsonObject transcriptionContent;
 
 	@JsonProperty("EuropeanaAnnotationId")
@@ -38,5 +39,6 @@ public class Transcription {
 		this.tpId = tpId;
 		this.record = record;
 		this.annotationId = annotationId;
+		this.transcriptionContent = new JsonObject();
 	}
 }
