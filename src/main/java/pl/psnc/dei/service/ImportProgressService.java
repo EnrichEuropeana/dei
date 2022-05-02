@@ -40,7 +40,9 @@ public class ImportProgressService {
             throw new AssertionError("Import " + importName + " not found");
         }
         Import anImport = importOptional.get();
-        anImport.getProgress().incrementCompleted();
+        if (anImport.getProgress() != null) {
+            anImport.getProgress().incrementCompleted();
+        }
         record.setAnImport(importsRepository.save(anImport));
     }
 }
