@@ -3,10 +3,7 @@ package pl.psnc.dei.util;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.model.Aggregator;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class IiifValidator {
 
@@ -403,6 +400,9 @@ public class IiifValidator {
 	}
 
 	public static String getMimeTypeFromShort(String shortMimeType) {
+		if (Objects.isNull(shortMimeType)) {
+			return null;
+		}
 		return TYPES_SHORT_TO_FULL.get(shortMimeType.toLowerCase());
 	}
 }
