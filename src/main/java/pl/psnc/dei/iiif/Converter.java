@@ -161,11 +161,18 @@ public class Converter {
 			case EUROPEANA:
 				Optional<JsonObject> aggregatorData = recordJson.get("@graph").getAsArray().stream()
 						.map(JsonValue::getAsObject)
-						.filter(e -> e.get("edm:isShownBy") != null)
+						.filter(e -> e.get("edm:isShownBy") != null && e.get("edm:hasView") != null)
 						.findFirst();
 
 				if (aggregatorData.isEmpty()) {
-					throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
+					aggregatorData = recordJson.get("@graph").getAsArray().stream()
+							.map(JsonValue::getAsObject)
+							.filter(e -> e.get("edm:isShownBy") != null)
+							.findFirst();
+
+					if (aggregatorData.isEmpty()) {
+						throw new ConversionImpossibleException("Can't convert! Record doesn't contain files list!");
+					}
 				}
 
 				EuropeanaConversionDataHolder eConversionDataHolder = new EuropeanaConversionDataHolder(record.getIdentifier(), aggregatorData.get(), recordJson, recordJsonRaw);
