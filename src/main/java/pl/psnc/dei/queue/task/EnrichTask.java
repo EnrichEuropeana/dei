@@ -36,9 +36,7 @@ public class EnrichTask extends Task {
 
 	private final EnrichmentNotifierService ens;
 
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-			   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens) {
-	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator, TranscriptionConverter tc) {
+	EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens, ContextMediator contextMediator, TranscriptionConverter tc) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.context = (EnrichTaskContext) this.contextMediator.get(record);

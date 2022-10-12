@@ -39,10 +39,8 @@ public class UpdateTask extends Task {
 	private final QueueRecordService queueRecordService;
 
 	UpdateTask(Record record, QueueRecordService queueRecordService,
-			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
+			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens, ContextMediator contextMediator) {
 		// Fired only for crash recovery
-	UpdateTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-			   EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens) {
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) contextMediator.get(record);
@@ -69,16 +67,14 @@ public class UpdateTask extends Task {
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) throws NotFoundException {
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens, ContextMediator contextMediator) throws NotFoundException {
 		// fired for normal execution
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-					  EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens)
-			throws NotFoundException {
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
 		this.queueRecordService = queueRecordService;
 		Record record = this.queueRecordService.getRecord(recordIdentifier);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
+		this.ens = ens;
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
@@ -86,9 +82,6 @@ public class UpdateTask extends Task {
 		// state should be changed here and only here
 		// moving it earlier could possibly leave us, in case of crash, with task that have no new records, then
 		// there is no point for further processing
-		this.ens = ens;
-		// assemble transcription onece more
-		transcriptions = List.of(new Transcription(transcriptionId, record, annotationId));
 		queueRecordService.setNewStateForRecord(getRecord().getId(), Record.RecordState.U_PENDING);
 		state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
 		ContextUtils.executeIfPresent(this.context.getTaskState(),
