@@ -18,6 +18,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -32,8 +33,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -71,6 +71,9 @@ public class EnrichTaskTest {
     private TranscriptionPlatformService tps;
     private EnrichTask enrichTask;
 
+    @Mock
+    private EnrichmentNotifierService ens;
+
     @SneakyThrows
     @Before
     public void readJson() {
@@ -82,6 +85,7 @@ public class EnrichTaskTest {
     @Before
     public void prepareMock() {
         when(tps.fetchTranscriptionsFor(any())).thenReturn(this.transcribathonResponse);
+        doNothing().when(ens).notifyPublishers(any());
     }
 
     @Before
@@ -111,7 +115,7 @@ public class EnrichTaskTest {
 
         this.record = this.qrs.getRecord(this.record.getIdentifier());
 
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc, ens);
         enrichTask.process();
         assertTrue(
                 this.transcriptionRepository.findByTpId(transcription.getTpId()).isEmpty()
@@ -123,7 +127,7 @@ public class EnrichTaskTest {
     @Transactional
     public void whenPostedTwice_notDuplicateRecords() {
         // if post method is called this task will be created
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc, ens);
         enrichTask.process();
         enrichTask.process();
         List<Transcription> transcriptionsFound = this.transcriptionRepository.findAllByTpId("203544");

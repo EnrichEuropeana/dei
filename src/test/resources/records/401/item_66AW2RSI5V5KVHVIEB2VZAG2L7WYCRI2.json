@@ -1,0 +1,450 @@
+{
+  "apikey": "api2demo",
+  "success": true,
+  "statsDuration": 315,
+  "requestNumber": 999,
+  "object": {
+    "about": "/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+    "aggregations": [
+      {
+        "about": "/aggregation/provider/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "edmDataProvider": {
+          "def": [
+            "Eesti Sõjamuuseum - Kindral Laidoneri Muuseum"
+          ]
+        },
+        "edmIsShownBy": "https://www.muis.ee/digitaalhoidla/api/meedia/originaal?id=c97d0c2d-ac38-4d1b-9b75-3ac5fcc55d7b",
+        "edmIsShownAt": "https://www.muis.ee/museaalView/1118596",
+        "edmObject": "https://www.muis.ee/digitaalhoidla/api/meedia/originaal?id=c97d0c2d-ac38-4d1b-9b75-3ac5fcc55d7b",
+        "edmProvider": {
+          "def": [
+            "http://data.europeana.eu/organization/1482250000026719048"
+          ]
+        },
+        "edmRights": {
+          "def": [
+            "http://creativecommons.org/publicdomain/zero/1.0/"
+          ]
+        },
+        "edmUgc": "false",
+        "aggregatedCHO": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "webResources": [
+          {
+            "about": "https://www.muis.ee/digitaalhoidla/api/meedia/originaal?id=c97d0c2d-ac38-4d1b-9b75-3ac5fcc55d7b",
+            "textAttributionSnippet": "(et) Münt, Tallinna lübische - https://www.europeana.eu/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2. Eesti Sõjamuuseum - Kindral Laidoneri Muuseum - https://www.muis.ee/museaalView/1118596. CC0 - http://creativecommons.org/publicdomain/zero/1.0/",
+            "htmlAttributionSnippet": "<link rel='stylesheet' type='text/css' href='https://api.europeana.eu/attribution/style.css'/><dl class='europeana-attribution' lang='en'><dt>Title</dt><dd lang='et'><a href='http://data.europeana.eu/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2' target='_blank' rel='noopener'>Münt, Tallinna lübische</a></dd><dt>Date</dt><dd lang=''>1351</dd><dt>Institution</dt><dd lang=''><a href='https://www.muis.ee/museaalView/1118596' target='_blank' rel='noopener'>Eesti Sõjamuuseum - Kindral Laidoneri Muuseum</a></dd><dt>Country</dt><dd lang=''>Estonia</dd><dt>Rights</dt><dd><a href='http://creativecommons.org/publicdomain/zero/1.0/' target='_blank' rel='noopener'><span class='icon-cc'/><span class='icon-zero'/>CC0</a></dd></dl>",
+            "ebucoreHasMimeType": "image/jpeg",
+            "ebucoreFileByteSize": 68364,
+            "ebucoreWidth": 800,
+            "ebucoreHeight": 600,
+            "edmHasColorSpace": "sRGB",
+            "edmComponentColor": [
+              "#F5F5F5",
+              "#696969",
+              "#FFFAFA",
+              "#F5FFFA",
+              "#808080",
+              "#FFFAF0"
+            ],
+            "ebucoreOrientation": "landscape"
+          },
+          {
+            "about": "https://www.muis.ee/museaalView/1118596",
+            "textAttributionSnippet": "(et) Münt, Tallinna lübische - https://www.europeana.eu/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2. Eesti Sõjamuuseum - Kindral Laidoneri Muuseum - https://www.muis.ee/museaalView/1118596. CC0 - http://creativecommons.org/publicdomain/zero/1.0/",
+            "htmlAttributionSnippet": "<link rel='stylesheet' type='text/css' href='https://api.europeana.eu/attribution/style.css'/><dl class='europeana-attribution' lang='en'><dt>Title</dt><dd lang='et'><a href='http://data.europeana.eu/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2' target='_blank' rel='noopener'>Münt, Tallinna lübische</a></dd><dt>Date</dt><dd lang=''>1351</dd><dt>Institution</dt><dd lang=''><a href='https://www.muis.ee/museaalView/1118596' target='_blank' rel='noopener'>Eesti Sõjamuuseum - Kindral Laidoneri Muuseum</a></dd><dt>Country</dt><dd lang=''>Estonia</dd><dt>Rights</dt><dd><a href='http://creativecommons.org/publicdomain/zero/1.0/' target='_blank' rel='noopener'><span class='icon-cc'/><span class='icon-zero'/>CC0</a></dd></dl>",
+            "ebucoreHasMimeType": "application/xhtml+xml",
+            "ebucoreFileByteSize": 0
+          }
+        ]
+      }
+    ],
+    "edmDatasetName": [
+      "401_Muuseumid"
+    ],
+    "europeanaAggregation": {
+      "about": "/aggregation/europeana/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+      "aggregatedCHO": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+      "edmCountry": {
+        "def": [
+          "Estonia"
+        ]
+      },
+      "edmLanguage": {
+        "def": [
+          "et"
+        ]
+      },
+      "edmPreview": "https://api.europeana.eu/thumbnail/v2/url.json?uri=https%3A%2F%2Fwww.muis.ee%2Fdigitaalhoidla%2Fapi%2Fmeedia%2Foriginaal%3Fid%3Dc97d0c2d-ac38-4d1b-9b75-3ac5fcc55d7b&type=IMAGE",
+      "edmLandingPage": "https://www.europeana.eu/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+      "dqvHasQualityAnnotation": [
+        "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2#contentTier",
+        "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2#metadataTier"
+      ]
+    },
+    "europeanaCollectionName": [
+      "401_Muuseumid"
+    ],
+    "europeanaCompleteness": 5,
+    "organizations": [
+      {
+        "about": "http://data.europeana.eu/organization/1482250000026719048",
+        "prefLabel": {
+          "en": [
+            "Estonian e-Repository and Conservation of Collections"
+          ]
+        }
+      }
+    ],
+    "providedCHOs": [
+      {
+        "about": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+      }
+    ],
+    "proxies": [
+      {
+        "about": "/proxy/europeana/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "dcDate": {
+          "def": [
+            "http://semium.org/time/1351",
+            "http://semium.org/time/13xx",
+            "http://semium.org/time/13xx_2_half",
+            "http://semium.org/time/13xx_3_quarter",
+            "http://data.europeana.eu/timespan/14"
+          ]
+        },
+        "dcIdentifier": {
+          "def": [
+            "http://www.e-varamu.ee/item/66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+          ]
+        },
+        "proxyIn": [
+          "/aggregation/europeana/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+        ],
+        "proxyFor": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "edmType": "IMAGE",
+        "year": {
+          "def": [
+            "1351"
+          ]
+        },
+        "europeanaProxy": true
+      },
+      {
+        "about": "/proxy/provider/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "dcDate": {
+          "zxx": [
+            "1351"
+          ]
+        },
+        "dcFormat": {
+          "zxx": [
+            "tervik läbimõõt: 1.3 cm",
+            "tervik paksus: 0.25 cm"
+          ]
+        },
+        "dcIdentifier": {
+          "def": [
+            "oai:muis.ee:1118596",
+            "HMK _ 3488:40 A 423"
+          ]
+        },
+        "dcSubject": {
+          "et": [
+            "münt"
+          ]
+        },
+        "dcTitle": {
+          "et": [
+            "Münt, Tallinna lübische"
+          ]
+        },
+        "dcType": {
+          "et": [
+            "münt"
+          ]
+        },
+        "dctermsIsPartOf": {
+          "et": [
+            "Arheoloogia kogu"
+          ]
+        },
+        "proxyIn": [
+          "/aggregation/provider/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+        ],
+        "proxyFor": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2",
+        "edmType": "IMAGE",
+        "europeanaProxy": false
+      }
+    ],
+    "qualityAnnotations": [
+      {
+        "about": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2#contentTier",
+        "created": "2021-01-04T09:10:02.600375Z",
+        "target": [
+          "/aggregation/provider/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+        ],
+        "body": "http://www.europeana.eu/schemas/epf/contentTier2"
+      },
+      {
+        "about": "/item/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2#metadataTier",
+        "created": "2021-01-04T09:10:02.600659Z",
+        "target": [
+          "/aggregation/provider/401/item_66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"
+        ],
+        "body": "http://www.europeana.eu/schemas/epf/metadataTierA"
+      }
+    ],
+    "timespans": [
+      {
+        "about": "http://data.europeana.eu/timespan/14",
+        "prefLabel": {
+          "de": [
+            "14. Jahrhundert"
+          ],
+          "fi": [
+            "1300-luku"
+          ],
+          "ru": [
+            "XIV век"
+          ],
+          "pt": [
+            "século XIV"
+          ],
+          "bg": [
+            "14 век"
+          ],
+          "lt": [
+            "XIV amžius"
+          ],
+          "hr": [
+            "14. stoljeće"
+          ],
+          "lv": [
+            "14. gadsimts"
+          ],
+          "fr": [
+            "XIVe siècle"
+          ],
+          "hu": [
+            "14. század"
+          ],
+          "sk": [
+            "14. storočie"
+          ],
+          "sl": [
+            "14. stoletje"
+          ],
+          "ga": [
+            "14ú haois"
+          ],
+          "ca": [
+            "Segle XIV"
+          ],
+          "sv": [
+            "1300-talet"
+          ],
+          "el": [
+            "14ος αιώνας"
+          ],
+          "en": [
+            "14th century"
+          ],
+          "it": [
+            "XIV secolo"
+          ],
+          "es": [
+            "siglo XIV"
+          ],
+          "et": [
+            "14. sajand"
+          ],
+          "cs": [
+            "14. století"
+          ],
+          "pl": [
+            "XIV wiek"
+          ],
+          "ro": [
+            "Secolul al XIV-lea"
+          ],
+          "da": [
+            "14. århundrede"
+          ],
+          "nl": [
+            "14e eeuw"
+          ]
+        },
+        "altLabel": {
+          "sv": [
+            "1300-talet (sekel)",
+            "1300-tal",
+            "14:e århundradet",
+            "14:e seklet",
+            "1300-talet (århundrade)"
+          ],
+          "ru": [
+            "14 век"
+          ],
+          "en": [
+            "14th-century"
+          ],
+          "it": [
+            "14° secolo",
+            "Trecento",
+            "Secolo XIV",
+            "XIV Secolo"
+          ],
+          "fr": [
+            "14e siècle"
+          ]
+        },
+        "begin": {
+          "def": [
+            "1301-01-01"
+          ]
+        },
+        "end": {
+          "def": [
+            "1400-12-31"
+          ]
+        },
+        "isPartOf": {
+          "def": [
+            "http://semium.org/time/AD2xxx"
+          ]
+        },
+        "owlSameAs": [
+          "http://id.loc.gov/authorities/names/sh85051098",
+          "http://vocab.getty.edu/aat/300404506",
+          "http://semium.org/time/13xx",
+          "http://www.wikidata.org/entity/Q7034"
+        ]
+      },
+      {
+        "about": "http://semium.org/time/13xx",
+        "prefLabel": {
+          "ru": [
+            "14й век"
+          ],
+          "def": [
+            "14..",
+            "14??",
+            "14e"
+          ],
+          "en": [
+            "14-th",
+            "14th",
+            "14th century"
+          ],
+          "fr": [
+            "14e siècle"
+          ],
+          "nl": [
+            "14de eeuw"
+          ]
+        },
+        "begin": {
+          "def": [
+            "Sun Jan 01 01:00:00 CET 1301"
+          ]
+        },
+        "end": {
+          "def": [
+            "Fri Dec 31 01:00:00 CET 1400"
+          ]
+        },
+        "isPartOf": {
+          "def": [
+            "http://semium.org/time/AD2xxx"
+          ]
+        }
+      },
+      {
+        "about": "http://semium.org/time/13xx_2_half",
+        "prefLabel": {
+          "ru": [
+            "Вторая половина 14-го века"
+          ],
+          "en": [
+            "Second half of the 14th century"
+          ],
+          "fr": [
+            "14e (fin)"
+          ]
+        },
+        "begin": {
+          "def": [
+            "Sat Jan 01 01:00:00 CET 1351"
+          ]
+        },
+        "end": {
+          "def": [
+            "Sat Dec 31 01:00:00 CET 1401"
+          ]
+        },
+        "isPartOf": {
+          "def": [
+            "http://data.europeana.eu/timespan/14"
+          ]
+        }
+      },
+      {
+        "about": "http://semium.org/time/1351",
+        "prefLabel": {
+          "def": [
+            "1351"
+          ]
+        },
+        "begin": {
+          "def": [
+            "Sat Jan 01 01:00:00 CET 1351"
+          ]
+        },
+        "end": {
+          "def": [
+            "Sat Dec 31 01:00:00 CET 1351"
+          ]
+        },
+        "isPartOf": {
+          "def": [
+            "http://semium.org/time/13xx_3_quarter"
+          ]
+        }
+      },
+      {
+        "about": "http://semium.org/time/13xx_3_quarter",
+        "prefLabel": {
+          "ru": [
+            "3-я четверть 14-го века"
+          ],
+          "en": [
+            "3 quarter of the 14th century"
+          ],
+          "fr": [
+            "3e quart 14e siècle"
+          ]
+        },
+        "begin": {
+          "def": [
+            "Sat Jan 01 01:00:00 CET 1351"
+          ]
+        },
+        "end": {
+          "def": [
+            "Mon Dec 31 01:00:00 CET 1375"
+          ]
+        },
+        "isPartOf": {
+          "def": [
+            "http://semium.org/time/13xx_2_half"
+          ]
+        }
+      }
+    ],
+    "timestamp_created": "2021-01-04T08:24:22.632Z",
+    "timestamp_created_epoch": 1609748662632,
+    "timestamp_update": "2021-01-04T08:24:22.632Z",
+    "timestamp_update_epoch": 1609748662632,
+    "type": "IMAGE"
+  }
+}
