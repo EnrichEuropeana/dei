@@ -10,11 +10,13 @@ import pl.psnc.dei.exception.ParseRecordsException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.CustomStreamUtils;
+import pl.psnc.dei.util.MetadataEnrichmentExtractor;
 
 import java.io.IOException;
 import java.net.*;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -37,29 +39,28 @@ public class EnrichmentNotifierService {
 
     public void notifyPublishers(Record record) {
         JsonObject recordJson = getRecordJson(record);
-        String oai = extractOai(recordJson);
         try {
-            notifyContentProvider(recordJson, oai);
-        } catch (IOException | URISyntaxException e) {
+            notifyContentProvider(recordJson, extractOaiIdentifier(recordJson));
+        } catch (IOException | URISyntaxException | ParseRecordsException e) {
             log.error("Unable to notify content provider. Reason: {}", e.getMessage());
         }
         try {
-            notifyNationalAggregator(recordJson, oai);
-        } catch (IOException | URISyntaxException e) {
+            notifyNationalAggregator(recordJson, extractDriIdentifier(recordJson));
+        } catch (IOException | URISyntaxException | ParseRecordsException e) {
             log.error("Unable to notify national aggregator. Reason: {}", e.getMessage());
         }
     }
 
-    private void notifyContentProvider(JsonObject recordJson, String oai) throws IOException, URISyntaxException {
+    private void notifyContentProvider(JsonObject recordJson, String oaiId) throws IOException, URISyntaxException {
         List<URL> contentProviderUrls = extractContentProviderUrls(recordJson);
         for (URL providerUrl : contentProviderUrls) {
-            sendNotification(providerUrl, CONTENT_PROVIDER_NOTIFY_ENDPOINT, oai);
+            sendNotification(providerUrl, CONTENT_PROVIDER_NOTIFY_ENDPOINT, oaiId);
         }
     }
 
-    private void notifyNationalAggregator(JsonObject recordJson, String oai) throws IOException, URISyntaxException {
+    private void notifyNationalAggregator(JsonObject recordJson, String driId) throws IOException, URISyntaxException {
         URL nationalAggregatorUrl = extractNationalAggregatorUrl(recordJson);
-        sendNotification(nationalAggregatorUrl, NATIONAL_AGGREGATOR_NOTIFY_ENDPOINT, oai);
+        sendNotification(nationalAggregatorUrl, NATIONAL_AGGREGATOR_NOTIFY_ENDPOINT, driId);
     }
 
     private JsonObject getRecordJson(Record record) {
@@ -87,11 +88,20 @@ public class EnrichmentNotifierService {
                 .collect(Collectors.toList());
     }
 
-    protected String extractOai(JsonObject recordJson) throws ParseRecordsException {
-        return getDcIdentifiersStream(recordJson)
-                .filter(s -> s.startsWith("oai:"))
+    protected String extractOaiIdentifier(JsonObject recordJson) throws ParseRecordsException {
+        return getIsShownAtStream(recordJson).flatMap(s -> MetadataEnrichmentExtractor.IS_SHOWN_AT_PATTERN_FOR_DLIBRA.matcher(s).results())
+                .filter(Objects::nonNull)
+                .map(s -> s.group(1))
                 .findFirst()
                 .orElseThrow(() -> new ParseRecordsException("Unable to extract OAI identifier from record json"));
+    }
+
+    protected String extractDriIdentifier(JsonObject recordJson) throws ParseRecordsException {
+        return getIsShownAtStream(recordJson).flatMap(s -> MetadataEnrichmentExtractor.IS_SHOWN_AT_PATTERN_FOR_DRI.matcher(s).results())
+                .filter(Objects::nonNull)
+                .map(s -> s.group(1))
+                .findFirst()
+                .orElseThrow(() -> new ParseRecordsException("Unable to extract DRI identifier from record json"));
     }
 
     protected URL extractNationalAggregatorUrl(JsonObject recordJson) throws ParseRecordsException, MalformedURLException {
@@ -107,8 +117,20 @@ public class EnrichmentNotifierService {
                 .get("proxies").getAsArray()
                 .stream()
                 .map(JsonValue::getAsObject)
-                .map(jsonObject -> jsonObject.get("dcIdentifier").getAsObject())
+                .map(jsonObject -> jsonObject.get("dcIdentifier"))
+                .filter(Objects::nonNull)
+                .map(JsonValue::getAsObject)
                 .flatMap(jsonValue -> jsonValue.get("def").getAsArray().stream())
+                .map(jsonValue -> jsonValue.getAsString().value());
+    }
+
+    private Stream<String> getIsShownAtStream(JsonObject recordJson) {
+        return recordJson.get("object").getAsObject()
+                .get("aggregations").getAsArray()
+                .stream()
+                .map(JsonValue::getAsObject)
+                .map(jsonObject -> jsonObject.get("edmIsShownAt"))
+                .filter(Objects::nonNull)
                 .map(jsonValue -> jsonValue.getAsString().value());
     }
 

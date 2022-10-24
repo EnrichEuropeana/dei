@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 import pl.psnc.dei.converter.AggregatorConverter;
 import pl.psnc.dei.converter.RecordStateConverter;
+import pl.psnc.dei.model.enrichments.MetadataEnrichment;
 
 import javax.persistence.*;
 import java.util.HashMap;
@@ -52,6 +53,10 @@ public class Record {
 	private List<Transcription> transcriptions;
 
 	@JsonIgnore
+	@OneToMany(cascade = {CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "record")
+	private List<MetadataEnrichment> metadataEnrichments;
+
+	@JsonIgnore
 	@Lob
 	private String iiifManifest;
 
@@ -94,6 +99,9 @@ public class Record {
 	 * C_FAILED - Record isn't in IIIF, and record conversion failed
 	 * T_FAILED - Transcription process has started and there was an attempt to transfer the record to TP which failed
 	 * T_SENT - Transcription process has started and the record was successfully transferred to TP
+	 * M_PENDING - Metadata enrichment process for given record is pending, metadata enrichments are ready to be retrieved from TP
+	 * ME_PENDING - complex state used when E_PENDING and M_PENDING are valid at the same time, this state can be computed by adding integer
+	 * values of E_PENDING and M_PENDING
 	 */
 	@Getter
 	@AllArgsConstructor
@@ -106,7 +114,9 @@ public class Record {
 		C_PENDING(4),
 		C_FAILED(5),
 		T_FAILED(6),
-		T_SENT(7);
+		T_SENT(7),
+		M_PENDING(8),
+		ME_PENDING(9);
 
 
 		private static final Map<Integer, RecordState> map = new HashMap<>();

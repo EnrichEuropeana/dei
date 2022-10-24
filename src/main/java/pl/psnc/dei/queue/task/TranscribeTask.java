@@ -124,7 +124,7 @@ public class TranscribeTask extends Task {
 							queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.C_PENDING);
 							record.setState(Record.RecordState.C_PENDING);
 							importProgressService.reportProgress(record);
-							tqs.addTaskToQueue(tasksFactory.getTask(record));
+							tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
 							return;
 						} catch (NotFoundException e) {
 							throw new AssertionError("Record deleted while being processed, id: " + record.getId()
