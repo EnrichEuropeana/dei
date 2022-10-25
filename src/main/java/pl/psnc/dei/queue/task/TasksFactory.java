@@ -12,7 +12,10 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.MetadataEnrichmentExtractor;
 import pl.psnc.dei.util.TranscriptionConverter;
+
+import java.util.List;
 
 /**
  * Factory used to convert records into tasks based on state they are in
@@ -58,6 +61,12 @@ public class TasksFactory {
 	@Autowired
 	private TranscriptionConverter tc;
 
+	@Autowired
+	private EnrichmentNotifierService ens;
+
+	@Autowired
+	private MetadataEnrichmentExtractor mee;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -69,16 +78,21 @@ public class TasksFactory {
 	 * @param record record to convert
 	 * @return Task
 	 */
-	public Task getTask(Record record) {
+	public List<Task> getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return new EnrichTask(record, qrs, tps, ess, eas, ctxm, tc);
+				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ens, ctxm, tc));
 			case T_PENDING:
-				return new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes, ips);
+				return List.of(new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes, ips));
 			case U_PENDING:
-				return new UpdateTask(record, qrs, tps, ess, eas, ctxm);
+				return List.of(new UpdateTask(record, qrs, tps, ess, eas, ens, ctxm));
 			case C_PENDING:
-				return new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, cnv, ips, this, pes, rr, ctxm);
+				return List.of(new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, cnv, ips, this, pes, rr, ctxm));
+			case M_PENDING:
+				return List.of(new MetadataEnrichTask(record, qrs, tps, ess, eas, ens, ctxm, mee));
+			case ME_PENDING:
+				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ens, ctxm, tc),
+						new MetadataEnrichTask(record, qrs, tps, ess, eas, ens, ctxm, mee));
 
 			default:
 				throw new RuntimeException("Incorrect record state!");
@@ -86,7 +100,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ctxm);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ens, ctxm);
 	}
 
 	/**

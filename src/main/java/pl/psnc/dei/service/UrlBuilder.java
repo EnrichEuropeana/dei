@@ -22,11 +22,11 @@ public class UrlBuilder {
 	private static final String DATASET_PARAM = "datasetId=";
 	private static final String IMPORT_NAME_PARAM = "importName=";
 	private static final String STORY_ID_PARAM = "storyId=";
+	private static final String RECORD_ID_PARAM = "recordId=";
 	private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
 	private static final String ANNOTATION_ID = "annotationId=";
 	private static final String MOTIVATION = "motivation=";
 	private static final String INCLUDE_EXPORTED_PARAM = "includeExported=";
-
 
 	@Value("${transcription.api.url}")
 	private String transcriptionPlatformLocation;
@@ -93,4 +93,12 @@ public class UrlBuilder {
 
         return url;
     }
+
+	public String urlForRecordMetadataEnrichments(Record record) {
+		return transcriptionPlatformLocation
+				+ STORIES_SUFFIX
+				+ '?'
+				+ RECORD_ID_PARAM
+				+ record.getIdentifier();
+	}
 }

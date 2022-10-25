@@ -106,7 +106,7 @@ public class ConversionTask extends Task {
 				() -> {
 					record.setState(Record.RecordState.T_PENDING);
 					this.recordsRepository.save(record);
-					tqs.addTaskToQueue(tasksFactory.getTask(record));
+					tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
 				});
 		ContextUtils.executeIf(!this.context.isHasConverted(),
 				() -> {
@@ -122,7 +122,7 @@ public class ConversionTask extends Task {
 						record.setState(Record.RecordState.T_PENDING);
 						this.recordsRepository.save(record);
 						this.contextMediator.save(this.context);
-						tqs.addTaskToQueue(tasksFactory.getTask(record));
+						tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
 						this.contextMediator.delete(this.context);
 					} catch (ConversionImpossibleException e) {
 						logger.info("Impossible to convert record {} {} ", record.getIdentifier(), e);

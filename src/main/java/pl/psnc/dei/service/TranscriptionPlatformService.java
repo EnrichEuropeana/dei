@@ -32,6 +32,8 @@ import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
+import pl.psnc.dei.queue.task.EnrichTask;
+import pl.psnc.dei.queue.task.MetadataEnrichTask;
 import pl.psnc.dei.queue.task.TasksFactory;
 import reactor.core.publisher.Mono;
 import reactor.netty.http.client.HttpClient;
@@ -377,9 +379,40 @@ public class TranscriptionPlatformService {
 		Optional<Record> record = recordsRepository.findByIdentifier(recordId);
 		if (record.isPresent()) {
 			Record savedRecord = record.get();
-			savedRecord.setState(Record.RecordState.E_PENDING);
+			// when metadata enrichment is in progress we set ME_PENDING state which means that transcription enrichment is pending at the same time
+			if (savedRecord.getState() == Record.RecordState.M_PENDING) {
+				savedRecord.setState(Record.RecordState.ME_PENDING);
+			} else {
+				savedRecord.setState(Record.RecordState.E_PENDING);
+			}
 			recordsRepository.save(savedRecord);
-			taskQueueService.addTaskToQueue(tasksFactory.getTask(savedRecord));
+			tasksFactory.getTask(savedRecord).stream()
+					.filter(task -> task instanceof EnrichTask)
+					.forEach(taskQueueService::addTaskToQueue);
+		} else {
+			throw new NotFoundException("Record not found " + recordId);
+		}
+	}
+
+	/**
+	 * Fetch and create task to enrich record
+	 * @param recordId id of record to be enriched
+	 * @throws NotFoundException if record was not found
+	 */
+	public void createNewMetadataEnrichTask(String recordId) throws NotFoundException {
+		Optional<Record> record = recordsRepository.findByIdentifier(recordId);
+		if (record.isPresent()) {
+			Record savedRecord = record.get();
+			// when transcription enrichment is in progress we set ME_PENDING state which means that metadata enrichment is pending at the same time
+			if (savedRecord.getState() == Record.RecordState.E_PENDING) {
+				savedRecord.setState(Record.RecordState.ME_PENDING);
+			} else {
+				savedRecord.setState(Record.RecordState.M_PENDING);
+			}
+			recordsRepository.save(savedRecord);
+			tasksFactory.getTask(savedRecord).stream()
+					.filter(task -> task instanceof MetadataEnrichTask)
+					.forEach(taskQueueService::addTaskToQueue);
 		} else {
 			throw new NotFoundException("Record not found " + recordId);
 		}
@@ -418,7 +451,7 @@ public class TranscriptionPlatformService {
 			toSend.forEach(record -> {
 				record.setState(Record.RecordState.T_PENDING);
 				recordsRepository.save(record);
-				taskQueueService.addTaskToQueue(tasksFactory.getTask(record));
+				tasksFactory.getTask(record).forEach(taskQueueService::addTaskToQueue);
 			});
 		}
 	}
@@ -472,5 +505,33 @@ public class TranscriptionPlatformService {
 		Hibernate.initialize(anImport.get().getFailures());
 		anImport.get().getFailures().add(importFailure);
 		importsRepository.save(anImport.get());
+	}
+
+	public JsonValue fetchMetadataEnrichmentsFor(Record record) throws TranscriptionPlatformException {
+		logger.info("Retrieving metadata enrichments from TP for record {}", record.getIdentifier());
+		String recordMetadataEnrichments =
+				this.webClient
+						.get()
+						.uri(urlBuilder.urlForRecordMetadataEnrichments(record))
+						.header("Authorization", authToken)
+						.retrieve()
+						.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+							logger.info("Error while fetching metadata enrichments {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
+						.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+							logger.info("Error while fetching metadata enrichments {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
+						.bodyToMono(String.class)
+						.doOnError(cause -> {
+							if (cause instanceof TranscriptionPlatformException) {
+								throw new TranscriptionPlatformException("Error while communicating with Transcription Platform while fetching metadata enrichments");
+							} else {
+								throw new TranscriptionPlatformException("Error while communicating with Transcription Platform while fetching metadata enrichments", cause);
+							}
+						})
+						.block();
+		return JSON.parseAny(recordMetadataEnrichments);
 	}
 }
