@@ -17,4 +17,5 @@ public class ItemFieldsNames {
     public static final String WIKIDATA_ID = "WikidataId";
     public static final String NAME = "Name";
     public static final String ZOOM = "Zoom";
+    public static final String ORDER_INDEX = "OrderIndex";
 }
