@@ -71,10 +71,9 @@ public class EnrichmentNotifierService {
         return recordJson.get("object").getAsObject()
                 .get("aggregations").getAsArray()
                 .stream()
-                .map(jsonValue -> jsonValue.getAsObject()
-                        .get("edmObject")
-                        .getAsString()
-                        .value())
+                .map(jsonValue -> jsonValue.getAsObject().get("edmObject"))
+                .filter(Objects::nonNull)
+                .map(jsonValue -> jsonValue.getAsString().value())
                 .map(string -> {
                     try {
                         return new URL(string);
