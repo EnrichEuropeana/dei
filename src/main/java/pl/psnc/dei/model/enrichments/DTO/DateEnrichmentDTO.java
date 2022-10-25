@@ -19,19 +19,23 @@ public class DateEnrichmentDTO extends MetadataEnrichmentDTO {
     private final String end;
 
     @Builder
-    public DateEnrichmentDTO(long id, String attribute, String itemURL, String begin, String end) {
-        super(id, attribute, itemURL);
+    public DateEnrichmentDTO(long id, String attribute, TranscribathonItemDTO item, String begin, String end) {
+        super(id, attribute, item);
         this.begin = begin;
         this.end = end;
     }
 
     public static DateEnrichmentDTO from(DateEnrichment dateEnrichment) {
-        DateEnrichmentDTOBuilder builder =  DateEnrichmentDTO.builder()
+        DateEnrichmentDTOBuilder builder = DateEnrichmentDTO.builder()
                 .id(dateEnrichment.getId())
                 .attribute(dateEnrichment.getAttribute());
-        Optional.ofNullable(dateEnrichment.getItemLink()).ifPresent(builder::itemURL);
-        Optional.ofNullable(dateEnrichment.getDateStart()).ifPresent(instant -> builder.begin(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
-        Optional.ofNullable(dateEnrichment.getDateEnd()).ifPresent(instant -> builder.end(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
+        Optional.ofNullable(dateEnrichment.getItemLink())
+                .ifPresent(s -> builder.item(TranscribathonItemDTO.builder().itemURL(s)
+                        .pageNo(dateEnrichment.getPageNo()).build()));
+        Optional.ofNullable(dateEnrichment.getDateStart())
+                .ifPresent(instant -> builder.begin(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
+        Optional.ofNullable(dateEnrichment.getDateEnd())
+                .ifPresent(instant -> builder.end(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
         return builder.build();
     }
 }

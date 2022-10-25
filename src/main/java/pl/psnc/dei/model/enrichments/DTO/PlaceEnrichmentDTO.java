@@ -27,9 +27,10 @@ public class PlaceEnrichmentDTO extends MetadataEnrichmentDTO {
     private final int zoom;
 
     @Builder
-    public PlaceEnrichmentDTO(long id, String attribute, String itemURL, double latitude, double longitude, String name,
+    public PlaceEnrichmentDTO(long id, String attribute, TranscribathonItemDTO item, double latitude, double longitude,
+            String name,
             String language, String wikiDataURL, int zoom) {
-        super(id, attribute, itemURL);
+        super(id, attribute, item);
         this.latitude = latitude;
         this.longitude = longitude;
         this.name = name;
@@ -42,12 +43,13 @@ public class PlaceEnrichmentDTO extends MetadataEnrichmentDTO {
         PlaceEnrichmentDTO.PlaceEnrichmentDTOBuilder builder = PlaceEnrichmentDTO.builder()
                 .id(placeEnrichment.getId())
                 .attribute(placeEnrichment.getAttribute())
-                .itemURL(placeEnrichment.getItemLink())
                 .name(placeEnrichment.getName())
                 .language(placeEnrichment.getLanguage())
                 .zoom(placeEnrichment.getZoom())
                 .latitude(placeEnrichment.getLatitude())
-                .longitude(placeEnrichment.getLongitude());
+                .longitude(placeEnrichment.getLongitude())
+                .item(TranscribathonItemDTO.builder().itemURL(placeEnrichment.getItemLink())
+                        .pageNo(placeEnrichment.getPageNo()).build());
         Optional.ofNullable(placeEnrichment.getWikidataId()).filter(s -> !"undefined".equals(s))
                 .ifPresent(s -> builder.wikiDataURL(String.format(WIKIDATA_URL, s.trim())));
         return builder.build();

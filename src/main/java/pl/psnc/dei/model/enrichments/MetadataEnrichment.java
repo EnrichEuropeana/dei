@@ -40,6 +40,9 @@ public abstract class MetadataEnrichment {
 
 	private String itemLink;
 
+	@Column(columnDefinition = "int default 0")
+	private int pageNo;
+
 	@Getter
 	@AllArgsConstructor
 	public enum EnrichmentState {

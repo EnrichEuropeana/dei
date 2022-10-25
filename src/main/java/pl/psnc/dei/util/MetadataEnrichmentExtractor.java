@@ -92,6 +92,8 @@ public class MetadataEnrichmentExtractor {
     private DateEnrichment createDateEnrichment(Record record, String recordId, JsonValue item, JsonNumber itemId) {
         DateEnrichment enrichment = (DateEnrichment) initMetadataEnrichment(
                 new DateEnrichment(), record, recordId, DC_DATE, itemId);
+        extractPageNumber(item.getAsObject()).map(jsonValue -> jsonValue.getAsNumber().value().intValue())
+                .ifPresent(enrichment::setPageNo);
         extractStartDate(item.getAsObject()).map(
                         jsonValue -> Instant.from(DateTimeFormatter.ISO_ZONED_DATE_TIME.parse(jsonValue.getAsString().value())))
                 .ifPresent(
@@ -142,6 +144,8 @@ public class MetadataEnrichmentExtractor {
         item.getAsObject().get(ItemFieldsNames.PLACES).getAsArray().forEach(place -> {
             PlaceEnrichment enrichment = (PlaceEnrichment) initMetadataEnrichment(
                     new PlaceEnrichment(), record, recordId, DCTERMS_SPATIAL, itemId);
+            extractPageNumber(item.getAsObject()).map(jsonValue -> jsonValue.getAsNumber().value().intValue())
+                    .ifPresent(enrichment::setPageNo);
             extractLatitude(place.getAsObject()).map(jsonValue -> jsonValue.getAsNumber().value().doubleValue())
                     .ifPresent(
                             enrichment::setLatitude);
@@ -158,6 +162,10 @@ public class MetadataEnrichmentExtractor {
             result.add(enrichment);
         });
         return result;
+    }
+
+    private Optional<JsonValue> extractPageNumber(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.ORDER_INDEX));
     }
 
     public List<MetadataEnrichment> extractEnrichments(Record record, JsonObject metadataEnrichments) {
