@@ -122,9 +122,14 @@ public class MetadataEnrichmentController {
     @PostMapping("/validate")
     public ResponseEntity validate(
             @RequestBody List<RecordMetadataEnrichmentValidation> recordMetadataEnrichmentValidations) {
+        logger.info("Enrichments validation received...");
+
         List<String> notFound = new ArrayList<>();
         recordMetadataEnrichmentValidations.forEach(recordMetadataEnrichmentValidation -> {
             try {
+                logger.info("Validating enrichments for record recordId: {}, externalId: {}",
+                        recordMetadataEnrichmentValidation.getRecordId(),
+                        recordMetadataEnrichmentValidation.getExternalId());
                 mes.validateMetadataEnrichments(recordMetadataEnrichmentValidation);
             } catch (NotFoundException e) {
                 notFound.add(recordMetadataEnrichmentValidation.getRecordId());
