@@ -1,7 +1,10 @@
 package pl.psnc.dei.service;
 
 import lombok.AllArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pl.psnc.dei.controllers.MetadataEnrichmentController;
 import pl.psnc.dei.controllers.requests.RecordMetadataEnrichmentValidation;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.AllMetadataEnrichmentRepository;
@@ -21,6 +24,8 @@ import java.util.stream.Stream;
 @Transactional
 @AllArgsConstructor
 public class MetadataEnrichmentService {
+    private final Logger logger = LoggerFactory.getLogger(MetadataEnrichmentService.class);
+
     private final RecordsRepository recordsRepository;
 
     private final AllMetadataEnrichmentRepository metadataEnrichmentRepository;
@@ -108,12 +113,18 @@ public class MetadataEnrichmentService {
     }
 
     private void acceptMetadataEnrichments(Set<MetadataEnrichment> enrichments) {
-        enrichments.forEach(metadataEnrichment -> metadataEnrichment.setState(MetadataEnrichment.EnrichmentState.ACCEPTED));
+        enrichments.forEach(metadataEnrichment -> {
+            logger.info("Accepting enrichment {}", metadataEnrichment.getId());
+            metadataEnrichment.setState(MetadataEnrichment.EnrichmentState.ACCEPTED);
+        });
         metadataEnrichmentRepository.saveAll(enrichments);
     }
 
     private void rejectMetadataEnrichments(Set<MetadataEnrichment> enrichments) {
-        enrichments.forEach(metadataEnrichment -> metadataEnrichment.setState(MetadataEnrichment.EnrichmentState.REJECTED));
+        enrichments.forEach(metadataEnrichment -> {
+            logger.info("Rejecting enrichment {}", metadataEnrichment.getId());
+            metadataEnrichment.setState(MetadataEnrichment.EnrichmentState.REJECTED);
+        });
         metadataEnrichmentRepository.saveAll(enrichments);
     }
 
