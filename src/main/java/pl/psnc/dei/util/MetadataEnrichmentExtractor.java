@@ -35,12 +35,6 @@ public class MetadataEnrichmentExtractor {
     public static final Pattern IS_SHOWN_AT_PATTERN = Pattern.compile(
             "https?://(?:fbc.pionier.net.pl/id/|doi.org/)(.*)");
 
-    public static final Pattern IS_SHOWN_AT_PATTERN_FOR_DLIBRA = Pattern.compile(
-            "https?://(?:fbc.pionier.net.pl/id/)(.*)");
-
-    public static final Pattern IS_SHOWN_AT_PATTERN_FOR_DRI = Pattern.compile(
-            "https?://(?:doi.org/)(.*)");
-
     @Value("${transcribathon.url}")
     private String transcribathonLocation;
 

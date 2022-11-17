@@ -2,155 +2,83 @@ package pl.psnc.dei.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.client.utils.URIBuilder;
-import org.apache.jena.atlas.json.JsonObject;
-import org.apache.jena.atlas.json.JsonValue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.ParseRecordsException;
 import pl.psnc.dei.model.Record;
-import pl.psnc.dei.service.search.EuropeanaSearchService;
-import pl.psnc.dei.util.CustomStreamUtils;
-import pl.psnc.dei.util.MetadataEnrichmentExtractor;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLConnection;
 
 @Service
 @Slf4j
 public class EnrichmentNotifierService {
 
-    public static final String RECORD_PARAM = "record";
+    private static final Logger logger = LoggerFactory.getLogger(EnrichmentNotifierService.class);
+
+    @Value("${dri.api.url}")
+    private String driApiUrl;
+
+    @Value("${dri.api.username}")
+    private String driApiUsername;
+
+    @Value("${dri.api.token:none}")
+    private String driApiToken;
+
+    private static final String RECORD_PARAM = "recordId";
+    private static final String USER_PARAM = "user_email";
+    private static final String TOKEN_PARAM = "user_token";
+
     private static final String NATIONAL_AGGREGATOR_NOTIFY_ENDPOINT =
-            "/enrichment";
-    private static final String CONTENT_PROVIDER_NOTIFY_ENDPOINT =
-            "/enrichment";
-    private final EuropeanaSearchService europeanaSearchService;
-    private final boolean IS_MOCK = true;
-
-    public EnrichmentNotifierService(EuropeanaSearchService europeanaSearchService) {
-        this.europeanaSearchService = europeanaSearchService;
-    }
-
+            "/enrichments";
 
     public void notifyPublishers(Record record) {
-        JsonObject recordJson = getRecordJson(record);
         try {
-            notifyContentProvider(recordJson, extractOaiIdentifier(recordJson));
-        } catch (IOException | URISyntaxException | ParseRecordsException e) {
-            log.error("Unable to notify content provider. Reason: {}", e.getMessage());
-        }
-        try {
-            notifyNationalAggregator(recordJson, extractDriIdentifier(recordJson));
+            notifyNationalAggregator(record.getIdentifier());
         } catch (IOException | URISyntaxException | ParseRecordsException e) {
             log.error("Unable to notify national aggregator. Reason: {}", e.getMessage());
         }
     }
 
-    private void notifyContentProvider(JsonObject recordJson, String oaiId) throws IOException, URISyntaxException {
-        List<URL> contentProviderUrls = extractContentProviderUrls(recordJson);
-        for (URL providerUrl : contentProviderUrls) {
-            sendNotification(providerUrl, CONTENT_PROVIDER_NOTIFY_ENDPOINT, oaiId);
+    private void notifyNationalAggregator(String recordId) throws IOException, URISyntaxException {
+        if (!sendNotification(NATIONAL_AGGREGATOR_NOTIFY_ENDPOINT, recordId)) {
+            logger.warn("Failed notifying national aggregator about enrichments for record {}", recordId);
         }
     }
 
-    private void notifyNationalAggregator(JsonObject recordJson, String driId) throws IOException, URISyntaxException {
-        URL nationalAggregatorUrl = extractNationalAggregatorUrl(recordJson);
-        sendNotification(nationalAggregatorUrl, NATIONAL_AGGREGATOR_NOTIFY_ENDPOINT, driId);
-    }
-
-    private JsonObject getRecordJson(Record record) {
-        return europeanaSearchService.retrieveRecordInJson(record.getIdentifier());
-    }
-
-    protected List<URL> extractContentProviderUrls(JsonObject recordJson) {
-        return recordJson.get("object").getAsObject()
-                .get("aggregations").getAsArray()
-                .stream()
-                .map(jsonValue -> jsonValue.getAsObject().get("edmObject"))
-                .filter(Objects::nonNull)
-                .map(jsonValue -> jsonValue.getAsString().value())
-                .map(string -> {
-                    try {
-                        return new URL(string);
-                    } catch (MalformedURLException e) {
-                        log.error("Cannot create URL for {}, reason {}", string, e.getMessage());
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .filter(CustomStreamUtils.distinctByKey(URL::getAuthority))
-                .collect(Collectors.toList());
-    }
-
-    protected String extractOaiIdentifier(JsonObject recordJson) throws ParseRecordsException {
-        return getIsShownAtStream(recordJson).flatMap(s -> MetadataEnrichmentExtractor.IS_SHOWN_AT_PATTERN_FOR_DLIBRA.matcher(s).results())
-                .filter(Objects::nonNull)
-                .map(s -> s.group(1))
-                .findFirst()
-                .orElseThrow(() -> new ParseRecordsException("Unable to extract OAI identifier from record json"));
-    }
-
-    protected String extractDriIdentifier(JsonObject recordJson) throws ParseRecordsException {
-        return getIsShownAtStream(recordJson).flatMap(s -> MetadataEnrichmentExtractor.IS_SHOWN_AT_PATTERN_FOR_DRI.matcher(s).results())
-                .filter(Objects::nonNull)
-                .map(s -> s.group(1))
-                .findFirst()
-                .orElseThrow(() -> new ParseRecordsException("Unable to extract DRI identifier from record json"));
-    }
-
-    protected URL extractNationalAggregatorUrl(JsonObject recordJson) throws ParseRecordsException, MalformedURLException {
-        String urlString = getDcIdentifiersStream(recordJson)
-                .filter(s -> s.startsWith("http"))
-                .findFirst()
-                .orElseThrow(() -> new ParseRecordsException("Unable to extract national provider URL"));
-        return new URL(urlString);
-    }
-
-    private Stream<String> getDcIdentifiersStream(JsonObject recordJson) {
-        return recordJson.get("object").getAsObject()
-                .get("proxies").getAsArray()
-                .stream()
-                .map(JsonValue::getAsObject)
-                .map(jsonObject -> jsonObject.get("dcIdentifier"))
-                .filter(Objects::nonNull)
-                .map(JsonValue::getAsObject)
-                .flatMap(jsonValue -> jsonValue.get("def").getAsArray().stream())
-                .map(jsonValue -> jsonValue.getAsString().value());
-    }
-
-    private Stream<String> getIsShownAtStream(JsonObject recordJson) {
-        return recordJson.get("object").getAsObject()
-                .get("aggregations").getAsArray()
-                .stream()
-                .map(JsonValue::getAsObject)
-                .map(jsonObject -> jsonObject.get("edmIsShownAt"))
-                .filter(Objects::nonNull)
-                .map(jsonValue -> jsonValue.getAsString().value());
-    }
-
-    protected boolean sendNotification(URL objectUrl, String path, String recordId) throws URISyntaxException, IOException {
-        URL url = new URIBuilder().setHost(objectUrl.getHost())
-                .setScheme(objectUrl.getProtocol())
-                .setPort(objectUrl.getPort())
+    protected boolean sendNotification(String path, String recordId) throws URISyntaxException, IOException {
+        URL apiURL = new URL(driApiUrl);
+        URL url = new URIBuilder().setHost(apiURL.getHost())
+                .setScheme(apiURL.getProtocol())
+                .setPort(apiURL.getPort())
                 .setPath(path)
                 .setParameter(RECORD_PARAM, recordId)
+                .setParameter(USER_PARAM, driApiUsername)
+                .setParameter(TOKEN_PARAM, driApiToken)
                 .build().toURL();
         log.info("Calling POST {}", url);
-        if (!IS_MOCK) {
-            URLConnection urlConnection = url.openConnection();
-            HttpURLConnection connection = (HttpURLConnection) urlConnection;
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            int responseCode = connection.getResponseCode();
-            return HttpStatus.valueOf(responseCode).is2xxSuccessful();
-        } else {
-            log.info("Notification sending is not implemented yet!");
-            return true;
+        URLConnection urlConnection = url.openConnection();
+        HttpURLConnection connection = (HttpURLConnection) urlConnection;
+        connection.setRequestMethod("POST");
+        connection.setRequestProperty("Content-Type", "application/json");
+        connection.setRequestProperty("Accept", "application/json");
+        connection.setDoOutput(true);
+        addRequestBody(connection);
+        int responseCode = connection.getResponseCode();
+        return HttpStatus.valueOf(responseCode).is2xxSuccessful();
+    }
+
+    private void addRequestBody(HttpURLConnection connection) throws IOException {
+        try(OutputStream os = connection.getOutputStream()) {
+            byte[] input = "{}".getBytes("utf-8");
+            os.write(input, 0, input.length);
         }
     }
 }
