@@ -69,8 +69,8 @@ public class EnrichmentNotifierService {
         connection.setRequestMethod("POST");
         connection.setRequestProperty("Content-Type", "application/json");
         connection.setRequestProperty("Accept", "application/json");
-        addRequestBody(connection);
         connection.setDoOutput(true);
+        addRequestBody(connection);
         int responseCode = connection.getResponseCode();
         return HttpStatus.valueOf(responseCode).is2xxSuccessful();
     }
