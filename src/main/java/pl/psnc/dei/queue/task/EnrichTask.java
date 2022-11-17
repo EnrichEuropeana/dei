@@ -33,8 +33,6 @@ public class EnrichTask extends Task {
     private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
     private final TranscriptionConverter transcriptionConverter;
 
-//    private final EnrichmentNotifierService ens;
-
     EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
             EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
             ContextMediator contextMediator, TranscriptionConverter tc) {
