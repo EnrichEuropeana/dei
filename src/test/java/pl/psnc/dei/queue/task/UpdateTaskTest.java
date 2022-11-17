@@ -119,7 +119,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromRestoreConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.ens, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -132,7 +132,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromNormalConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.ens, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -146,7 +146,7 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void areUpdatesIdempotent() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.ens, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
         updateTask.process();
         updateTask.process();
         updateTask.process();

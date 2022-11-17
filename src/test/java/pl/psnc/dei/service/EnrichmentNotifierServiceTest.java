@@ -56,32 +56,7 @@ public class EnrichmentNotifierServiceTest {
 
         enrichmentNotifierService.notifyPublishers(record);
         Mockito.verify(enrichmentNotifierService, times(1))
-                .sendNotification(any(), any(), any());
-    }
-
-    @Ignore
-    @SneakyThrows
-    @Test
-    public void shouldExtractNationalAggregatorUrl() {
-        JsonObject jsonObject = getRecordFromTestResources(RECORD_ID);
-        URL url = enrichmentNotifierService.extractNationalAggregatorUrl(jsonObject);
-        assertEquals(new URL("http://www.e-varamu.ee/item/66AW2RSI5V5KVHVIEB2VZAG2L7WYCRI2"), url);
-    }
-
-    @SneakyThrows
-    @Test
-    public void shouldExtractContentProviderUrl() {
-        JsonObject jsonObject = getRecordFromTestResources(RECORD_ID);
-        List<URL> urls = enrichmentNotifierService.extractContentProviderUrls(jsonObject);
-        assertEquals(1, urls.size());
-    }
-
-    @SneakyThrows
-    @Test
-    public void shouldExtractOAIIdentifier() {
-        JsonObject jsonObject = getRecordFromTestResources(RECORD_ID);
-        String oai = enrichmentNotifierService.extractOaiIdentifier(jsonObject);
-        assertEquals("oai:bibliotekacyfrowa.eu:45871", oai);
+                .sendNotification(any(), any());
     }
 
     private JsonObject getRecordFromTestResources(String path) throws IOException {

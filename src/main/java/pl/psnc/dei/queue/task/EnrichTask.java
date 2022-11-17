@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
-import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -34,15 +33,14 @@ public class EnrichTask extends Task {
     private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
     private final TranscriptionConverter transcriptionConverter;
 
-    private final EnrichmentNotifierService ens;
+//    private final EnrichmentNotifierService ens;
 
     EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-            EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens,
+            EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
             ContextMediator contextMediator, TranscriptionConverter tc) {
         super(record, queueRecordService, tps, ess, eas);
         this.contextMediator = contextMediator;
         this.context = (EnrichTaskContext) this.contextMediator.get(record);
-        this.ens = ens;
         state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
         this.transcriptionConverter = tc;
         ContextUtils.executeIfPresent(this.context.getTaskState(),
@@ -187,6 +185,5 @@ public class EnrichTask extends Task {
         state = TaskState.E_FINALIZE;
         this.context.setTaskState(this.state);
         this.contextMediator.save(this.context);
-        ens.notifyPublishers(record);
     }
 }

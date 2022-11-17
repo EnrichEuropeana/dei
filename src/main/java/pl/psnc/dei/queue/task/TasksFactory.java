@@ -81,17 +81,17 @@ public class TasksFactory {
 	public List<Task> getTask(Record record) {
 		switch (record.getState()) {
 			case E_PENDING:
-				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ens, ctxm, tc));
+				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ctxm, tc));
 			case T_PENDING:
 				return List.of(new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes, ips));
 			case U_PENDING:
-				return List.of(new UpdateTask(record, qrs, tps, ess, eas, ens, ctxm));
+				return List.of(new UpdateTask(record, qrs, tps, ess, eas, ctxm));
 			case C_PENDING:
 				return List.of(new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, cnv, ips, this, pes, rr, ctxm));
 			case M_PENDING:
 				return List.of(new MetadataEnrichTask(record, qrs, tps, ess, eas, ens, ctxm, mee));
 			case ME_PENDING:
-				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ens, ctxm, tc),
+				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ctxm, tc),
 						new MetadataEnrichTask(record, qrs, tps, ess, eas, ens, ctxm, mee));
 
 			default:
@@ -100,7 +100,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ens, ctxm);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ctxm);
 	}
 
 	/**

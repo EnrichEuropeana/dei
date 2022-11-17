@@ -7,7 +7,6 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.conversion.UpdateTaskContext;
-import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -21,8 +20,6 @@ import java.util.List;
 public class UpdateTask extends Task {
 
 	private static final Logger logger = LoggerFactory.getLogger(UpdateTask.class);
-
-	private final EnrichmentNotifierService ens;
 
 	private int totalTranscriptionsSend = 0;
 
@@ -39,13 +36,12 @@ public class UpdateTask extends Task {
 	private final QueueRecordService queueRecordService;
 
 	UpdateTask(Record record, QueueRecordService queueRecordService,
-			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens, ContextMediator contextMediator) {
+			   TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) {
 		// Fired only for crash recovery
 		super(record, queueRecordService, tps, ess, eas);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) contextMediator.get(record);
 		this.queueRecordService = queueRecordService;
-		this.ens = ens;
 		// someone is pushing update to transcription that is not present
 		// ignore request
 		if (record.getTranscriptions().isEmpty()) {
@@ -67,14 +63,13 @@ public class UpdateTask extends Task {
 	}
 
 	public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
-					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, EnrichmentNotifierService ens, ContextMediator contextMediator) throws NotFoundException {
+					  QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas, ContextMediator contextMediator) throws NotFoundException {
 		// fired for normal execution
 		super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
 		this.queueRecordService = queueRecordService;
 		Record record = this.queueRecordService.getRecord(recordIdentifier);
 		this.contextMediator = contextMediator;
 		this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
-		this.ens = ens;
 		Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
 		record.getTranscriptions().add(newTranscription);
 		queueRecordService.saveRecord(record);
@@ -107,7 +102,6 @@ public class UpdateTask extends Task {
 					eas.updateTranscription(record, t);
 					this.totalTranscriptionsSend++;
 				}
-				ens.notifyPublishers(record);
 				if (this.totalTranscriptionsSend == this.transcriptions.size()) {
 					try {
 						this.context.setTaskState(this.state);
