@@ -8,4 +8,5 @@ public class RecordMetadataEnrichmentValidation {
     String externalId;
     MetadataEnrichmentValidation timespans;
     MetadataEnrichmentValidation places;
+    MetadataEnrichmentValidation persons;
 }

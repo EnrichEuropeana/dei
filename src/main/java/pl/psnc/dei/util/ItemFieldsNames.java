@@ -18,4 +18,11 @@ public class ItemFieldsNames {
     public static final String NAME = "Name";
     public static final String ZOOM = "Zoom";
     public static final String ORDER_INDEX = "OrderIndex";
+    public static final String FIRST_NAME = "FirstName";
+    public static final String LAST_NAME = "LastName";
+    public static final String BIRTH_PLACE = "BirthPlace";
+    public static final String BIRTH_DATE = "BirthDate";
+    public static final String DEATH_PLACE = "DeathPlace";
+    public static final String DEATH_DATE = "DeathDate";
+    public static final String PERSON_LINK = "Link";
 }

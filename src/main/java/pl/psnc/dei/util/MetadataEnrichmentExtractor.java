@@ -1,6 +1,7 @@
 package pl.psnc.dei.util;
 
 import lombok.NonNull;
+import lombok.RequiredArgsConstructor;
 import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonNumber;
 import org.apache.jena.atlas.json.JsonObject;
@@ -10,7 +11,9 @@ import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.enrichments.DateEnrichment;
 import pl.psnc.dei.model.enrichments.MetadataEnrichment;
+import pl.psnc.dei.model.enrichments.PersonEnrichment;
 import pl.psnc.dei.model.enrichments.PlaceEnrichment;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
@@ -22,14 +25,16 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static pl.psnc.dei.util.EnrichmentAttributeNames.DCTERMS_SPATIAL;
-import static pl.psnc.dei.util.EnrichmentAttributeNames.DC_DATE;
+import static pl.psnc.dei.util.EnrichmentAttributeNames.*;
 
 /**
  * Extracts metadata enrichment of the given type from the Item. Original values are kept.
  */
 @Component
+@RequiredArgsConstructor
 public class MetadataEnrichmentExtractor {
+    private final TranscriptionPlatformService tps;
+
     private static final String URL_TEMPLATE = "%s/documents/story/item?item=%s";
 
     public static final Pattern IS_SHOWN_AT_PATTERN = Pattern.compile(
@@ -131,6 +136,34 @@ public class MetadataEnrichmentExtractor {
         return Optional.ofNullable(item.get(ItemFieldsNames.ZOOM));
     }
 
+    public Optional<JsonValue> extractFirstName(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.FIRST_NAME));
+    }
+
+    public Optional<JsonValue> extractLastName(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.LAST_NAME));
+    }
+
+    public Optional<JsonValue> extractBirthPlace(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.BIRTH_PLACE));
+    }
+
+    public Optional<JsonValue> extractBirthDate(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.BIRTH_DATE));
+    }
+
+    public Optional<JsonValue> extractDeathPlace(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.DEATH_PLACE));
+    }
+
+    public Optional<JsonValue> extractDeathDate(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.DEATH_DATE));
+    }
+
+    public Optional<JsonValue> extractPersonLink(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.PERSON_LINK));
+    }
+
     private List<PlaceEnrichment> createPlaceEnrichments(Record record, String recordId, JsonValue item,
             JsonNumber itemId,
             String language) {
@@ -174,6 +207,7 @@ public class MetadataEnrichmentExtractor {
                 if (isPlaceEnrichmentAvailable(item.getAsObject())) {
                     enrichments.addAll(createPlaceEnrichments(record, externalId, item, itemId, language));
                 }
+                enrichments.addAll(extractPersons(record, externalId, itemId, language));
             });
         }
 
@@ -190,5 +224,34 @@ public class MetadataEnrichmentExtractor {
         enrichments.add(generalDateEnrichment);
 
         return enrichments;
+    }
+
+    private List<PersonEnrichment> extractPersons(Record record, String recordId, JsonNumber itemId,
+            String language) {
+        JsonObject itemEnrichments = tps.fetchMetadataEnrichmentsForItem(itemId.value().longValue()).getAsObject();
+        List<PersonEnrichment> result = new ArrayList<>();
+        itemEnrichments.get(ItemFieldsNames.PERSONS).getAsArray().forEach(person -> {
+            PersonEnrichment enrichment = (PersonEnrichment) initMetadataEnrichment(new PersonEnrichment(), record,
+                    recordId, DC_SUBJECT, itemId);
+            extractPageNumber(itemEnrichments).map(jsonValue -> jsonValue.getAsNumber().value().intValue())
+                    .ifPresent(enrichment::setPageNo);
+            enrichment.setLanguage(language);
+            extractFirstName(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setFirstName);
+            extractLastName(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setLastName);
+            extractBirthPlace(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setBirthPlace);
+            extractBirthDate(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setBirthDate);
+            extractDeathPlace(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setDeathPlace);
+            extractDeathDate(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setDeathDate);
+            extractPersonLink(person.getAsObject()).map(jsonValue -> jsonValue.getAsString().value())
+                    .ifPresent(enrichment::setWikidataId);
+            result.add(enrichment);
+        });
+        return result;
     }
 }

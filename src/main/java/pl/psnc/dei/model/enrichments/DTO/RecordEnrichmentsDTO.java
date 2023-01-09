@@ -6,6 +6,7 @@ import lombok.Builder;
 import lombok.Data;
 import pl.psnc.dei.model.enrichments.DateEnrichment;
 import pl.psnc.dei.model.enrichments.MetadataEnrichment;
+import pl.psnc.dei.model.enrichments.PersonEnrichment;
 import pl.psnc.dei.model.enrichments.PlaceEnrichment;
 
 import java.util.Collection;
@@ -26,6 +27,8 @@ public class RecordEnrichmentsDTO {
 
     List<PlaceEnrichmentDTO> places;
 
+    List<PersonEnrichmentDTO> persons;
+
     public static RecordEnrichmentsDTO fromRecordEnrichments(Collection<MetadataEnrichment> enrichments) {
         RecordEnrichmentsDTOBuilder builder = RecordEnrichmentsDTO.builder();
         enrichments.stream().findFirst().ifPresent(metadataEnrichment -> builder.recordId(
@@ -37,6 +40,10 @@ public class RecordEnrichmentsDTO {
         builder.places(enrichments.stream()
                 .filter(metadataEnrichment -> metadataEnrichment instanceof PlaceEnrichment)
                 .map(metadataEnrichment -> PlaceEnrichmentDTO.from((PlaceEnrichment) metadataEnrichment)).collect(
+                        Collectors.toList()));
+        builder.persons(enrichments.stream()
+                .filter(metadataEnrichment -> metadataEnrichment instanceof PersonEnrichment)
+                .map(metadataEnrichment -> PersonEnrichmentDTO.from((PersonEnrichment) metadataEnrichment)).collect(
                         Collectors.toList()));
         return builder.build();
     }

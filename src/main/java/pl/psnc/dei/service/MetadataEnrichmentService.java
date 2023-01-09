@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import pl.psnc.dei.controllers.MetadataEnrichmentController;
 import pl.psnc.dei.controllers.requests.RecordMetadataEnrichmentValidation;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.AllMetadataEnrichmentRepository;
@@ -60,7 +59,8 @@ public class MetadataEnrichmentService {
         if (OAIRecordIdValidator.validate(externalId)) {
             RecordEnrichmentsDTO recordEnrichmentsDTO = RecordEnrichmentsDTO.fromRecordEnrichments(
                     metadataEnrichmentRepository.findAllByExternalIdAndState(externalId, state));
-            if (recordEnrichmentsDTO.getPlaces().isEmpty() && recordEnrichmentsDTO.getTimespans().isEmpty()) {
+            if (recordEnrichmentsDTO.getPlaces().isEmpty() && recordEnrichmentsDTO.getTimespans().isEmpty() &&
+                    recordEnrichmentsDTO.getPersons().isEmpty()) {
                 recordEnrichmentsDTO.setExternalId(externalId);
             }
             return recordEnrichmentsDTO;
@@ -77,7 +77,8 @@ public class MetadataEnrichmentService {
         }
         RecordEnrichmentsDTO recordEnrichmentsDTO = RecordEnrichmentsDTO.fromRecordEnrichments(
                 metadataEnrichmentRepository.findAllByRecordAndState(optionalRecord.get(), state));
-        if (recordEnrichmentsDTO.getPlaces().isEmpty() && recordEnrichmentsDTO.getTimespans().isEmpty()) {
+        if (recordEnrichmentsDTO.getPlaces().isEmpty() && recordEnrichmentsDTO.getTimespans().isEmpty() &&
+                recordEnrichmentsDTO.getPersons().isEmpty()) {
             recordEnrichmentsDTO.setRecordId(recordId);
         }
         return recordEnrichmentsDTO;
@@ -102,11 +103,13 @@ public class MetadataEnrichmentService {
                             extractRejected(recordMetadataEnrichmentValidation)));
         } else {
             acceptMetadataEnrichments(
-                    metadataEnrichmentRepository.findAllByExternalIdAndStateAndIdIn(recordMetadataEnrichmentValidation.getExternalId(),
+                    metadataEnrichmentRepository.findAllByExternalIdAndStateAndIdIn(
+                            recordMetadataEnrichmentValidation.getExternalId(),
                             MetadataEnrichment.EnrichmentState.PENDING,
                             extractAccepted(recordMetadataEnrichmentValidation)));
             rejectMetadataEnrichments(
-                    metadataEnrichmentRepository.findAllByExternalIdAndStateAndIdIn(recordMetadataEnrichmentValidation.getExternalId(),
+                    metadataEnrichmentRepository.findAllByExternalIdAndStateAndIdIn(
+                            recordMetadataEnrichmentValidation.getExternalId(),
                             MetadataEnrichment.EnrichmentState.PENDING,
                             extractRejected(recordMetadataEnrichmentValidation)));
         }
