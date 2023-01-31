@@ -13,7 +13,5 @@ import java.time.Instant;
 @EqualsAndHashCode(callSuper = true)
 public class DateEnrichment extends MetadataEnrichment {
 	private Instant dateStart;
-
 	private Instant dateEnd;
-
 }

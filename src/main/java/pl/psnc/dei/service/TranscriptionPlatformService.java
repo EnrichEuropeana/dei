@@ -534,4 +534,32 @@ public class TranscriptionPlatformService {
 						.block();
 		return JSON.parseAny(recordMetadataEnrichments);
 	}
+
+	public JsonValue fetchMetadataEnrichmentsForItem(long itemId) throws TranscriptionPlatformException {
+		logger.info("Retrieving item metadata enrichments from TP for item {}", itemId);
+		String itemMetadataEnrichments =
+				this.webClient
+						.get()
+						.uri(urlBuilder.urlForItemMetadataEnrichments(itemId))
+						.header("Authorization", authToken)
+						.retrieve()
+						.onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+							logger.info("Error while fetching item metadata enrichments {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
+						.onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+							logger.info("Error while fetching item metadata enrichments {} {}",clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
+							return Mono.error(new TranscriptionPlatformException());
+						})
+						.bodyToMono(String.class)
+						.doOnError(cause -> {
+							if (cause instanceof TranscriptionPlatformException) {
+								throw new TranscriptionPlatformException("Error while communicating with Transcription Platform while fetching item metadata enrichments");
+							} else {
+								throw new TranscriptionPlatformException("Error while communicating with Transcription Platform while fetching item metadata enrichments", cause);
+							}
+						})
+						.block();
+		return JSON.parseAny(itemMetadataEnrichments);
+	}
 }

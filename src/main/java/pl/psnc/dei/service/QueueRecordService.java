@@ -8,13 +8,18 @@ import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.exception.TranscriptionDuplicationException;
 import pl.psnc.dei.iiif.Converter;
 import pl.psnc.dei.model.DAO.*;
-import pl.psnc.dei.model.*;
+import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.enrichments.DateEnrichment;
 import pl.psnc.dei.model.enrichments.MetadataEnrichment;
+import pl.psnc.dei.model.enrichments.PersonEnrichment;
 import pl.psnc.dei.model.enrichments.PlaceEnrichment;
 
 import javax.transaction.Transactional;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -31,6 +36,9 @@ public class QueueRecordService {
 
     @Autowired
     private PlaceEnrichmentRepository placeEnrichmentRepository;
+
+    @Autowired
+    private PersonEnrichmentRepository personEnrichmentRepository;
 
     @Autowired
     private AllMetadataEnrichmentRepository allMetadataEnrichmentRepository;
@@ -165,6 +173,21 @@ public class QueueRecordService {
         if (enrichment instanceof PlaceEnrichment) {
             return savePlaceEnrichmentIfNotExists((PlaceEnrichment) enrichment);
         }
+        if (enrichment instanceof PersonEnrichment) {
+            return savePersonEnrichmentIfNotExists((PersonEnrichment) enrichment);
+        }
+        return false;
+    }
+
+    private boolean savePersonEnrichmentIfNotExists(PersonEnrichment enrichment) {
+        if (!personEnrichmentRepository.existsByRecordAndFirstNameAndLastNameAndBirthPlaceAndBirthDateAndDeathPlaceAndDeathDateAndItemLink(
+                enrichment.getRecord(),
+                enrichment.getFirstName(), enrichment.getLastName(), enrichment.getBirthPlace(),
+                enrichment.getBirthDate(), enrichment.getDeathPlace(), enrichment.getDeathDate(),
+                enrichment.getItemLink())) {
+            personEnrichmentRepository.save(enrichment);
+            return true;
+        }
         return false;
     }
 
@@ -179,13 +202,13 @@ public class QueueRecordService {
     }
 
     private boolean saveDateEnrichmentIfNotExists(DateEnrichment enrichment) {
-		if (!dateEnrichmentRepository.existsByRecordAndDateEndAndDateStartAndItemLink(enrichment.getRecord(),
-				enrichment.getDateEnd(), enrichment.getDateStart(),
-				enrichment.getItemLink())) {
-			dateEnrichmentRepository.save(enrichment);
-			return true;
-		}
-		return false;
+        if (!dateEnrichmentRepository.existsByRecordAndDateEndAndDateStartAndItemLink(enrichment.getRecord(),
+                enrichment.getDateEnd(), enrichment.getDateStart(),
+                enrichment.getItemLink())) {
+            dateEnrichmentRepository.save(enrichment);
+            return true;
+        }
+        return false;
     }
 
     public void saveMetadataEnrichments(List<MetadataEnrichment> enrichments) {

@@ -10,11 +10,13 @@ import javax.persistence.Entity;
 @Data
 @NoArgsConstructor
 @EqualsAndHashCode(callSuper = true)
-public class PlaceEnrichment extends MetadataEnrichment {
-	private double latitude;
-	private double longitude;
-	private String name;
+public class PersonEnrichment extends MetadataEnrichment {
+	private String firstName;
+	private String lastName;
+	private String birthPlace;
+	private String birthDate;
+	private String deathPlace;
+	private String deathDate;
 	private String language;
 	private String wikidataId;
-	private int zoom;
 }

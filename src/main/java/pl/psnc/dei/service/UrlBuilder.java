@@ -17,6 +17,7 @@ public class UrlBuilder {
 	private static final String DATASETS_SUFFIX = "/datasets";
 	private static final String IMPORTS_ADD_SUFFIX = "/";
 	private static final String STORIES_SUFFIX = "/stories";
+	private static final String ITEMS_SUFFIX = "/items";
 	private static final String ENRICHMENTS_SUFFIX = "/enrichments";
 	private static final String TRANSCRIPTION_SUFFIX = "/transcription";
 	private static final String DATASET_PARAM = "datasetId=";
@@ -100,5 +101,12 @@ public class UrlBuilder {
 				+ '?'
 				+ RECORD_ID_PARAM
 				+ record.getIdentifier();
+	}
+
+	public String urlForItemMetadataEnrichments(long itemId) {
+		return transcriptionPlatformLocation
+				+ ITEMS_SUFFIX
+				+ '/'
+				+ itemId;
 	}
 }

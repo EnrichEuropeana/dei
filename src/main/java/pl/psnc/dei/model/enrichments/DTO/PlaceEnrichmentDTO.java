@@ -12,8 +12,6 @@ import java.util.Optional;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @Getter
 public class PlaceEnrichmentDTO extends MetadataEnrichmentDTO {
-    private final static String WIKIDATA_URL = "https://www.wikidata.org/wiki/%s";
-
     private final double latitude;
 
     private final double longitude;
