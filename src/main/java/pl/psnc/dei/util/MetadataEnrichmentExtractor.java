@@ -217,11 +217,13 @@ public class MetadataEnrichmentExtractor {
                         ((DateEnrichment) enrichment).getDateEnd()).filter(Objects::nonNull))
                 .collect(Collectors.toList());
 
-        DateEnrichment generalDateEnrichment = (DateEnrichment) initMetadataEnrichment(new DateEnrichment(), record,
-                externalId, DC_DATE, null);
-        dates.stream().max(Instant::compareTo).ifPresent(generalDateEnrichment::setDateEnd);
-        dates.stream().min(Instant::compareTo).ifPresent(generalDateEnrichment::setDateStart);
-        enrichments.add(generalDateEnrichment);
+        if (!dates.isEmpty()) {
+            DateEnrichment generalDateEnrichment = (DateEnrichment) initMetadataEnrichment(new DateEnrichment(), record,
+                    externalId, DC_DATE, null);
+            dates.stream().max(Instant::compareTo).ifPresent(generalDateEnrichment::setDateEnd);
+            dates.stream().min(Instant::compareTo).ifPresent(generalDateEnrichment::setDateStart);
+            enrichments.add(generalDateEnrichment);
+        }
 
         return enrichments;
     }
