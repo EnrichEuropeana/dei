@@ -132,30 +132,30 @@ public class MetadataEnrichmentService {
     }
 
     private Set<Long> extractAccepted(RecordMetadataEnrichmentValidation recordMetadataEnrichmentValidation) {
-        if (recordMetadataEnrichmentValidation.getTimespans() == null) {
-            if (recordMetadataEnrichmentValidation.getPlaces() == null) {
-                return Collections.emptySet();
-            }
-            return recordMetadataEnrichmentValidation.getPlaces().getAccept();
+        Set<Long> accepted = new HashSet<>();
+        if (recordMetadataEnrichmentValidation.getTimespans() != null) {
+            accepted.addAll(recordMetadataEnrichmentValidation.getTimespans().getAccept());
         }
-        if (recordMetadataEnrichmentValidation.getPlaces() == null) {
-            return recordMetadataEnrichmentValidation.getTimespans().getAccept();
+        if (recordMetadataEnrichmentValidation.getPlaces() != null) {
+            accepted.addAll(recordMetadataEnrichmentValidation.getPlaces().getAccept());
         }
-        return Stream.concat(recordMetadataEnrichmentValidation.getTimespans().getAccept().stream(),
-                recordMetadataEnrichmentValidation.getPlaces().getAccept().stream()).collect(Collectors.toSet());
+        if (recordMetadataEnrichmentValidation.getPersons() != null) {
+            accepted.addAll(recordMetadataEnrichmentValidation.getPersons().getAccept());
+        }
+        return accepted;
     }
 
     private Set<Long> extractRejected(RecordMetadataEnrichmentValidation recordMetadataEnrichmentValidation) {
-        if (recordMetadataEnrichmentValidation.getTimespans() == null) {
-            if (recordMetadataEnrichmentValidation.getPlaces() == null) {
-                return Collections.emptySet();
-            }
-            return recordMetadataEnrichmentValidation.getPlaces().getReject();
+        Set<Long> rejected = new HashSet<>();
+        if (recordMetadataEnrichmentValidation.getTimespans() != null) {
+            rejected.addAll(recordMetadataEnrichmentValidation.getTimespans().getReject());
         }
-        if (recordMetadataEnrichmentValidation.getPlaces() == null) {
-            return recordMetadataEnrichmentValidation.getTimespans().getReject();
+        if (recordMetadataEnrichmentValidation.getPlaces() != null) {
+            rejected.addAll(recordMetadataEnrichmentValidation.getPlaces().getReject());
         }
-        return Stream.concat(recordMetadataEnrichmentValidation.getTimespans().getReject().stream(),
-                recordMetadataEnrichmentValidation.getPlaces().getReject().stream()).collect(Collectors.toSet());
+        if (recordMetadataEnrichmentValidation.getPersons() != null) {
+            rejected.addAll(recordMetadataEnrichmentValidation.getPersons().getReject());
+        }
+        return rejected;
     }
 }
