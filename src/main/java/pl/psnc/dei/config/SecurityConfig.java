@@ -88,6 +88,8 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 				.requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
 				.antMatchers("/api/transcription/iiif/manifest**", "/accessdenied*", "/logout*", "/sso/login*").permitAll()
 				.and()
+				.authorizeRequests().antMatchers("/*").anonymous()
+				.and()
 				.authorizeRequests().anyRequest().hasAuthority("operator")
 				.and()
 				.requiresChannel()

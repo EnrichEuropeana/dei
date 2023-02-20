@@ -31,6 +31,13 @@ public class Record {
 	 */
 	private String identifier;
 
+	/**
+	 * Story Id is retrieved from TP API once the record is sent. Each time we send the record (maybe there is a
+	 * retry or it sent again for some reason) this story id might be updated.
+	 */
+	@JsonIgnore
+	private Long storyId;
+
 	@Convert(converter = RecordStateConverter.class)
 	@Column(columnDefinition = "int default 0")
 	private RecordState state;
