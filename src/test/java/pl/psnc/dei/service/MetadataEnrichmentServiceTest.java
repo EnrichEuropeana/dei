@@ -88,8 +88,9 @@ public class MetadataEnrichmentServiceTest {
     }
 
     @Test
-    public void shouldCreateRecordEnrichmentsDTO() throws TranscriptionPlatformException {
+    public void shouldCreateRecordEnrichmentsDTO() throws TranscriptionPlatformException, NotFoundException {
         setUp("oai:europeana1989.eu:390");
+        when(metadataEnrichmentRepository.existsByExternalIdContaining("europeana1989.eu")).thenReturn(true);
 
         List<RecordEnrichmentsDTO> dtos = metadataEnrichmentService.getEnrichmentsForDomain("europeana1989.eu",
                 MetadataEnrichment.EnrichmentState.PENDING);
@@ -98,6 +99,16 @@ public class MetadataEnrichmentServiceTest {
         Assert.assertEquals(record.getIdentifier(), dtos.get(0).getRecordId());
         Assert.assertEquals(2, dtos.get(0).getTimespans().size());
         Assert.assertEquals(1, dtos.get(0).getPlaces().size());
+    }
+
+    @Test(expected = NotFoundException.class)
+    public void shouldNotCreateRecordEnrichmentsDTO() throws NotFoundException {
+        when(metadataEnrichmentRepository.existsByExternalIdContaining("europeana1989.eu")).thenReturn(false);
+
+        metadataEnrichmentService.getEnrichmentsForDomain("europeana1989.eu",
+                MetadataEnrichment.EnrichmentState.PENDING);
+
+        Assert.fail();
     }
 
     @Test

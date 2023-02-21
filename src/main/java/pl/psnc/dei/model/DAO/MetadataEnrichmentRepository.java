@@ -23,6 +23,8 @@ public interface MetadataEnrichmentRepository<T extends MetadataEnrichment> exte
 
     Set<MetadataEnrichment> findAllByExternalIdContainingAndState(String domain, MetadataEnrichment.EnrichmentState state);
 
+    boolean existsByExternalIdContaining(String domain);
+
     Set<Record> findRecordsByRecordIdContaining(String domain);
 
 }
