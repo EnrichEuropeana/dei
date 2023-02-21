@@ -100,6 +100,16 @@ public class MetadataEnrichmentServiceTest {
         Assert.assertEquals(1, dtos.get(0).getPlaces().size());
     }
 
+    @Test(expected = NotFoundException.class)
+    public void shouldNotCreateRecordEnrichmentsDTO() throws NotFoundException {
+        when(metadataEnrichmentRepository.existsByExternalIdContaining("europeana1989.eu")).thenReturn(false);
+
+        metadataEnrichmentService.getEnrichmentsForDomain("europeana1989.eu",
+                MetadataEnrichment.EnrichmentState.PENDING);
+
+        Assert.fail();
+    }
+
     @Test
     public void shouldCreateRecordEnrichmentDTO() throws TranscriptionPlatformException, NotFoundException {
         setUp("/12345/xyz345");
