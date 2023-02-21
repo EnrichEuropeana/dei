@@ -90,6 +90,7 @@ public class MetadataEnrichmentServiceTest {
     @Test
     public void shouldCreateRecordEnrichmentsDTO() throws TranscriptionPlatformException, NotFoundException {
         setUp("oai:europeana1989.eu:390");
+        when(metadataEnrichmentRepository.existsByExternalIdContaining("europeana1989.eu")).thenReturn(true);
 
         List<RecordEnrichmentsDTO> dtos = metadataEnrichmentService.getEnrichmentsForDomain("europeana1989.eu",
                 MetadataEnrichment.EnrichmentState.PENDING);
