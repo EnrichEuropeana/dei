@@ -88,7 +88,7 @@ public class MetadataEnrichmentServiceTest {
     }
 
     @Test
-    public void shouldCreateRecordEnrichmentsDTO() throws TranscriptionPlatformException {
+    public void shouldCreateRecordEnrichmentsDTO() throws TranscriptionPlatformException, NotFoundException {
         setUp("oai:europeana1989.eu:390");
 
         List<RecordEnrichmentsDTO> dtos = metadataEnrichmentService.getEnrichmentsForDomain("europeana1989.eu",
