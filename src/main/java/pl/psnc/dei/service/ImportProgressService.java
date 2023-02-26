@@ -21,13 +21,15 @@ public class ImportProgressService {
 
     public ImportProgress initImportProgress(int recordsToSend) {
         /*
-         * Multiplied by 3, because each record can do at most 3 tasks:
+         * Multiplied by 5, because each record can do at most 5 tasks:
          * fetch data from europeana
          * convert to iiif
          * send to transcribathon
+         * validate iif manifest
+         * send call to action
          */
         ImportProgress importProgress = new ImportProgress();
-        int estimatedTasks = recordsToSend * 3;
+        int estimatedTasks = recordsToSend * 5;
         importProgress.setEstimatedTasks(estimatedTasks);
         importProgress.setCompletedTasks(0);
         return importProgress;

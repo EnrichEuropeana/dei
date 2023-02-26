@@ -12,6 +12,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.IIIFManifestValidator;
 import pl.psnc.dei.util.MetadataEnrichmentExtractor;
 import pl.psnc.dei.util.TranscriptionConverter;
 
@@ -67,6 +68,12 @@ public class TasksFactory {
 	@Autowired
 	private MetadataEnrichmentExtractor mee;
 
+	@Autowired
+	private IIIFManifestValidator imv;
+
+	@Autowired
+	private GeneralRestRequestService grrs;
+
 	@Value("${application.server.url}")
 	String serverUrl;
 
@@ -93,6 +100,8 @@ public class TasksFactory {
 			case ME_PENDING:
 				return List.of(new EnrichTask(record, qrs, tps, ess, eas, ctxm, tc),
 						new MetadataEnrichTask(record, qrs, tps, ess, eas, ens, ctxm, mee));
+			case V_PENDING:
+				return List.of(new ValidationTask(record, qrs, tps, ess, eas, tqs, this, ctxm, pes, ips, imv, grrs));
 
 			default:
 				throw new RuntimeException("Incorrect record state!");

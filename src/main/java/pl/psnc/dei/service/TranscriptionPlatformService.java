@@ -200,7 +200,7 @@ public class TranscriptionPlatformService {
 
 	public void sendRecord(JsonObject recordBody, Record record) throws TranscriptionPlatformException {
 		Hibernate.initialize(record.getAnImport());
-		this.webClient.post()
+		String storyId = this.webClient.post()
 				.uri(urlBuilder.urlForSendingRecord(record))
 				.header("Authorization", authToken)
 				.contentType(MediaType.APPLICATION_JSON)
@@ -226,6 +226,19 @@ public class TranscriptionPlatformService {
 					}
 				})
 				.block();
+		try {
+			record.setStoryId(Long.parseLong(storyId));
+			recordsRepository.save(record);
+		} catch (NumberFormatException e) {
+			// wrong value from the response, get story id from API
+			JsonObject storyEnrichments = fetchMetadataEnrichmentsFor(record).getAsArray().get(0).getAsObject();
+			try {
+				record.setStoryId(storyEnrichments.get("StoryId").getAsNumber().value().longValue());
+				recordsRepository.save(record);
+			} catch (NumberFormatException e1) {
+				logger.error("StoryId not found for record {}", record.getIdentifier());
+			}
+		}
 	}
 
 	/**
@@ -445,14 +458,22 @@ public class TranscriptionPlatformService {
 		// sending import can be done only for imports that are in progress
 		if (ImportStatus.IN_PROGRESS.equals(anImport.getStatus())) {
 			// We have to start the process of sending records by setting record state to T_PENDING and creating TranscribeTask
-			// Only records in NORMAL or T_FAILED state are considered
-			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED, Record.RecordState.C_FAILED));
-			initializeImportProgress(anImport, toSend.size());
-			toSend.forEach(record -> {
-				record.setState(Record.RecordState.T_PENDING);
-				recordsRepository.save(record);
-				tasksFactory.getTask(record).forEach(taskQueueService::addTaskToQueue);
-			});
+			// Only records in NORMAL, T_FAILED, C_FAILED or V_FAILED state are considered
+			Set<Record> toSend = recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.T_FAILED, Record.RecordState.C_FAILED, Record.RecordState.V_FAILED));
+			if (toSend.isEmpty()) {
+				updateImportState(anImport);
+			} else {
+				initializeImportProgress(anImport, toSend.size());
+				toSend.forEach(record -> {
+					if (record.getState().equals(Record.RecordState.V_FAILED)) {
+						record.setState(Record.RecordState.V_PENDING);
+					} else {
+						record.setState(Record.RecordState.T_PENDING);
+					}
+					recordsRepository.save(record);
+					tasksFactory.getTask(record).forEach(taskQueueService::addTaskToQueue);
+				});
+			}
 		}
 	}
 
@@ -469,10 +490,10 @@ public class TranscriptionPlatformService {
 	public void updateImportState(Import anImport) {
 		if (ImportStatus.IN_PROGRESS.equals(anImport.getStatus())) {
 			logger.info("Updating import status from IN_PROGRESS...");
-			// if there is any record in state T_PENDING import is still IN_PROGRESS
-			Set<Record> pendingRecords = recordsRepository.findAllByAnImportAndState(anImport, Record.RecordState.T_PENDING);
+			// if there is any record in state T_PENDING, C_PENDING or V_PENDING import is still IN_PROGRESS
+			Set<Record> pendingRecords = recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.T_PENDING, Record.RecordState.C_PENDING, Record.RecordState.V_PENDING));
 			if (pendingRecords.isEmpty()) {
-				if (!recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.T_FAILED, Record.RecordState.C_FAILED)).isEmpty()) {
+				if (!recordsRepository.findAllByAnImportAndStateIsIn(anImport, Arrays.asList(Record.RecordState.T_FAILED, Record.RecordState.C_FAILED, Record.RecordState.V_FAILED)).isEmpty()) {
 					anImport.setStatus(ImportStatus.FAILED);
 				} else {
 					anImport.setStatus(ImportStatus.SENT);

@@ -14,4 +14,7 @@ class AnnotationFieldsNames extends JsonFieldsNames {
     static final String TARGET_SOURCE = "source";
 
     static final String MOTIVATION = "motivation";
+
+    // for Call to action
+    static final String CONTEXT = "@context";
 }

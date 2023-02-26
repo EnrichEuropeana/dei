@@ -21,6 +21,7 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.service.*;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.IIIFManifestValidator;
 
 import java.util.Set;
 
@@ -98,6 +99,12 @@ public class TranscribeTaskTest {
 
     @Autowired
     private PersistableExceptionService persistableExceptionService;
+
+    @Autowired
+    IIIFManifestValidator imv;
+
+    @Autowired
+    GeneralRestRequestService grrs;
 
     @Before
     public void prepareDatasets() {

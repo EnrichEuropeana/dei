@@ -13,10 +13,13 @@ public class PersistableExceptionEntity {
         CONVERSION_EXCEPTION,
         CONVERSION_IMPOSSIBLE_EXCEPTION,
         INTERRUPTED_EXCEPTION,
-        IO_EXCEPTION
+        IO_EXCEPTION,
+        INVALID_IIIF_MANIFEST_EXCEPTION,
+        IMAGE_NOT_AVAILABLE_EXCEPTION
     }
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Enumerated(EnumType.STRING)
     private ExceptionType type;

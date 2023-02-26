@@ -5,6 +5,8 @@ import org.springframework.stereotype.Service;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ConversionException;
 import pl.psnc.dei.iiif.ConversionImpossibleException;
+import pl.psnc.dei.iiif.ImageNotAvailableException;
+import pl.psnc.dei.iiif.InvalidIIIFManifestException;
 import pl.psnc.dei.model.DAO.PersistableExceptionRepository;
 import pl.psnc.dei.model.PersistableExceptionEntity;
 import pl.psnc.dei.model.conversion.Context;
@@ -54,6 +56,16 @@ public class PersistableExceptionService {
 
     private <T extends Exception> T inflateException(PersistableExceptionEntity persistableException, Class<T> exceptionClass) {
         switch (persistableException.getType()) {
+            case IMAGE_NOT_AVAILABLE_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(ImageNotAvailableException.class)) {
+                    return exceptionClass.cast(new ImageNotAvailableException(persistableException.getMessage()));
+                }
+            }
+            case INVALID_IIIF_MANIFEST_EXCEPTION: {
+                if (exceptionClass.isAssignableFrom(InvalidIIIFManifestException.class)) {
+                    return exceptionClass.cast(new InvalidIIIFManifestException(persistableException.getMessage()));
+                }
+            }
             case TRANSCRIPTION_PLATFORM_EXCEPTION: {
                 // unchecked cast without it
                 if (exceptionClass.isAssignableFrom(TranscriptionPlatformException.class)) {
@@ -93,6 +105,12 @@ public class PersistableExceptionService {
     }
 
     private <T> PersistableExceptionEntity.ExceptionType convertExceptionClassToExceptionType(Class<T> aClass) {
+        if (aClass.isAssignableFrom(ImageNotAvailableException.class)) {
+            return PersistableExceptionEntity.ExceptionType.IMAGE_NOT_AVAILABLE_EXCEPTION;
+        }
+        if (aClass.isAssignableFrom(InvalidIIIFManifestException.class)) {
+            return PersistableExceptionEntity.ExceptionType.INVALID_IIIF_MANIFEST_EXCEPTION;
+        }
         if (aClass.isAssignableFrom(TranscriptionPlatformException.class)) {
             return PersistableExceptionEntity.ExceptionType.TRANSCRIPTION_PLATFORM_EXCEPTION;
         }

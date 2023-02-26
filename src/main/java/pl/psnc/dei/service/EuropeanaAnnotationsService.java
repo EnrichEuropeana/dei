@@ -16,6 +16,7 @@ import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
+import pl.psnc.dei.util.CallToActionBuilder;
 import pl.psnc.dei.util.TranscriptionConverter;
 import reactor.core.publisher.Mono;
 
@@ -36,6 +37,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     private final TranscriptionConverter transcriptionConverter;
 
+    private final CallToActionBuilder callToActionBuilder;
+
     @Value("${europeana.api.annotations.endpoint}")
     private String annotationApiEndpoint;
 
@@ -44,9 +47,10 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     @Autowired
     public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder, AccessTokenManager accessTokenManager,
-                                       TranscriptionConverter transcriptionConverter) {
+            TranscriptionConverter transcriptionConverter, CallToActionBuilder callToActionBuilder) {
         this.accessTokenManager = accessTokenManager;
         this.transcriptionConverter = transcriptionConverter;
+        this.callToActionBuilder = callToActionBuilder;
         configure(webClientBuilder);
     }
 
@@ -67,7 +71,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
-        logger.info("Sending transcription to Annotations API. Transcription: " + transcription.getTranscriptionContent().toString());
+        logger.info("Sending transcription to Annotations API. Transcription: " +
+                transcription.getTranscriptionContent().toString());
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
                 .header("Authorization", "Bearer " + userToken)
@@ -79,13 +84,17 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                         logger.warn("Access token expired. Requesting new one.");
                         return Mono.empty();
                     } else {
-                        logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                        logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase());
+                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase()));
                     }
                 })
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-                    logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
                 .doOnError(throwable -> logger.error(throwable.getMessage()))
@@ -104,9 +113,11 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return
      */
     public String updateTranscription(Record record, Transcription transcription) {
-        JsonObject convertedTranscription = transcriptionConverter.convert(record, transcription.getTranscriptionContent());
+        JsonObject convertedTranscription = transcriptionConverter.convert(record,
+                transcription.getTranscriptionContent());
         String annotationResponse = webClient.put()
-                .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId()).build())
+                .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId())
+                        .build())
                 .header("Authorization", "Bearer " + userToken)
                 .body(BodyInserters.fromObject(convertedTranscription.toString()))
                 .retrieve()
@@ -115,13 +126,17 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                         logger.warn("Access token expired. Requesting new one.");
                         return Mono.empty();
                     } else {
-                        logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                        logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase());
+                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase()));
                     }
                 })
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
+                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
                 .block();
@@ -145,4 +160,41 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
         return null;
     }
 
+    public void postCallToAction(Record record) {
+        logger.info("Sending call to action link to Annotations API. Record identifier: {}, story identifier: {}",
+                record.getIdentifier(), record.getStoryId());
+        if (record.getStoryId() == null) {
+            throw new IllegalArgumentException("No story id in record " + record.getIdentifier());
+        }
+        String annotationResponse = webClient.post()
+                .uri(annotationApiEndpoint)
+                .header("Authorization", "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromObject(callToActionBuilder.fromRecord(record).toString()))
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
+                        logger.warn("Access token expired. Requesting new one.");
+                        return Mono.empty();
+                    } else {
+                        logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase());
+                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                clientResponse.statusCode().getReasonPhrase()));
+                    }
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase()));
+                })
+                .bodyToMono(String.class)
+                .doOnError(throwable -> logger.error(throwable.getMessage()))
+                .block();
+        if (annotationResponse == null || annotationResponse.isEmpty()) {
+            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
+            postCallToAction(record);
+        }
+    }
 }

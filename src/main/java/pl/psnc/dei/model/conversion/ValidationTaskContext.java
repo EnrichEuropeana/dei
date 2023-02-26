@@ -13,41 +13,36 @@ import java.util.ArrayList;
  * Context of Transcribe Task
  */
 @Entity
-public class TranscribeTaskContext extends Context {
+public class ValidationTaskContext extends Context {
     // PROCESSING STATE STORAGE
-    private boolean hasSendRecord;
     private boolean hasThrownError;
     private boolean hasAddedFailure;
-    private boolean hasSendCallToAction;
+    private boolean hasValidatedManifest;
+    private boolean hasCheckedImages;
 
     // PROCESSING DATA STORAGE
     @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJsonRaw;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJson;
+    @Column(columnDefinition = "MEDIUMTEXT")
+    private String iiifManifest;
     @Enumerated(EnumType.STRING)
     private Task.TaskState taskState;
 
-    public static TranscribeTaskContext from(Record record) {
-        TranscribeTaskContext context = new TranscribeTaskContext();
+    public static ValidationTaskContext from(Record record) {
+        ValidationTaskContext context = new ValidationTaskContext();
         context.setRecord(record);
-        context.setHasSendRecord(false);
         context.setHasThrownError(false);
         context.setHasAddedFailure(false);
-        context.setHasSendCallToAction(false);
+        context.setHasValidatedManifest(false);
+        context.setHasCheckedImages(false);
         context.setRecordJson(null);
         context.setRecordJsonRaw(null);
+        context.setIIIFManifest(null);
         context.setTaskState(null);
         context.setExceptions(new ArrayList<>());
         return context;
-    }
-
-    public boolean isHasSendRecord() {
-        return hasSendRecord;
-    }
-
-    public void setHasSendRecord(boolean hasSendRecord) {
-        this.hasSendRecord = hasSendRecord;
     }
 
     public boolean isHasThrownError() {
@@ -66,12 +61,28 @@ public class TranscribeTaskContext extends Context {
         this.hasAddedFailure = hasAddedFailure;
     }
 
-    public boolean isHasSendCallToAction() {
-        return hasSendCallToAction;
+    public boolean isHasValidatedManifest() {
+        return hasValidatedManifest;
     }
 
-    public void setHasSendCallToAction(boolean hasSendCallToAction) {
-        this.hasSendCallToAction = hasSendCallToAction;
+    public void setHasValidatedManifest(boolean hasValidatedManifest) {
+        this.hasValidatedManifest = hasValidatedManifest;
+    }
+
+    public boolean isHasCheckedImages() {
+        return hasCheckedImages;
+    }
+
+    public void setHasCheckedImages(boolean hasCheckedImages) {
+        this.hasCheckedImages = hasCheckedImages;
+    }
+
+    public String getIIIFManifest() {
+        return iiifManifest;
+    }
+
+    public void setIIIFManifest(String iiifManifest) {
+        this.iiifManifest = iiifManifest;
     }
 
     public String getRecordJson() {
