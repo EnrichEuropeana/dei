@@ -22,8 +22,6 @@ public class ValidationTaskContext extends Context {
 
     // PROCESSING DATA STORAGE
     @Column(columnDefinition = "MEDIUMTEXT")
-    private String recordJsonRaw;
-    @Column(columnDefinition = "MEDIUMTEXT")
     private String recordJson;
     @Column(columnDefinition = "MEDIUMTEXT")
     private String iiifManifest;
@@ -38,7 +36,6 @@ public class ValidationTaskContext extends Context {
         context.setHasValidatedManifest(false);
         context.setHasCheckedImages(false);
         context.setRecordJson(null);
-        context.setRecordJsonRaw(null);
         context.setIIIFManifest(null);
         context.setTaskState(null);
         context.setExceptions(new ArrayList<>());
@@ -91,14 +88,6 @@ public class ValidationTaskContext extends Context {
 
     public void setRecordJson(String recordJson) {
         this.recordJson = recordJson;
-    }
-
-    public String getRecordJsonRaw() {
-        return recordJsonRaw;
-    }
-
-    public void setRecordJsonRaw(String recordJsonRaw) {
-        this.recordJsonRaw = recordJsonRaw;
     }
 
     @Override
