@@ -1,10 +1,12 @@
 package pl.psnc.dei.util;
 
+import lombok.experimental.UtilityClass;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.model.Aggregator;
 
 import java.util.*;
 
+@UtilityClass
 public class IiifValidator {
 
 	private static final List<String> ALLOWED_TYPES = new ArrayList<>();

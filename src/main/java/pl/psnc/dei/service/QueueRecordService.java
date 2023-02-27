@@ -54,7 +54,7 @@ public class QueueRecordService {
     public List<Record> getRecordsToProcess() {
         return recordsRepository.findAllByStateIsNotIn(
                 Arrays.asList(Record.RecordState.NORMAL, Record.RecordState.C_FAILED, Record.RecordState.T_SENT,
-                        Record.RecordState.T_FAILED));
+                        Record.RecordState.T_FAILED, Record.RecordState.V_FAILED));
     }
 
     /**

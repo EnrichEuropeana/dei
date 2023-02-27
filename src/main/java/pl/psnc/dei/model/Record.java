@@ -31,6 +31,20 @@ public class Record {
 	 */
 	private String identifier;
 
+	/**
+	 * Story Id is retrieved from TP API once the record is sent. Each time we send the record (maybe there is a
+	 * retry or it is sent again for some reason) this story id might be updated.
+	 */
+	@JsonIgnore
+	private Long storyId;
+
+	/**
+	 * Set this flag to true only when the validation of IIIF manifest and files has been performed successfully
+	 */
+	@JsonIgnore
+	@Column(columnDefinition = "boolean default false")
+	private boolean validated;
+
 	@Convert(converter = RecordStateConverter.class)
 	@Column(columnDefinition = "int default 0")
 	private RecordState state;
@@ -116,7 +130,9 @@ public class Record {
 		T_FAILED(6),
 		T_SENT(7),
 		M_PENDING(8),
-		ME_PENDING(9);
+		ME_PENDING(9),
+		V_PENDING(10),
+		V_FAILED(11);
 
 
 		private static final Map<Integer, RecordState> map = new HashMap<>();
