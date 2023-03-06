@@ -32,6 +32,9 @@ public class UrlBuilder {
 	@Value("${transcription.api.url}")
 	private String transcriptionPlatformLocation;
 
+	@Value("${transcription.new.api.url}")
+	private String transcriptionPlatformAPILocation;
+
 	public String getBaseUrl() {
 		return transcriptionPlatformLocation;
 	}
@@ -108,5 +111,25 @@ public class UrlBuilder {
 				+ ITEMS_SUFFIX
 				+ '/'
 				+ itemId;
+	}
+
+	public String urlForItem(long itemId) {
+		return transcriptionPlatformAPILocation
+				+ ITEMS_SUFFIX
+				+ '/'
+				+ itemId;
+	}
+
+	public String urlForStory(long storyId) {
+		return transcriptionPlatformAPILocation
+				+ STORIES_SUFFIX
+				+ '/'
+				+ storyId;
+	}
+
+	public String urlForItemHTR(Long itemId) {
+		return urlForItem(itemId)
+				+ '/'
+				+ "htrdata";
 	}
 }

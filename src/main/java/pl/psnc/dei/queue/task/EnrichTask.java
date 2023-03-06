@@ -79,24 +79,8 @@ public class EnrichTask extends Task {
         }
         ContextUtils.executeIf(!this.context.isHasDownloadedEnrichment(),
                 () -> {
-                    for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
-                        try {
-                            Transcription transcription = new Transcription();
-                            transcription.setRecord(record);
-                            transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-                            transcription.setTranscriptionContent(
-                                    transcriptionConverter.convert(record, val.getAsObject()));
-                            JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-                            if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-                                transcription.setAnnotationId(europeanaAnnotationId.toString());
-                            }
-                            if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
-                                transcriptions.put(transcription.getTpId(), transcription);
-                            }
-                        } catch (IllegalArgumentException e) {
-                            logger.error("Transcription was corrupted: " + val.toString());
-                        }
-                    }
+                    collectManualTranscriptions(transcriptions);
+                    collectHTRTranscriptions(transcriptions);
                     this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
                     this.context.setHasDownloadedEnrichment(true);
                     this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
@@ -116,14 +100,68 @@ public class EnrichTask extends Task {
             fillQueue();
             for (Transcription transcription : notAnnotatedTranscriptions) {
                 Transcription prepared = transcriptions.get(transcription.getTpId());
-				if (prepared != null) {
-					transcription.setTranscriptionContent(prepared.getTranscriptionContent());
-				}
+                if (prepared != null) {
+                    transcription.setTranscriptionContent(prepared.getTranscriptionContent());
+                }
             }
         }
         state = TaskState.E_HANDLE_TRANSCRIPTIONS;
         this.context.setTaskState(this.state);
         this.contextMediator.save(this.context);
+    }
+
+    private void collectHTRTranscriptions(Map<String, Transcription> transcriptions) {
+        List<Long> manualItems = transcriptions.values().stream().map(Transcription::getItemId).collect(
+                Collectors.toList());
+        for (JsonValue val : tps.fetchHTRTranscriptions(record, manualItems)) {
+            try {
+                val = val.getAsObject().get("data").getAsArray().get(0);
+
+                Transcription transcription = new Transcription();
+                transcription.setTranscriptionType(Transcription.TranscriptionType.HTR);
+                transcription.setRecord(record);
+//                transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
+                transcription.setItemId(
+                        val.getAsObject().get("ItemId").getAsNumber().value().longValue());
+                transcription.setTranscriptionContent();
+                transcription.setTranscriptionContent(
+                        transcriptionConverter.convert(record, val.getAsObject()));
+//                JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
+//                if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+//                    transcription.setAnnotationId(europeanaAnnotationId.toString());
+//                }
+                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+                    transcriptions.put(transcription.getTpId(), transcription);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.error("Transcription was corrupted: " + val.toString());
+            }
+        }
+    }
+
+    private void collectManualTranscriptions(Map<String, Transcription> transcriptions) {
+        for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
+            try {
+                Transcription transcription = new Transcription();
+                // by default this request retrieves only manual transcriptions
+                transcription.setTranscriptionType(Transcription.TranscriptionType.MANUAL);
+                transcription.setRecord(record);
+                transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
+                transcription.setItemId(
+                        val.getAsObject().get("TranscribathonItemId").getAsNumber().value().longValue());
+                transcription.setTranscriptionContent(
+                        transcriptionConverter.convert(record, val.getAsObject()));
+                JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
+                if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+                    transcription.setAnnotationId(europeanaAnnotationId.toString());
+                }
+                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+                    transcriptions.put(transcription.getTpId(), transcription);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.error("Transcription was corrupted: " + val.toString());
+            }
+        }
     }
 
     /**

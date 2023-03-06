@@ -8,4 +8,6 @@ class TranscriptionFieldsNames extends JsonFieldsNames {
     static final String LANGUAGES = "Languages";
     static final String CODE = "Code";
     static final String ORDER_INDEX = "OrderIndex";
+    static final String TRANSCRIPTION_DATA = "TranscriptionData";
+    static final String LANGUAGE = "Language";
 }

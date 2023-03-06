@@ -37,6 +37,19 @@ public class TranscriptionConverter {
         return annotation;
     }
 
+    public JsonObject convertHTR(Record record, JsonObject transcription) {
+        if (transcription == null ||
+                transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA) == null ||
+                StringUtils.isBlank(transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA).getAsString().value()))
+            throw new IllegalArgumentException("HTR transcription object cannot be null");
+
+        JsonObject annotation = new JsonObject();
+        annotation.put(AnnotationFieldsNames.MOTIVATION, transcription.get(TranscriptionFieldsNames.MOTIVATION));
+        annotation.put(AnnotationFieldsNames.BODY, prepareBodyObjectHTR(transcription));
+        annotation.put(AnnotationFieldsNames.TARGET, prepareTargetObject(record, transcription));
+        return annotation;
+    }
+
     private JsonObject prepareTargetObject(Record record, JsonObject transcription) {
         JsonObject bodyObject = new JsonObject();
         if (transcription.get(TranscriptionFieldsNames.STORY_ID) != null) {
@@ -46,6 +59,18 @@ public class TranscriptionConverter {
         int tpOrderIndex = extractOrderIndex(transcription);
         String correctedImageLink = iiifMappingService.getSourceLink(record, tpOrderIndex, tpImageLink);
         bodyObject.put(AnnotationFieldsNames.TARGET_SOURCE, new JsonString(correctedImageLink));
+        return bodyObject;
+    }
+
+    private JsonObject prepareBodyObjectHTR(JsonObject transcription) {
+        JsonObject bodyObject = new JsonObject();
+        bodyObject.put(AnnotationFieldsNames.BODY_TYPE, FULL_TEXT_RESOURCE);
+        if (transcription.get(TranscriptionFieldsNames.LANGUAGE) != null && !transcription.get(TranscriptionFieldsNames.LANGUAGE).getAsArray().isEmpty()) {
+            bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE, transcription.get(TranscriptionFieldsNames.LANGUAGE).getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
+        }
+        bodyObject.put(AnnotationFieldsNames.BODY_VALUE, transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA));
+        bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/xml");
+        bodyObject.put(AnnotationFieldsNames.BODY_RIGHTS, "http://creativecommons.org/publicdomain/zero/1.0/");
         return bodyObject;
     }
 
