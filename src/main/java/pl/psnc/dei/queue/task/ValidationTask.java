@@ -17,6 +17,7 @@ import pl.psnc.dei.util.IIIFManifestValidator;
 import pl.psnc.dei.util.IiifChecker;
 
 import java.util.Arrays;
+import java.util.List;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.*;
 
@@ -28,6 +29,10 @@ public class ValidationTask extends Task {
 
     // Record in JSON-LD
     private JsonObject recordJson;
+
+    private final String serverUrl;
+
+    private final String serverPath;
 
     private String iiifManifest;
 
@@ -44,14 +49,16 @@ public class ValidationTask extends Task {
     private final GeneralRestRequestService generalRestRequestService;
 
     ValidationTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
-            EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs,
-            TasksFactory tasksFactory, ContextMediator contextMediator,
+            EuropeanaSearchService ess, EuropeanaAnnotationsService eas, TasksQueueService tqs, String url,
+            String serverPath, TasksFactory tasksFactory, ContextMediator contextMediator,
             PersistableExceptionService persistableExceptionService, ImportProgressService ips,
             IIIFManifestValidator imv, GeneralRestRequestService grrs) {
         super(record, queueRecordService, tps, ess, eas);
         this.contextMediator = contextMediator;
         this.validationTaskContext = (ValidationTaskContext) this.contextMediator.get(record);
         this.tqs = tqs;
+        this.serverUrl = url;
+        this.serverPath = serverPath;
         this.state = TaskState.T_RETRIEVE_RECORD;
         ContextUtils.executeIfPresent(this.validationTaskContext.getTaskState(),
                 () -> this.state = this.validationTaskContext.getTaskState()
@@ -97,7 +104,7 @@ public class ValidationTask extends Task {
             case V_RETRIEVE_IIIF_MANIFEST:
                 if (this.validationTaskContext.isHasThrownError()) {
                     this.persistableExceptionService.findFirstOfAndThrow(
-                            Arrays.asList(NotFoundException.class),
+                            List.of(NotFoundException.class),
                             this.validationTaskContext);
                 }
                 ContextUtils.executeIfNotPresent(this.recordJson,
@@ -109,11 +116,17 @@ public class ValidationTask extends Task {
                 ContextUtils.executeIfNotPresent(this.validationTaskContext.getIIIFManifest(),
                         () -> {
                             try {
-                                iiifManifest = StringUtils.isNotBlank(record.getIiifManifest()) ?
-                                        record.getIiifManifest() :
-                                        generalRestRequestService.downloadFrom(
-                                                IiifChecker.extractIIIFManifestURL(recordJson, record.getAggregator()));
+                                if (StringUtils.isNotBlank(record.getIiifManifest())) {
+                                    recordJson.put("iiif_url",
+                                            serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" +
+                                                    record.getIdentifier());
+                                    iiifManifest = record.getIiifManifest();
+                                } else {
+                                    iiifManifest = generalRestRequestService.downloadFrom(
+                                            IiifChecker.extractIIIFManifestURL(recordJson, record.getAggregator()));
+                                }
                                 this.validationTaskContext.setIIIFManifest(this.iiifManifest);
+                                this.validationTaskContext.setRecordJson(recordJson.toString());
                                 this.contextMediator.save(this.validationTaskContext);
                             } catch (InvalidIIIFManifestException e) {
                                 try {
@@ -136,7 +149,7 @@ public class ValidationTask extends Task {
                 try {
                     if (this.validationTaskContext.isHasThrownError()) {
                         this.persistableExceptionService.findFirstOfAndThrow(
-                                Arrays.asList(NotFoundException.class, InvalidIIIFManifestException.class),
+                                List.of(NotFoundException.class),
                                 this.validationTaskContext);
                     }
                     ContextUtils.executeIfNotPresent(this.recordJson,

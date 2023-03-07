@@ -132,6 +132,8 @@ public class TranscribeTask extends Task {
                                         record.getIdentifier());
                         queueRecordService.fillRecordJsonData(record, recordJson, recordJsonRaw);
                         state = T_SEND_RESULT;
+                        // update record in context
+                        this.transcribeTaskContext.setRecordJson(this.recordJson.toString());
                         this.transcribeTaskContext.setTaskState(this.state);
                         this.contextMediator.save(this.transcribeTaskContext);
                     } else {
