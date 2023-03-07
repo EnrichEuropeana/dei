@@ -496,12 +496,14 @@ public class Converter {
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
 		manifest.put("@id", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
 		manifest.put("@type", "sc:Manifest");
+		manifest.put("label", "Manifest for record " + record.getIdentifier());
 
 		JsonObject sequence = new JsonObject();
 		JsonArray sequences = new JsonArray();
 		sequences.add(sequence);
 		manifest.put("sequences", sequences);
 		sequence.put("@type", "sc:Sequence");
+		sequence.put("label", "Sequence");
 		sequence.put("canvases", getSequenceJson(storedFilesData));
 
 		return manifest;
