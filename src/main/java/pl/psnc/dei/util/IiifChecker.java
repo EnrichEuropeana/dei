@@ -134,11 +134,21 @@ public class IiifChecker {
         String context = jsonObject.get("@context").getAsString().value();
         Matcher matcher = CONTEXT_PATTERN.matcher(context);
         if (matcher.matches()) {
-            return matcher.group(1);
+            return getVersionForValidation(matcher.group(1));
         }
         throw new InvalidIIIFManifestException(
                 String.format("Presentation API version could not be extracted from manifest @contex element %s.",
                         context));
+    }
+
+    private String getVersionForValidation(String extractedVersion) {
+        if (extractedVersion.equals("2")) {
+            return "2.1";
+        }
+        if (extractedVersion.equals("3")) {
+            return "3.0";
+        }
+        return extractedVersion;
     }
 
     public static List<String> extractImages(String iiifManifest) {
