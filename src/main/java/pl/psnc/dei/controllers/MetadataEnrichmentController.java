@@ -112,13 +112,7 @@ public class MetadataEnrichmentController {
             @RequestParam(value = "domain") String domain,
             @RequestParam(value = "state", required = false, defaultValue = "PENDING") MetadataEnrichment.EnrichmentState state) {
         logger.info("Getting enrichments for domain");
-        List<RecordEnrichmentsDTO> pendingEnrichments = null;
-        try {
-            pendingEnrichments = mes.getEnrichmentsForDomain(domain, state);
-        } catch (NotFoundException e) {
-            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-        }
-        return new ResponseEntity<>(pendingEnrichments, HttpStatus.OK);
+        return new ResponseEntity<>(mes.getEnrichmentsForDomain(domain, state), HttpStatus.OK);
     }
 
     @PostMapping("/validate")
