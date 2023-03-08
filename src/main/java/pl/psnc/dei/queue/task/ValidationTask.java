@@ -195,7 +195,7 @@ public class ValidationTask extends Task {
                                 queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.V_FAILED);
                                 tps.updateImportState(record.getAnImport());
                             } catch (NotFoundException nfe) {
-                                this.contextMediator.delete(this.validationTaskContext);
+                                this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
                                 throw new AssertionError("Record deleted while being processed, id: " + record.getId()
                                         + ", identifier: " + record.getIdentifier(), nfe);
                             }
@@ -205,7 +205,7 @@ public class ValidationTask extends Task {
                             record.setValidated(true);
                             queueRecordService.saveRecord(record);
                             tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
-                            this.contextMediator.delete(this.validationTaskContext);
+                            this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
                         });
         }
     }
