@@ -4,6 +4,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.exception.AggregatorException;
+import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.iiif.ImageNotAvailableException;
 import pl.psnc.dei.iiif.InvalidIIIFManifestException;
@@ -219,8 +220,7 @@ public class TranscribeTask extends Task {
                     tps.updateImportState(record.getAnImport());
                     this.transcribeTaskContext.setRecord(record);
                     this.contextMediator.delete(this.transcribeTaskContext);
-                } catch (TranscriptionPlatformException e) {
-                    this.persistException(e);
+                } catch (DEIHttpException e) {
                     // deletion must occur before state change or context will never be deleted
                     this.contextMediator.delete(this.transcribeTaskContext);
                     queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.T_FAILED);
