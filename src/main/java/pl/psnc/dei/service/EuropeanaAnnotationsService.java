@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
+import org.springframework.web.reactive.function.client.ClientResponse;
+import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Record;
@@ -32,6 +34,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
     private static final Pattern ANNOTATION_ID_PATTERN = Pattern.compile(".*\\/([0-9]*)");
 
     private static final String ID = "id";
+
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
     private final AccessTokenManager accessTokenManager;
 
@@ -71,11 +75,11 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return String that contains annotationId generated for given transcription
      */
     public String postTranscription(Transcription transcription) {
-        logger.info("Sending transcription to Annotations API. Transcription: " +
+        logger.info("Sending transcription to Annotations API. Transcription: {}",
                 transcription.getTranscriptionContent().toString());
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
-                .header("Authorization", "Bearer " + userToken)
+                .header(AUTHORIZATION_HEADER, "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
@@ -112,14 +116,13 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @param transcription
      * @return
      */
-    public String updateTranscription(Record record, Transcription transcription) {
-        JsonObject convertedTranscription = transcriptionConverter.convert(record,
-                transcription.getTranscriptionContent());
+    public String updateTranscription(Transcription transcription) {
         String annotationResponse = webClient.put()
                 .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId())
                         .build())
-                .header("Authorization", "Bearer " + userToken)
-                .body(BodyInserters.fromObject(convertedTranscription.toString()))
+                .header(AUTHORIZATION_HEADER, "Bearer " + userToken)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
@@ -139,10 +142,11 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                             clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
         if (annotationResponse == null || annotationResponse.isEmpty()) {
             userToken = accessTokenManager.getAccessTokenWithRefreshToken();
-            return updateTranscription(record, transcription);
+            return updateTranscription(transcription);
         }
         return extractAnnotationId(annotationResponse);
     }
@@ -166,31 +170,32 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
         if (record.getStoryId() == null) {
             throw new IllegalArgumentException("No story id in record " + record.getIdentifier());
         }
+
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
-                .header("Authorization", "Bearer " + userToken)
+                .header(AUTHORIZATION_HEADER, "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(callToActionBuilder.fromRecord(record).toString()))
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
-                        logger.warn("Access token expired. Requesting new one.");
-                        return Mono.empty();
-                    } else {
-                        logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase());
-                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase()));
-                    }
-                })
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-                    logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase()));
-                })
+//                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+//                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
+//                        logger.warn("Access token expired. Requesting new one.");
+//                        return Mono.empty();
+//                    } else {
+//                        logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
+//                                clientResponse.statusCode().getReasonPhrase());
+//                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+//                                clientResponse.statusCode().getReasonPhrase()));
+//                    }
+//                })
+//                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+//                    logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
+//                            clientResponse.statusCode().getReasonPhrase());
+//                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+//                            clientResponse.statusCode().getReasonPhrase()));
+//                })
                 .bodyToMono(String.class)
-                .doOnError(throwable -> logger.error(throwable.getMessage()))
+//                .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
         if (annotationResponse == null || annotationResponse.isEmpty()) {
             userToken = accessTokenManager.getAccessTokenWithRefreshToken();

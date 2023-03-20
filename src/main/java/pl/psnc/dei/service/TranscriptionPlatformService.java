@@ -121,9 +121,9 @@ public class TranscriptionPlatformService {
      * @return available projects
      */
     public List<Project> getProjects() {
-		if (availableProjects == null || availableProjects.isEmpty()) {
-			refreshAvailableProjects();
-		}
+        if (availableProjects == null || availableProjects.isEmpty()) {
+            refreshAvailableProjects();
+        }
 
         return availableProjects;
     }
@@ -152,16 +152,16 @@ public class TranscriptionPlatformService {
                 })
                 .bodyToMono(Project[].class).block();
         // owh error :/
-		if (projects == null) {
-			return;
-		}
+        if (projects == null) {
+            return;
+        }
 
         // check which projects are not present
         for (Project tempProject : projects) {
             Project project = projectsRepository.findByName(tempProject.getName());
-			if (project == null) {
-				project = tempProject;
-			}
+            if (project == null) {
+                project = tempProject;
+            }
             getDatasetsFor(project);
             project = projectsRepository.save(project);
             Hibernate.initialize(project.getDatasets());
@@ -391,6 +391,20 @@ public class TranscriptionPlatformService {
             return JSON.parse(currentTranscription);
         }
         return null;
+    }
+
+    /**
+     * Fetch content of updated HTR transcription
+     *
+     * @param transcription transcription to fetch content for
+     * @return content of transcription
+     */
+    public JsonObject fetchHTRTranscriptionUpdate(Transcription transcription) {
+        logger.info(
+                "Fetching HTR transcription update based on HtrDataId (ItemId={}) {} and Europeana Annotation Id {}. Record identifier {}.",
+                transcription.getItemId(), transcription.getTpId(), transcription.getAnnotationId(), transcription.getRecord().getIdentifier());
+        // TODO maybe another endpoint will have to be used...for now it's getHTRData, no Europeana Annotation is used
+        return Objects.requireNonNullElse(getHTRData(transcription.getItemId()).getAsObject(), null);
     }
 
     private String retrieveCurrentTranscription(String transcriptionId, String enrichments) {
@@ -690,7 +704,7 @@ public class TranscriptionPlatformService {
         String response = this.webClient
                 .get()
                 .uri(urlBuilder.urlForItemHTR(itemId))
-                .header("Authorization", authToken)
+                .header("Authorization", authNewApiToken)
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
@@ -713,16 +727,13 @@ public class TranscriptionPlatformService {
                     }
                 })
                 .block();
-        if (response != null) {
-            return JSON.parseAny(response);
-        }
-        return JSON.parseAny("{}");
+        return JSON.parseAny(Objects.requireNonNullElse(response, "{}"));
     }
 
     private boolean isHTR(JsonValue jsonValue) {
         JsonValue source = jsonValue.getAsObject().get("TranscriptionSource");
-        return source != null && Transcription.TranscriptionType.HTR.equals(
-                Transcription.TranscriptionType.from(source.getAsString().value()));
+        return source != null && TranscriptionType.HTR.equals(
+                TranscriptionType.from(source.getAsString().value()));
     }
 
     private JsonValue getItemFromTP(Long id) {

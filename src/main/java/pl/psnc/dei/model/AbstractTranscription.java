@@ -1,8 +1,7 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.converter.JsonObjectToStringConverter;
 
@@ -16,7 +15,7 @@ import javax.persistence.*;
  * This class seems to be a weak entity as it could be identified by only tpId and annotaionId,
  * but on creation there not always is annotationId, thus we need to create surrogate id field
  */
-public class Transcription {
+public abstract class AbstractTranscription {
 
     @Id
     @GeneratedValue
@@ -27,8 +26,10 @@ public class Transcription {
      */
     private String tpId;
 
-    @Convert(converter = TranscriptionTypeConverter.class)
-    @Column(columnDefinition = "VARCHAR(10) default manual")
+	@Convert(converter = TranscriptionTypeConverter.class)
+	@Column(columnDefinition = "VARCHAR(10) default manual")
+    @Getter(AccessLevel.PUBLIC)
+    @Setter(AccessLevel.PROTECTED)
     private TranscriptionType transcriptionType;
 
     /**
@@ -46,11 +47,15 @@ public class Transcription {
     @JsonProperty("EuropeanaAnnotationId")
     private String annotationId;
 
-    public Transcription(String tpId, Record record, String annotationId) {
+    protected AbstractTranscription(Record record) {
+        this.record = record;
+    }
+
+    protected AbstractTranscription(String tpId, Record record, String annotationId) {
         this.tpId = tpId;
         this.record = record;
         this.annotationId = annotationId;
-        this.transcriptionContent = new JsonObject();
     }
 
+    public abstract void from(JsonObject transcription);
 }

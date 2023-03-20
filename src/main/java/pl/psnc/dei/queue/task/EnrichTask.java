@@ -4,9 +4,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.util.Pair;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.TranscriptionType;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
+import pl.psnc.dei.model.factory.HTRTranscriptionFactory;
+import pl.psnc.dei.model.factory.ManualTranscriptionFactory;
+import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -15,6 +20,7 @@ import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -31,7 +37,20 @@ public class EnrichTask extends Task {
     private final ContextMediator contextMediator;
 
     private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+
     private final TranscriptionConverter transcriptionConverter;
+
+    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories = new HashMap<>();
+
+    @PostConstruct
+    public void init(List<TranscriptionFactory> factories) {
+        transcriptionFactories.put(TranscriptionType.MANUAL, factories.stream()
+                .filter(transcriptionFactory -> transcriptionFactory instanceof ManualTranscriptionFactory).findFirst()
+                .orElseThrow());
+        transcriptionFactories.put(TranscriptionType.HTR, factories.stream()
+                .filter(transcriptionFactory -> transcriptionFactory instanceof HTRTranscriptionFactory).findFirst()
+                .orElseThrow());
+    }
 
     EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
             EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
@@ -115,26 +134,13 @@ public class EnrichTask extends Task {
                 Collectors.toList());
         for (JsonValue val : tps.fetchHTRTranscriptions(record, manualItems)) {
             try {
-                val = val.getAsObject().get("data").getAsArray().get(0);
-
-                Transcription transcription = new Transcription();
-                transcription.setTranscriptionType(Transcription.TranscriptionType.HTR);
-                transcription.setRecord(record);
-//                transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-                transcription.setItemId(
-                        val.getAsObject().get("ItemId").getAsNumber().value().longValue());
-                transcription.setTranscriptionContent();
-                transcription.setTranscriptionContent(
-                        transcriptionConverter.convert(record, val.getAsObject()));
-//                JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-//                if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-//                    transcription.setAnnotationId(europeanaAnnotationId.toString());
-//                }
+                Transcription transcription = transcriptionFactories.get(TranscriptionType.HTR)
+                        .createTranscription(record, val.getAsObject(), transcriptionConverter);
                 if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
                     transcriptions.put(transcription.getTpId(), transcription);
                 }
             } catch (IllegalArgumentException e) {
-                logger.error("Transcription was corrupted: " + val.toString());
+                logger.error("Transcription was corrupted: {}", val);
             }
         }
     }
@@ -142,24 +148,14 @@ public class EnrichTask extends Task {
     private void collectManualTranscriptions(Map<String, Transcription> transcriptions) {
         for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
             try {
-                Transcription transcription = new Transcription();
                 // by default this request retrieves only manual transcriptions
-                transcription.setTranscriptionType(Transcription.TranscriptionType.MANUAL);
-                transcription.setRecord(record);
-                transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-                transcription.setItemId(
-                        val.getAsObject().get("TranscribathonItemId").getAsNumber().value().longValue());
-                transcription.setTranscriptionContent(
-                        transcriptionConverter.convert(record, val.getAsObject()));
-                JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-                if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-                    transcription.setAnnotationId(europeanaAnnotationId.toString());
-                }
+                Transcription transcription = transcriptionFactories.get(TranscriptionType.MANUAL)
+                        .createTranscription(record, val.getAsObject(), transcriptionConverter);
                 if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
                     transcriptions.put(transcription.getTpId(), transcription);
                 }
             } catch (IllegalArgumentException e) {
-                logger.error("Transcription was corrupted: " + val.toString());
+                logger.error("Transcription was corrupted: {}", val);
             }
         }
     }

@@ -4,14 +4,14 @@ import javax.persistence.AttributeConverter;
 import javax.persistence.Converter;
 
 @Converter
-public class TranscriptionTypeConverter implements AttributeConverter<Transcription.TranscriptionType, String> {
+public class TranscriptionTypeConverter implements AttributeConverter<TranscriptionType, String> {
     @Override
-    public String convertToDatabaseColumn(Transcription.TranscriptionType transcriptionType) {
+    public String convertToDatabaseColumn(TranscriptionType transcriptionType) {
         return transcriptionType.name();
     }
 
     @Override
-    public Transcription.TranscriptionType convertToEntityAttribute(String s) {
-        return Transcription.TranscriptionType.from(s);
+    public TranscriptionType convertToEntityAttribute(String s) {
+        return TranscriptionType.from(s);
     }
 }

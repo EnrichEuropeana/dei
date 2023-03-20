@@ -92,7 +92,7 @@ public class TasksFactory {
 			case T_PENDING:
 				return List.of(new TranscribeTask(record, qrs, tps, ess, eas, tqs, serverUrl, serverPath, this, ctxm, pes, ips));
 			case U_PENDING:
-				return List.of(new UpdateTask(record, qrs, tps, ess, eas, ctxm));
+				return List.of(new UpdateTask(record, qrs, tps, ess, eas, tc, ctxm));
 			case C_PENDING:
 				return List.of(new ConversionTask(record, qrs, tps, ess, eas, ddbfr, tqs, cnv, ips, this, pes, rr, ctxm));
 			case M_PENDING:
@@ -109,7 +109,7 @@ public class TasksFactory {
 	}
 
 	public UpdateTask getNewUpdateTask(String recordId, String annotationId, String transcriptionId) throws NotFoundException {
-		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, ctxm);
+		return new UpdateTask(recordId, annotationId, transcriptionId, qrs, tps, ess, eas, tc, ctxm);
 	}
 
 	/**
