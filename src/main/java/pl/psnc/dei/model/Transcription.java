@@ -28,7 +28,7 @@ public class Transcription {
     private String tpId;
 
     @Convert(converter = TranscriptionTypeConverter.class)
-    @Column(columnDefinition = "VARCHAR(10) default manual")
+    @Column(columnDefinition = "VARCHAR(10) default 'manual'")
     private TranscriptionType transcriptionType;
 
     /**

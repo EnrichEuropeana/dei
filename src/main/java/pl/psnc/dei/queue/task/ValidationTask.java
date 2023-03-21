@@ -136,7 +136,7 @@ public class ValidationTask extends Task {
                 try {
                     if (this.validationTaskContext.isHasThrownError()) {
                         this.persistableExceptionService.findFirstOfAndThrow(
-                                Arrays.asList(NotFoundException.class, InvalidIIIFManifestException.class),
+                                Arrays.asList(NotFoundException.class),
                                 this.validationTaskContext);
                     }
                     ContextUtils.executeIfNotPresent(this.recordJson,
