@@ -192,6 +192,10 @@ public class EnrichTask extends Task {
         while (!notAnnotatedTranscriptions.isEmpty()) {
             Transcription transcription = notAnnotatedTranscriptions.peek();
             String annotationId = eas.postTranscription(transcription);
+            if (annotationId == null) {
+                logger.warn("Received null annotation id from Europeana Annotation API for transcription {} record {}",
+                        transcription.getTpId(), transcription.getRecord().getIdentifier());
+            }
             transcription.setAnnotationId(annotationId);
             queueRecordService.saveTranscription(transcription);
             notAnnotatedTranscriptions.remove(transcription);
@@ -211,7 +215,9 @@ public class EnrichTask extends Task {
         Iterator<Transcription> it = record.getTranscriptions().iterator();
         while (it.hasNext()) {
             Transcription t = it.next();
-            tps.sendAnnotationUrl(t);
+            if (t.getAnnotationId() != null) {
+                tps.sendAnnotationUrl(t);
+            }
             it.remove();
         }
         state = TaskState.E_FINALIZE;

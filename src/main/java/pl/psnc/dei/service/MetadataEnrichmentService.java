@@ -36,11 +36,7 @@ public class MetadataEnrichmentService {
      * @param domain
      * @return list of DTOs for record enrichments
      */
-    public List<RecordEnrichmentsDTO> getEnrichmentsForDomain(String domain, MetadataEnrichment.EnrichmentState state) throws
-            NotFoundException {
-        if (!metadataEnrichmentRepository.existsByExternalIdContaining(domain)) {
-            throw new NotFoundException(domain);
-        }
+    public List<RecordEnrichmentsDTO> getEnrichmentsForDomain(String domain, MetadataEnrichment.EnrichmentState state) {
         Map<Record, List<MetadataEnrichment>> recordEnrichments = metadataEnrichmentRepository.findAllByExternalIdContainingAndState(
                 domain, state).stream().collect(Collectors.groupingBy(MetadataEnrichment::getRecord));
 

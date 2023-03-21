@@ -87,7 +87,15 @@ public class IiifChecker {
         if (checkIfIiif(record, aggregator)) {
             return extractIIIFManifestURL(record);
         }
-        throw new InvalidIIIFManifestException("No iiif manifest found in the record.");
+        return Optional.ofNullable(extractLocalIIIFManifestURL(record))
+                .orElseThrow(() -> new InvalidIIIFManifestException("No iiif manifest found in the record."));
+    }
+
+    private static String extractLocalIIIFManifestURL(JsonObject record) {
+        if (record.get("iiif_url") != null) {
+            return record.get("iiif_url").getAsString().value();
+        }
+        return null;
     }
 
     private static String extractIIIFManifestURL(JsonObject record) {
@@ -122,20 +130,30 @@ public class IiifChecker {
     }
 
     public static String extractVersion(String iiifManifest) {
-        JsonObject jsonObject = JSON.parse(iiifManifest);
+        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0',' '));
         String context = jsonObject.get("@context").getAsString().value();
         Matcher matcher = CONTEXT_PATTERN.matcher(context);
         if (matcher.matches()) {
-            return matcher.group(1);
+            return getVersionForValidation(matcher.group(1));
         }
         throw new InvalidIIIFManifestException(
                 String.format("Presentation API version could not be extracted from manifest @contex element %s.",
                         context));
     }
 
+    private String getVersionForValidation(String extractedVersion) {
+        if (extractedVersion.equals("2")) {
+            return "2.1";
+        }
+        if (extractedVersion.equals("3")) {
+            return "3.0";
+        }
+        return extractedVersion;
+    }
+
     public static List<String> extractImages(String iiifManifest) {
         List<String> extractedImages = new ArrayList<>();
-        JsonObject jsonObject = JSON.parse(iiifManifest);
+        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0',' '));
         JsonArray canvas = jsonObject.get("sequences").getAsArray().get(0).getAsObject().get("canvases").getAsArray();
         canvas.stream().iterator().forEachRemaining(canva -> {
             JsonArray images = canva.getAsObject().get("images").getAsArray();

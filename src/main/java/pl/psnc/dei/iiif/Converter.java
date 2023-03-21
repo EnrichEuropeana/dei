@@ -495,13 +495,15 @@ public class Converter {
 		JsonObject manifest = new JsonObject();
 		manifest.put("@context", "http://iiif.io/api/presentation/2/context.json");
 		manifest.put("@id", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
-		manifest.put("@type", "sc:manifest");
+		manifest.put("@type", "sc:Manifest");
+		manifest.put("label", "Manifest for record " + record.getIdentifier());
 
 		JsonObject sequence = new JsonObject();
 		JsonArray sequences = new JsonArray();
 		sequences.add(sequence);
 		manifest.put("sequences", sequences);
 		sequence.put("@type", "sc:Sequence");
+		sequence.put("label", "Sequence");
 		sequence.put("canvases", getSequenceJson(storedFilesData));
 
 		return manifest;
@@ -522,7 +524,7 @@ public class Converter {
 				canvases.add(canvas);
 
 				canvas.put("@id", iiifImageServerUrl + "/canvas/" + imagePath);
-				canvas.put("@type", "sc:canvas");
+				canvas.put("@type", "sc:Canvas");
 				canvas.put("label", imagePath);
 				canvas.put("width", data.dimensions.get(i).width);
 				canvas.put("height", data.dimensions.get(i).height);

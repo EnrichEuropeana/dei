@@ -170,36 +170,37 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
         if (record.getStoryId() == null) {
             throw new IllegalArgumentException("No story id in record " + record.getIdentifier());
         }
-
+        userToken = accessTokenManager.getAccessTokenWithRefreshToken();
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
                 .header(AUTHORIZATION_HEADER, "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(callToActionBuilder.fromRecord(record).toString()))
                 .retrieve()
-//                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-//                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
-//                        logger.warn("Access token expired. Requesting new one.");
-//                        return Mono.empty();
-//                    } else {
-//                        logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
-//                                clientResponse.statusCode().getReasonPhrase());
-//                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-//                                clientResponse.statusCode().getReasonPhrase()));
-//                    }
-//                })
-//                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-//                    logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
-//                            clientResponse.statusCode().getReasonPhrase());
-//                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-//                            clientResponse.statusCode().getReasonPhrase()));
-//                })
+                .onStatus(HttpStatus::is4xxClientError,
+                        clientResponse -> clientResponse.bodyToMono(String.class).flatMap(s -> {
+                            if (clientResponse.statusCode().equals(HttpStatus.BAD_REQUEST)) {
+                                logger.warn("Send Call to action - bad request. Response: {}", s);
+                                return Mono.empty();
+                            } else {
+                                logger.error("Error {} while posting call to action. Cause: {}",
+                                        clientResponse.rawStatusCode(),
+                                        s);
+                                return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                        s));
+                            }
+                        }))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase()));
+                })
                 .bodyToMono(String.class)
 //                .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
-        if (annotationResponse == null || annotationResponse.isEmpty()) {
-            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
-            postCallToAction(record);
+        if (!(annotationResponse == null || annotationResponse.isEmpty())) {
+            logger.info("Call to action annotation id: {}", annotationResponse);
         }
     }
 }
