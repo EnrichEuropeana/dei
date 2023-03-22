@@ -18,6 +18,7 @@ import pl.psnc.dei.util.IiifChecker;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 import static pl.psnc.dei.queue.task.Task.TaskState.*;
 
@@ -123,7 +124,8 @@ public class ValidationTask extends Task {
                                     iiifManifest = record.getIiifManifest();
                                 } else {
                                     iiifManifest = generalRestRequestService.downloadFrom(
-                                            IiifChecker.extractIIIFManifestURL(recordJson, record.getAggregator()));
+                                                    IiifChecker.extractIIIFManifestURL(recordJson, record.getAggregator()))
+                                            .orElseThrow(() -> new InvalidIIIFManifestException("Manifest is empty"));
                                 }
                                 this.validationTaskContext.setIIIFManifest(this.iiifManifest);
                                 this.validationTaskContext.setRecordJson(recordJson.toString());
@@ -186,27 +188,26 @@ public class ValidationTask extends Task {
                 ContextUtils.executeIfNotPresent(this.iiifManifest,
                         () -> this.iiifManifest = this.validationTaskContext.getIIIFManifest()
                 );
-                IiifChecker.extractImages(iiifManifest).stream().map(generalRestRequestService::downloadFrom)
-                        .filter(
-                                StringUtils::isBlank).findFirst().ifPresentOrElse(s -> {
-                            try {
-                                this.persistException(new ImageNotAvailableException(
-                                        "Images for record " + record.getId() + " not available."));
-                                queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.V_FAILED);
-                                tps.updateImportState(record.getAnImport());
-                            } catch (NotFoundException nfe) {
-                                this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
-                                throw new AssertionError("Record deleted while being processed, id: " + record.getId()
-                                        + ", identifier: " + record.getIdentifier(), nfe);
-                            }
-                        }, () -> {
-                            importProgressService.reportProgress(record);
-                            record.setState(Record.RecordState.T_PENDING);
-                            record.setValidated(true);
-                            queueRecordService.saveRecord(record);
-                            tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
-                            this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
-                        });
+                IiifChecker.extractImages(iiifManifest).stream().map(generalRestRequestService::downloadFrom).filter(
+                        Optional::isEmpty).findFirst().ifPresentOrElse(s -> {
+                    try {
+                        this.persistException(new ImageNotAvailableException(
+                                "Images for record " + record.getId() + " not available."));
+                        queueRecordService.setNewStateForRecord(record.getId(), Record.RecordState.V_FAILED);
+                        tps.updateImportState(record.getAnImport());
+                    } catch (NotFoundException nfe) {
+                        this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
+                        throw new AssertionError("Record deleted while being processed, id: " + record.getId()
+                                + ", identifier: " + record.getIdentifier(), nfe);
+                    }
+                }, () -> {
+                    importProgressService.reportProgress(record);
+                    record.setState(Record.RecordState.T_PENDING);
+                    record.setValidated(true);
+                    queueRecordService.saveRecord(record);
+                    tasksFactory.getTask(record).forEach(tqs::addTaskToQueue);
+                    this.contextMediator.delete(this.validationTaskContext, ValidationTaskContext.class);
+                });
         }
     }
 

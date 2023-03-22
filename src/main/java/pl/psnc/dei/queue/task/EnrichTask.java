@@ -1,16 +1,14 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.util.Pair;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.TranscriptionType;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
-import pl.psnc.dei.model.factory.HTRTranscriptionFactory;
-import pl.psnc.dei.model.factory.ManualTranscriptionFactory;
 import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
@@ -20,7 +18,6 @@ import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
-import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -40,24 +37,16 @@ public class EnrichTask extends Task {
 
     private final TranscriptionConverter transcriptionConverter;
 
-    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories = new HashMap<>();
-
-    @PostConstruct
-    public void init(List<TranscriptionFactory> factories) {
-        transcriptionFactories.put(TranscriptionType.MANUAL, factories.stream()
-                .filter(transcriptionFactory -> transcriptionFactory instanceof ManualTranscriptionFactory).findFirst()
-                .orElseThrow());
-        transcriptionFactories.put(TranscriptionType.HTR, factories.stream()
-                .filter(transcriptionFactory -> transcriptionFactory instanceof HTRTranscriptionFactory).findFirst()
-                .orElseThrow());
-    }
+    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
 
     EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
             EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
-            ContextMediator contextMediator, TranscriptionConverter tc) {
+            ContextMediator contextMediator, TranscriptionConverter tc,
+            Map<TranscriptionType, TranscriptionFactory> transcriptionFactories) {
         super(record, queueRecordService, tps, ess, eas);
         this.contextMediator = contextMediator;
         this.context = (EnrichTaskContext) this.contextMediator.get(record);
+        this.transcriptionFactories = transcriptionFactories;
         state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
         this.transcriptionConverter = tc;
         ContextUtils.executeIfPresent(this.context.getTaskState(),
@@ -132,7 +121,8 @@ public class EnrichTask extends Task {
     private void collectHTRTranscriptions(Map<String, Transcription> transcriptions) {
         List<Long> manualItems = transcriptions.values().stream().map(Transcription::getItemId).collect(
                 Collectors.toList());
-        for (JsonValue val : tps.fetchHTRTranscriptions(record, manualItems)) {
+        JsonArray htrs = tps.fetchHTRTranscriptions(record, manualItems);
+        for (JsonValue val : htrs) {
             try {
                 Transcription transcription = transcriptionFactories.get(TranscriptionType.HTR)
                         .createTranscription(record, val.getAsObject(), transcriptionConverter);

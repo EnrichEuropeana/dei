@@ -126,11 +126,15 @@ public class IiifChecker {
                                 .value());
                     }
                 });
-        return url.get();
+        String manifestURL = url.get();
+        if (manifestURL.endsWith("/")) {
+            return manifestURL.substring(0, manifestURL.length() - 1);
+        }
+        return manifestURL;
     }
 
     public static String extractVersion(String iiifManifest) {
-        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0',' '));
+        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0', ' '));
         String context = jsonObject.get("@context").getAsString().value();
         Matcher matcher = CONTEXT_PATTERN.matcher(context);
         if (matcher.matches()) {
@@ -153,7 +157,7 @@ public class IiifChecker {
 
     public static List<String> extractImages(String iiifManifest) {
         List<String> extractedImages = new ArrayList<>();
-        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0',' '));
+        JsonObject jsonObject = JSON.parse(iiifManifest.replace('\u00A0', ' '));
         JsonArray canvas = jsonObject.get("sequences").getAsArray().get(0).getAsObject().get("canvases").getAsArray();
         canvas.stream().iterator().forEachRemaining(canva -> {
             JsonArray images = canva.getAsObject().get("images").getAsArray();

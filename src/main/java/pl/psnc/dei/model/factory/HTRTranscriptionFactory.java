@@ -4,6 +4,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonString;
 import org.apache.jena.atlas.json.JsonValue;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.TranscriptionType;
@@ -16,7 +18,12 @@ import java.util.Objects;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
+@Component
 public class HTRTranscriptionFactory implements TranscriptionFactory {
+
+    @Value("${htr.transcription.mime.type}")
+    private String mimeType;
+
     @Override
     public Transcription createTranscription(Record record, JsonObject original, TranscriptionConverter converter) {
         JsonValue data = original.get("data");
@@ -35,7 +42,7 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
         if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
             transcription.setAnnotationId(europeanaAnnotationId.toString());
         }
-        return null;
+        return transcription;
     }
 
     public void validateTranscription(JsonObject transcription) {
@@ -62,7 +69,7 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
     private void fillBodyValues(JsonObject transcription, JsonObject bodyObject) {
         bodyObject.put(AnnotationFieldsNames.BODY_VALUE,
                 transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA));
-        bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, "text/xml");
+        bodyObject.put(AnnotationFieldsNames.BODY_FORMAT, mimeType);
         fillLicense(bodyObject);
     }
 
@@ -71,8 +78,9 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
         if (languages.isArray() && !languages.getAsArray().isEmpty()) {
             bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE,
                     languages.getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
+        } else {
+            throw new IllegalArgumentException("Mandatory language property is missing.");
         }
-        throw new IllegalArgumentException("Mandatory language property is missing.");
     }
 
     public JsonObject prepareTargetObject(Record record, JsonObject transcription, String imageLink) {

@@ -1,7 +1,6 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.jena.atlas.json.JsonObject;
-import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
@@ -9,8 +8,6 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.TranscriptionType;
 import pl.psnc.dei.model.conversion.UpdateTaskContext;
-import pl.psnc.dei.model.factory.HTRTranscriptionFactory;
-import pl.psnc.dei.model.factory.ManualTranscriptionFactory;
 import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
@@ -20,9 +17,7 @@ import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
-import javax.annotation.PostConstruct;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -46,24 +41,16 @@ public class UpdateTask extends Task {
 
     private final TranscriptionConverter transcriptionConverter;
 
-    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories = new HashMap<>();
-
-    @PostConstruct
-    public void init(List<TranscriptionFactory> factories) {
-        transcriptionFactories.put(TranscriptionType.MANUAL, factories.stream()
-                .filter(transcriptionFactory -> transcriptionFactory instanceof ManualTranscriptionFactory).findFirst()
-                .orElseThrow());
-        transcriptionFactories.put(TranscriptionType.HTR, factories.stream()
-                .filter(transcriptionFactory -> transcriptionFactory instanceof HTRTranscriptionFactory).findFirst()
-                .orElseThrow());
-    }
+    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
 
     UpdateTask(Record record, QueueRecordService queueRecordService,
             TranscriptionPlatformService tps, EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
-            TranscriptionConverter transcriptionConverter, ContextMediator contextMediator) {
+            TranscriptionConverter transcriptionConverter, ContextMediator contextMediator,
+            Map<TranscriptionType, TranscriptionFactory> transcriptionFactories) {
         // Fired only for crash recovery
         super(record, queueRecordService, tps, ess, eas);
         this.contextMediator = contextMediator;
+        this.transcriptionFactories = transcriptionFactories;
         this.context = (UpdateTaskContext) contextMediator.get(record);
         this.queueRecordService = queueRecordService;
         this.transcriptionConverter = transcriptionConverter;
@@ -91,11 +78,13 @@ public class UpdateTask extends Task {
     public UpdateTask(String recordIdentifier, String annotationId, String transcriptionId,
             QueueRecordService queueRecordService, TranscriptionPlatformService tps, EuropeanaSearchService ess,
             EuropeanaAnnotationsService eas, TranscriptionConverter transcriptionConverter,
-            ContextMediator contextMediator) throws NotFoundException {
+            ContextMediator contextMediator, Map<TranscriptionType, TranscriptionFactory> transcriptionFactories) throws
+            NotFoundException {
         // fired for normal execution
         super(queueRecordService.getRecord(recordIdentifier), queueRecordService, tps, ess, eas);
         this.queueRecordService = queueRecordService;
         this.transcriptionConverter = transcriptionConverter;
+        this.transcriptionFactories = transcriptionFactories;
         Record record = this.queueRecordService.getRecord(recordIdentifier);
         this.contextMediator = contextMediator;
         this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);

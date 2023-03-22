@@ -111,7 +111,6 @@ public class TranscriptionPlatformService {
 
         this.webClient = webClientBuilder
                 .clientConnector(new ReactorClientHttpConnector(HttpClient.from(tcpClient)))
-                .baseUrl(urlBuilder.getBaseUrl())
                 .build();
     }
 
@@ -311,10 +310,14 @@ public class TranscriptionPlatformService {
      * @throws TranscriptionPlatformException
      */
     public void sendAnnotationUrl(Transcription transcription) throws TranscriptionPlatformException {
-        logger.info("Sending annotation id to TP: \n" +
-                "Record id: " +
-                (transcription.getRecord() != null ? transcription.getRecord().getIdentifier() : "missing") +
-                "\nAnnotation id: " + transcription.getAnnotationId());
+        if (TranscriptionType.HTR.equals(transcription.getTranscriptionType())) {
+            logger.info("Skipping HTR transcription {}", transcription.getTpId());
+            return;
+        }
+
+        logger.info("Sending annotation id to TP: \nRecord id: {}\nAnnotation id: {}",
+                (transcription.getRecord() != null ? transcription.getRecord().getIdentifier() : "missing"),
+                transcription.getAnnotationId());
         this.webClient
                 .post()
                 .uri(urlBuilder.urlForTranscription(transcription))
@@ -402,7 +405,8 @@ public class TranscriptionPlatformService {
     public JsonObject fetchHTRTranscriptionUpdate(Transcription transcription) {
         logger.info(
                 "Fetching HTR transcription update based on HtrDataId (ItemId={}) {} and Europeana Annotation Id {}. Record identifier {}.",
-                transcription.getItemId(), transcription.getTpId(), transcription.getAnnotationId(), transcription.getRecord().getIdentifier());
+                transcription.getItemId(), transcription.getTpId(), transcription.getAnnotationId(),
+                transcription.getRecord().getIdentifier());
         // TODO maybe another endpoint will have to be used...for now it's getHTRData, no Europeana Annotation is used
         return Objects.requireNonNullElse(getHTRData(transcription.getItemId()).getAsObject(), null);
     }
@@ -660,7 +664,7 @@ public class TranscriptionPlatformService {
         String itemInfo = this.webClient
                 .get()
                 .uri(urlBuilder.urlForItem(itemId))
-                .header("Authorization", authNewApiToken)
+                .header("Authorization", "Bearer " + authNewApiToken)
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     logger.info("Error while fetching item information {} {}", clientResponse.rawStatusCode(),
@@ -684,7 +688,13 @@ public class TranscriptionPlatformService {
                     }
                 })
                 .block();
-        return JSON.parseAny(itemInfo);
+        if (itemInfo != null) {
+            JsonValue value = JSON.parseAny(itemInfo);
+            if (value != null && value.getAsObject().get("success").getAsBoolean().value()) {
+                return value.getAsObject().get("data");
+            }
+        }
+        return JSON.parseAny("{}");
     }
 
     public JsonArray fetchHTRTranscriptions(Record record, List<Long> exclude) {
@@ -694,9 +704,17 @@ public class TranscriptionPlatformService {
         }
         JsonArray htrs = new JsonArray();
         List<Long> itemIds = fetchItemIds(record.getStoryId());
-        itemIds.stream().filter(id -> !exclude.contains(id)).map(id -> Pair.of(id, getItemFromTP(id)))
-                .filter(pair -> isHTR(
-                        pair.getValue())).map(pair -> getHTRData(pair.getKey())).forEach(htrs::add);
+        itemIds.stream().filter(id -> !exclude.contains(id))
+                .map(id -> Pair.of(id, getItemFromTP(id)))
+                .filter(pair -> isHTR(pair.getValue()))
+                .map(pair -> getHTRData(pair.getKey()))
+                .forEach(jsonValue -> {
+                    if (jsonValue.isArray()) {
+                        htrs.addAll(jsonValue.getAsArray());
+                    } else {
+                        htrs.add(jsonValue);
+                    }
+                });
         return htrs;
     }
 
@@ -704,43 +722,7 @@ public class TranscriptionPlatformService {
         String response = this.webClient
                 .get()
                 .uri(urlBuilder.urlForItemHTR(itemId))
-                .header("Authorization", authNewApiToken)
-                .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new TranscriptionPlatformException());
-                })
-                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
-                    logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new TranscriptionPlatformException());
-                })
-                .bodyToMono(String.class)
-                .doOnError(cause -> {
-                    if (cause instanceof TranscriptionPlatformException) {
-                        throw new TranscriptionPlatformException(
-                                "Error while communicating with Transcription Platform");
-                    } else {
-                        throw new TranscriptionPlatformException(
-                                "Error while communicating with Transcription Platform", cause);
-                    }
-                })
-                .block();
-        return JSON.parseAny(Objects.requireNonNullElse(response, "{}"));
-    }
-
-    private boolean isHTR(JsonValue jsonValue) {
-        JsonValue source = jsonValue.getAsObject().get("TranscriptionSource");
-        return source != null && TranscriptionType.HTR.equals(
-                TranscriptionType.from(source.getAsString().value()));
-    }
-
-    private JsonValue getItemFromTP(Long id) {
-        String response = this.webClient
-                .get()
-                .uri(urlBuilder.urlForItem(id))
-                .header("Authorization", authNewApiToken)
+                .header("Authorization", "Bearer " + authNewApiToken)
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
@@ -764,7 +746,52 @@ public class TranscriptionPlatformService {
                 })
                 .block();
         if (response != null) {
-            return JSON.parseAny(response);
+            JsonValue value = JSON.parseAny(response);
+            if (value != null && value.getAsObject().get("success").getAsBoolean().value()) {
+                return value.getAsObject().get("data");
+            }
+        }
+        return JSON.parseAny("{}");
+    }
+
+    private boolean isHTR(JsonValue jsonValue) {
+        JsonValue source = jsonValue.getAsObject().get("TranscriptionSource");
+        return source != null && TranscriptionType.HTR.equals(
+                TranscriptionType.from(source.getAsString().value()));
+    }
+
+    private JsonValue getItemFromTP(Long id) {
+        String response = this.webClient
+                .get()
+                .uri(urlBuilder.urlForItem(id))
+                .header("Authorization", "Bearer " + authNewApiToken)
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                    logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new TranscriptionPlatformException());
+                })
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
+                    logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new TranscriptionPlatformException());
+                })
+                .bodyToMono(String.class)
+                .doOnError(cause -> {
+                    if (cause instanceof TranscriptionPlatformException) {
+                        throw new TranscriptionPlatformException(
+                                "Error while communicating with Transcription Platform");
+                    } else {
+                        throw new TranscriptionPlatformException(
+                                "Error while communicating with Transcription Platform", cause);
+                    }
+                })
+                .block();
+        if (response != null) {
+            JsonValue value = JSON.parseAny(response);
+            if (value != null && value.getAsObject().get("success").getAsBoolean().value()) {
+                return value.getAsObject().get("data");
+            }
         }
         return JSON.parseAny("{}");
     }
@@ -773,7 +800,7 @@ public class TranscriptionPlatformService {
         String story = this.webClient
                 .get()
                 .uri(urlBuilder.urlForStory(storyId))
-                .header("Authorization", authNewApiToken)
+                .header("Authorization", "Bearer " + authNewApiToken)
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
                     logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),

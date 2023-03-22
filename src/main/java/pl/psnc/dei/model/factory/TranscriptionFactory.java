@@ -4,7 +4,6 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.springframework.stereotype.Component;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
-import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.util.AnnotationFieldsNames;
 import pl.psnc.dei.util.TranscriptionConverter;
 

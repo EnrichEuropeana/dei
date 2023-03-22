@@ -18,6 +18,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.TranscriptionType;
+import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
@@ -30,6 +32,7 @@ import javax.transaction.Transactional;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -60,7 +63,11 @@ public class EnrichTaskTest {
     @Autowired
     private ContextMediator contextMediator;
 
-//    @Qualifier("transcriptionPlatformService")
+    @Mock
+    private Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
+
+
+    //    @Qualifier("transcriptionPlatformService")
 //    @Autowired
 //    private TranscriptionPlatformService tps;
     @Autowired
@@ -95,7 +102,8 @@ public class EnrichTaskTest {
         this.record.setTranscriptions(new ArrayList<>());
         this.record.setState(Record.RecordState.E_PENDING);
         this.qrs.saveRecord(this.record);
-        this.enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator, this.tc);
+        this.enrichTask = new EnrichTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator,
+                this.tc, this.transcriptionFactories);
     }
 
     @SneakyThrows
@@ -115,7 +123,8 @@ public class EnrichTaskTest {
 
         this.record = this.qrs.getRecord(this.record.getIdentifier());
 
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc,
+                this.transcriptionFactories);
         enrichTask.process();
         assertTrue(
                 this.transcriptionRepository.findByTpId(transcription.getTpId()).isEmpty()
@@ -127,7 +136,8 @@ public class EnrichTaskTest {
     @Transactional
     public void whenPostedTwice_notDuplicateRecords() {
         // if post method is called this task will be created
-        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc);
+        EnrichTask enrichTask = new EnrichTask(record, qrs, tps, ess, eas, contextMediator, tc,
+                this.transcriptionFactories);
         enrichTask.process();
         enrichTask.process();
         List<Transcription> transcriptionsFound = this.transcriptionRepository.findAllByTpId("203544");

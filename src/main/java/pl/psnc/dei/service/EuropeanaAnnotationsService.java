@@ -1,7 +1,6 @@
 package pl.psnc.dei.service;
 
 import org.apache.jena.atlas.json.JSON;
-import org.apache.jena.atlas.json.JsonObject;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -11,15 +10,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
-import org.springframework.web.reactive.function.client.ClientResponse;
-import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
 import pl.psnc.dei.exception.DEIHttpException;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.util.CallToActionBuilder;
-import pl.psnc.dei.util.TranscriptionConverter;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
@@ -39,8 +35,6 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     private final AccessTokenManager accessTokenManager;
 
-    private final TranscriptionConverter transcriptionConverter;
-
     private final CallToActionBuilder callToActionBuilder;
 
     @Value("${europeana.api.annotations.endpoint}")
@@ -51,9 +45,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
 
     @Autowired
     public EuropeanaAnnotationsService(WebClient.Builder webClientBuilder, AccessTokenManager accessTokenManager,
-            TranscriptionConverter transcriptionConverter, CallToActionBuilder callToActionBuilder) {
+            CallToActionBuilder callToActionBuilder) {
         this.accessTokenManager = accessTokenManager;
-        this.transcriptionConverter = transcriptionConverter;
         this.callToActionBuilder = callToActionBuilder;
         configure(webClientBuilder);
     }
@@ -76,24 +69,26 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      */
     public String postTranscription(Transcription transcription) {
         logger.info("Sending transcription to Annotations API. Transcription: {}",
-                transcription.getTranscriptionContent().toString());
+                transcription.getTranscriptionContent());
+        userToken = accessTokenManager.getAccessTokenWithRefreshToken();
         String annotationResponse = webClient.post()
                 .uri(annotationApiEndpoint)
                 .header(AUTHORIZATION_HEADER, "Bearer " + userToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
-                        logger.warn("Access token expired. Requesting new one.");
-                        return Mono.empty();
-                    } else {
-                        logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase());
-                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase()));
-                    }
-                })
+                .onStatus(HttpStatus::is4xxClientError,
+                        clientResponse -> clientResponse.bodyToMono(String.class).flatMap(s -> {
+                            if (clientResponse.statusCode().equals(HttpStatus.BAD_REQUEST)) {
+                                logger.warn("Post transcription annotation - BAD REQUEST. Response: {}", s);
+                                return Mono.empty();
+                            }
+                            logger.error("Error {} while posting transcription annotation. Cause: {}",
+                                    clientResponse.rawStatusCode(),
+                                    s);
+                            return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                    s));
+                        }))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while posting transcription. Cause: {}", clientResponse.rawStatusCode(),
                             clientResponse.statusCode().getReasonPhrase());
@@ -103,9 +98,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .bodyToMono(String.class)
                 .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
-        if (annotationResponse == null || annotationResponse.isEmpty()) {
-            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
-            return postTranscription(transcription);
+        if (!(annotationResponse == null || annotationResponse.isEmpty())) {
+            logger.info("Transcription annotation: {}", annotationResponse);
         }
         return extractAnnotationId(annotationResponse);
     }
@@ -117,6 +111,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
      * @return
      */
     public String updateTranscription(Transcription transcription) {
+        userToken = accessTokenManager.getAccessTokenWithRefreshToken();
         String annotationResponse = webClient.put()
                 .uri(b -> b.path((annotationApiEndpoint.endsWith("/") ? "" : "/") + transcription.getAnnotationId())
                         .build())
@@ -125,15 +120,10 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
                 .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    if (clientResponse.statusCode().equals(HttpStatus.UNAUTHORIZED)) {
-                        logger.warn("Access token expired. Requesting new one.");
-                        return Mono.empty();
-                    } else {
-                        logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase());
-                        return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                                clientResponse.statusCode().getReasonPhrase()));
-                    }
+                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase());
+                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                            clientResponse.statusCode().getReasonPhrase()));
                 })
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
@@ -144,9 +134,8 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .bodyToMono(String.class)
                 .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
-        if (annotationResponse == null || annotationResponse.isEmpty()) {
-            userToken = accessTokenManager.getAccessTokenWithRefreshToken();
-            return updateTranscription(transcription);
+        if (!(annotationResponse == null || annotationResponse.isEmpty())) {
+            logger.info("Updated annotation {}", annotationResponse);
         }
         return extractAnnotationId(annotationResponse);
     }
@@ -180,15 +169,14 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .onStatus(HttpStatus::is4xxClientError,
                         clientResponse -> clientResponse.bodyToMono(String.class).flatMap(s -> {
                             if (clientResponse.statusCode().equals(HttpStatus.BAD_REQUEST)) {
-                                logger.warn("Send Call to action - bad request. Response: {}", s);
+                                logger.warn("Send Call to action - BAD REQUEST. Response: {}", s);
                                 return Mono.empty();
-                            } else {
-                                logger.error("Error {} while posting call to action. Cause: {}",
-                                        clientResponse.rawStatusCode(),
-                                        s);
-                                return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                                        s));
                             }
+                            logger.error("Error {} while posting call to action. Cause: {}",
+                                    clientResponse.rawStatusCode(),
+                                    s);
+                            return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                    s));
                         }))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while posting call to action. Cause: {}", clientResponse.rawStatusCode(),
@@ -197,10 +185,13 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                             clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
-//                .doOnError(throwable -> logger.error(throwable.getMessage()))
+                .onErrorResume(throwable -> {
+                    logger.error("Error when posting call to action: {}", throwable.getMessage());
+                    return Mono.empty();
+                })
                 .block();
         if (!(annotationResponse == null || annotationResponse.isEmpty())) {
-            logger.info("Call to action annotation id: {}", annotationResponse);
+            logger.info("Call to action annotation: {}", annotationResponse);
         }
     }
 }
