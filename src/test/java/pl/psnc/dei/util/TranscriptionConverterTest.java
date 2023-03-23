@@ -13,7 +13,10 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import pl.psnc.dei.model.Record;
+import pl.psnc.dei.model.factory.HTRTranscriptionFactory;
+import pl.psnc.dei.model.factory.ManualTranscriptionFactory;
 import pl.psnc.dei.service.IIIFMappingService;
+import pl.psnc.dei.service.TranscriptionPlatformService;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -28,25 +31,34 @@ public class TranscriptionConverterTest {
     @MockBean
     private IIIFMappingService mappingService;
 
+    @MockBean
+    private TranscriptionPlatformService transcriptionPlatformService;
+
+    @MockBean
+    private ManualTranscriptionFactory manualTranscriptionFactory;
+
+    @MockBean
+    private HTRTranscriptionFactory htrTranscriptionFactory;
+
     @Captor
     ArgumentCaptor<String> imageLinkCaptor = ArgumentCaptor.forClass(String.class);;
 
     @Before
     public void setupMocks() {
         MockitoAnnotations.initMocks(this);
-        transcriptionConverter = new TranscriptionConverter(mappingService);
+        transcriptionConverter = new TranscriptionConverter(mappingService, transcriptionPlatformService);
         when(mappingService.getSourceLink(any(Record.class), anyInt(), anyString()))
                 .thenAnswer(i -> i.getArguments()[2]);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForNonExistingTranscription() {
-        transcriptionConverter.convert(new Record(), null);
+        transcriptionConverter.convert(new Record(), null, manualTranscriptionFactory);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void shouldThrowExceptionForEmptyTranscription() {
-        transcriptionConverter.convert(new Record(), new JsonObject());
+        transcriptionConverter.convert(new Record(), new JsonObject(), manualTranscriptionFactory);
         Assert.fail();
     }
 
@@ -65,7 +77,7 @@ public class TranscriptionConverterTest {
         transformation.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().get(0).getAsObject().put("Code", "pl");
 
         //
-        JsonObject result = transcriptionConverter.convert(new Record(), transformation);
+        JsonObject result = transcriptionConverter.convert(new Record(), transformation, manualTranscriptionFactory);
         //
 
         Assert.assertEquals("pl", result.get(BODY).getAsObject().get(BODY_LANGUAGE).getAsString().value());
@@ -102,7 +114,7 @@ public class TranscriptionConverterTest {
                 .finishObject()
                 .build().getAsObject();
 
-        JsonObject converted = transcriptionConverter.convert(new Record(), transcription);
+        JsonObject converted = transcriptionConverter.convert(new Record(), transcription, manualTranscriptionFactory);
         Assert.assertNotNull(converted);
         Assert.assertEquals("transcribing", converted.get(MOTIVATION).getAsString().value());
         Assert.assertEquals("FullTextResource", converted.get(BODY).getAsObject().get(BODY_TYPE).getAsString().value());
@@ -137,7 +149,7 @@ public class TranscriptionConverterTest {
                 .finishObject()
                 .build().getAsObject();
 
-        transcriptionConverter.convert(new Record(), transcription);
+        transcriptionConverter.convert(new Record(), transcription, manualTranscriptionFactory);
         Assert.fail();
     }
 }

@@ -14,6 +14,7 @@ public class RestRequestExecutor {
 
     /**
      * Creates an instance of web client used by the executor.
+     *
      * @param webClientBuilder web client builder (by default automatically created by spring)
      */
     protected void configure(WebClient.Builder webClientBuilder) {
@@ -22,6 +23,7 @@ public class RestRequestExecutor {
 
     /**
      * Sets the root URI in the web client used by the executor.
+     *
      * @param rootUri root URI used for each request
      */
     protected void setRootUri(String rootUri) {

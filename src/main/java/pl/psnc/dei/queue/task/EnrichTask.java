@@ -1,12 +1,15 @@
 package pl.psnc.dei.queue.task;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.jena.atlas.json.JsonArray;
 import org.apache.jena.atlas.json.JsonValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.TranscriptionType;
 import pl.psnc.dei.model.conversion.EnrichTaskContext;
+import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
@@ -31,14 +34,19 @@ public class EnrichTask extends Task {
     private final ContextMediator contextMediator;
 
     private final Queue<Transcription> notAnnotatedTranscriptions = new LinkedList<>();
+
     private final TranscriptionConverter transcriptionConverter;
+
+    private final Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
 
     EnrichTask(Record record, QueueRecordService queueRecordService, TranscriptionPlatformService tps,
             EuropeanaSearchService ess, EuropeanaAnnotationsService eas,
-            ContextMediator contextMediator, TranscriptionConverter tc) {
+            ContextMediator contextMediator, TranscriptionConverter tc,
+            Map<TranscriptionType, TranscriptionFactory> transcriptionFactories) {
         super(record, queueRecordService, tps, ess, eas);
         this.contextMediator = contextMediator;
         this.context = (EnrichTaskContext) this.contextMediator.get(record);
+        this.transcriptionFactories = transcriptionFactories;
         state = TaskState.E_GET_TRANSCRIPTIONS_FROM_TP;
         this.transcriptionConverter = tc;
         ContextUtils.executeIfPresent(this.context.getTaskState(),
@@ -79,24 +87,8 @@ public class EnrichTask extends Task {
         }
         ContextUtils.executeIf(!this.context.isHasDownloadedEnrichment(),
                 () -> {
-                    for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
-                        try {
-                            Transcription transcription = new Transcription();
-                            transcription.setRecord(record);
-                            transcription.setTpId(val.getAsObject().get("AnnotationId").toString());
-                            transcription.setTranscriptionContent(
-                                    transcriptionConverter.convert(record, val.getAsObject()));
-                            JsonValue europeanaAnnotationId = val.getAsObject().get("EuropeanaAnnotationId");
-                            if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
-                                transcription.setAnnotationId(europeanaAnnotationId.toString());
-                            }
-                            if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
-                                transcriptions.put(transcription.getTpId(), transcription);
-                            }
-                        } catch (IllegalArgumentException e) {
-                            logger.error("Transcription was corrupted: " + val.toString());
-                        }
-                    }
+                    collectManualTranscriptions(transcriptions);
+                    collectHTRTranscriptions(transcriptions);
                     this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
                     this.context.setHasDownloadedEnrichment(true);
                     this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));
@@ -124,6 +116,38 @@ public class EnrichTask extends Task {
         state = TaskState.E_HANDLE_TRANSCRIPTIONS;
         this.context.setTaskState(this.state);
         this.contextMediator.save(this.context);
+    }
+
+    private void collectHTRTranscriptions(Map<String, Transcription> transcriptions) {
+        List<Long> manualItems = transcriptions.values().stream().map(Transcription::getItemId).collect(
+                Collectors.toList());
+        JsonArray htrs = tps.fetchHTRTranscriptions(record, manualItems);
+        for (JsonValue val : htrs) {
+            try {
+                Transcription transcription = transcriptionFactories.get(TranscriptionType.HTR)
+                        .createTranscription(record, val.getAsObject(), transcriptionConverter);
+                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+                    transcriptions.put(transcription.getTpId(), transcription);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.error("Transcription was corrupted: {}", val);
+            }
+        }
+    }
+
+    private void collectManualTranscriptions(Map<String, Transcription> transcriptions) {
+        for (JsonValue val : tps.fetchTranscriptionsFor(record)) {
+            try {
+                // by default this request retrieves only manual transcriptions
+                Transcription transcription = transcriptionFactories.get(TranscriptionType.MANUAL)
+                        .createTranscription(record, val.getAsObject(), transcriptionConverter);
+                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
+                    transcriptions.put(transcription.getTpId(), transcription);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.error("Transcription was corrupted: {}", val);
+            }
+        }
     }
 
     /**

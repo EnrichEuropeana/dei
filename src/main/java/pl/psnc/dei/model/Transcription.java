@@ -18,27 +18,39 @@ import javax.persistence.*;
  */
 public class Transcription {
 
-	@Id
-	@GeneratedValue
-	private Long id;
+    @Id
+    @GeneratedValue
+    private Long id;
 
-	private String tpId;
+    /**
+     * Identifier in TP
+     */
+    private String tpId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	private Record record;
+    @Convert(converter = TranscriptionTypeConverter.class)
+    @Column(columnDefinition = "VARCHAR(10) default 'manual'")
+    private TranscriptionType transcriptionType;
 
-	@Convert(converter = JsonObjectToStringConverter.class)
-	@Column(columnDefinition = "LONGTEXT")
-	private JsonObject transcriptionContent;
+    /**
+     * Transcribathon item id. Used for retrieving information about the item and its manual or HTR transcriptions
+     */
+    private Long itemId;
 
-	@JsonProperty("EuropeanaAnnotationId")
-	private String annotationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Record record;
 
+    @Convert(converter = JsonObjectToStringConverter.class)
+    @Column(columnDefinition = "LONGTEXT")
+    private JsonObject transcriptionContent;
 
-	public Transcription(String tpId, Record record, String annotationId) {
-		this.tpId = tpId;
-		this.record = record;
-		this.annotationId = annotationId;
-		this.transcriptionContent = new JsonObject();
-	}
+    @JsonProperty("EuropeanaAnnotationId")
+    private String annotationId;
+
+    public Transcription(String tpId, Record record, String annotationId) {
+        this.tpId = tpId;
+        this.record = record;
+        this.annotationId = annotationId;
+        this.transcriptionContent = new JsonObject();
+    }
+
 }

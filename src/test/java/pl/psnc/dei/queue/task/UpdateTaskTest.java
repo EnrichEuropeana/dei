@@ -18,15 +18,19 @@ import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.DAO.TranscriptionRepository;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
+import pl.psnc.dei.model.TranscriptionType;
+import pl.psnc.dei.model.factory.TranscriptionFactory;
 import pl.psnc.dei.service.EnrichmentNotifierService;
 import pl.psnc.dei.service.EuropeanaAnnotationsService;
 import pl.psnc.dei.service.QueueRecordService;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.service.context.ContextMediator;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.TranscriptionConverter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -74,6 +78,12 @@ public class UpdateTaskTest {
     @Autowired
     private ContextMediator contextMediator;
 
+    @Autowired
+    private TranscriptionConverter transcriptionConverter;
+
+    @Mock
+    private Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
+
     @SneakyThrows
     private void prepareTpsMock() {
         JsonObject response = JSON.parse(this.updateResponseJson.getInputStream());
@@ -81,7 +91,7 @@ public class UpdateTaskTest {
     }
 
     private void prepareEasMock() {
-        when(this.eas.updateTranscription(any(), any())).thenReturn("21");
+        when(this.eas.updateTranscription(any())).thenReturn("21");
     }
 
     @SneakyThrows
@@ -119,7 +129,8 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromRestoreConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.record, this.qrs, this.tps, this.ess, this.eas,
+                this.transcriptionConverter, this.contextMediator, this.transcriptionFactories);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -132,7 +143,9 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void willUpdateFromNormalConstructor() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs,
+                this.tps, this.ess, this.eas, this.transcriptionConverter, this.contextMediator,
+                this.transcriptionFactories);
         updateTask.process();
         assertEquals(
                 Record.RecordState.NORMAL,
@@ -146,7 +159,9 @@ public class UpdateTaskTest {
     @Rollback
     @Transactional
     public void areUpdatesIdempotent() {
-        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs, this.tps, this.ess, this.eas, this.contextMediator);
+        UpdateTask updateTask = new UpdateTask(this.RECORD_IDENTIFIER, this.ANNOTATION_ID, this.TP_ID, this.qrs,
+                this.tps, this.ess, this.eas, this.transcriptionConverter, this.contextMediator,
+                this.transcriptionFactories);
         updateTask.process();
         updateTask.process();
         updateTask.process();
