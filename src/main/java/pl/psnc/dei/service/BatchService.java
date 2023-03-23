@@ -9,11 +9,13 @@ import org.apache.jena.atlas.json.JsonValue;
 import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
 import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.controllers.responses.ManifestRecreationResponse;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.*;
 import pl.psnc.dei.model.DAO.DatasetsRepository;
@@ -33,6 +35,15 @@ import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 @Service
 @Transactional
 public class BatchService {
+	@Value("${conversion.iiif.server.url}")
+	private String iiifServerUrl;
+
+	@Value("${application.server.url}")
+	private String serverUrl;
+
+	@Value("${server.servlet.context-path}")
+	private String serverPath;
+
 	private final static Logger log = LoggerFactory.getLogger(BatchService.class);
 
 	private static final String CHANGING_DIMENSION_MSG = "Changing %s from %d to %d";
@@ -471,5 +482,52 @@ public class BatchService {
 				}
 			}
 		return imports;
+	}
+
+    public ManifestRecreationResponse fixManifests() {
+		ManifestRecreationResponse response = new ManifestRecreationResponse();
+		response.setRecordsCount(recordsRepository.count());
+
+		String oldUrl = iiifServerUrl.replace("https://", "");
+
+		Set<Record> records = recordsRepository.findAllByIiifManifestNotNull();
+		response.setRecordsWithManifest(records.size());
+
+		records.forEach(record -> fixManifest(response, oldUrl, record));
+		return response;
+    }
+
+	private void fixManifest(ManifestRecreationResponse response, String oldUrl, Record record) {
+		JsonValue originalManifest = JSON.parseAny(record.getIiifManifest());
+
+		JsonValue manifestJson = JSON.parseAny(record.getIiifManifest().replace("\"" + oldUrl, "\"" + iiifServerUrl));
+		// @id
+		manifestJson.getAsObject().put("@id", serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" + record.getIdentifier());
+		// sc:Manifest
+		manifestJson.getAsObject().put("@type", "sc:Manifest");
+
+		JsonObject newManifest = new JsonObject();
+
+		manifestJson.getAsObject().forEach((s, jsonValue) -> {
+			newManifest.put(s, jsonValue);
+			if ("@type".equals(s)) {
+				newManifest.put("label", "Manifest for record " + record.getIdentifier());
+			}
+		});
+
+		if (!originalManifest.equals(newManifest)) {
+			record.setIiifManifest(newManifest.toString());
+			response.setRecreatedManifests(response.getRecreatedManifests() + 1);
+		}
+	}
+
+	public ManifestRecreationResponse fixManifest(String recordId) throws NotFoundException {
+		ManifestRecreationResponse response = new ManifestRecreationResponse();
+		Optional<Record> optRecord = recordsRepository.findByIdentifierAndIiifManifestNotNull(recordId);
+		Record record = optRecord.orElseThrow(() -> new NotFoundException(recordId));
+		response.setRecordsCount(1L);
+		response.setRecordsWithManifest(1L);
+		fixManifest(response, iiifServerUrl.replace("https://", ""), record);
+		return response;
 	}
 }

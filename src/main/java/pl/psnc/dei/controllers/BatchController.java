@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
 import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.controllers.responses.ManifestRecreationResponse;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Record;
@@ -138,5 +139,22 @@ public class BatchController {
 			logger.error(iae.getMessage());
 			return new ResponseEntity<>(HttpStatus.UNPROCESSABLE_ENTITY);
 		}
+	}
+
+	@PostMapping(path = "/fix-manifests", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ManifestRecreationResponse> fixManifests() {
+		ManifestRecreationResponse response = batchService.fixManifests();
+		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@PostMapping(path = "/fix-manifest", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<ManifestRecreationResponse> fixManifest(@RequestParam String recordId) {
+		ManifestRecreationResponse response = null;
+		try {
+			response = batchService.fixManifest(recordId);
+		} catch (NotFoundException e) {
+			return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+		}
+		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 }
