@@ -33,9 +33,13 @@ public interface RecordsRepository extends JpaRepository<Record, Long> {
 
     Optional<Record> findByIdentifier(String id);
 
+    Optional<Record> findByIdentifierAndIiifManifestNotNull(String id);
+
     List<Record> findAllByStateIsNotIn(List<Record.RecordState> states);
 
     Set<Record> findAllByAnImportNull();
+
+    Set<Record> findAllByIiifManifestNotNull();
 
     Set<Record> findAllByAggregatorAndAnImportNull(Aggregator aggregator);
 

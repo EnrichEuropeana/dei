@@ -2,7 +2,10 @@ package pl.psnc.dei.service;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
+import lombok.SneakyThrows;
+import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -12,25 +15,43 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
 import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.controllers.responses.ManifestRecreationResponse;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Set;
+import java.nio.charset.StandardCharsets;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
+@TestPropertySource(properties = {
+        "conversion.iiif.server.url=https://rhus-148.man.poznan.pl",
+        "application.server.url=https://fresenia-dev.man.poznan.pl",
+        "server.servlet.context-path=/dei-test",
+})
 public class BatchServiceTest {
+
+    @Value("${conversion.iiif.server.url}")
+    private String iiifServerUrl;
+
+    @Value("${application.server.url}")
+    private String serverUrl;
+
+    @Value("${server.servlet.context-path}")
+    private String serverPath;
 
     private static final String DATASET_ID = "202904";
     private static final String PROJECT_NAME = "EUROPEANA";
@@ -42,9 +63,52 @@ public class BatchServiceTest {
             , "/123/stu", "/123/vwx", "/123/yzz"
     );
 
+    @Value("classpath:iiif/iiif_manifest.json")
+    private Resource iiifManifest;
+
+    @Value("classpath:iiif/iiif_good_manifest.json")
+    private Resource iiifGoodManifest;
+
+    private Record testRecord = new Record();
+    private Record goodRecord = new Record();
+
+    @Before
+    @SneakyThrows
+    public void init() {
+        testRecord.setIdentifier("/123/abc");
+        Project project = new Project();
+        project.setProjectId(PROJECT_NAME);
+        project.setName(PROJECT_NAME);
+        testRecord.setProject(project);
+        String manifest =
+                String.join("",
+                        IOUtils.readLines(
+                                this.iiifManifest.getInputStream(),
+                                StandardCharsets.UTF_8
+                        )
+                );
+        testRecord.setIiifManifest(manifest);
+
+        goodRecord.setIdentifier("/137/_nnVV2z6");
+        goodRecord.setProject(project);
+        String goodManifest =
+                String.join("",
+                        IOUtils.readLines(
+                                this.iiifGoodManifest.getInputStream(),
+                                StandardCharsets.UTF_8
+                        )
+                );
+        goodRecord.setIiifManifest(goodManifest);
+
+        ReflectionTestUtils.setField(batchService, "iiifServerUrl", iiifServerUrl);
+        ReflectionTestUtils.setField(batchService, "serverUrl", serverUrl);
+        ReflectionTestUtils.setField(batchService, "serverPath", serverPath);
+    }
+
     @InjectMocks @Spy private BatchService batchService;
     @Mock private EuropeanaSearchService europeanaSearchService;
     @Mock private ImportPackageService importPackageService;
+    @Mock private RecordsRepository recordsRepository;
 
     @Rule public ExpectedException exceptionRule = ExpectedException.none();
 
@@ -153,5 +217,31 @@ public class BatchServiceTest {
         anImport.setName(invocationOnMock.getArgument(0));
         anImport.setRecords(invocationOnMock.getArgument(2));
         return anImport;
+    }
+
+    @Test
+    public void shouldFixManifest() {
+        Mockito.when(recordsRepository.findAllByIiifManifestNotNull()).thenReturn(Set.of(testRecord));
+        Mockito.when(recordsRepository.count()).thenReturn(1L);
+
+        ManifestRecreationResponse response = batchService.fixManifests();
+
+        Assert.assertEquals(1L, response.getRecordsCount());
+        Assert.assertEquals(1L, response.getRecordsWithManifest());
+        Assert.assertEquals(1L, response.getRecreatedManifests());
+    }
+
+    @Test
+    @SneakyThrows
+    public void shouldNotFixManifest() {
+        Mockito.when(recordsRepository.findByIdentifierAndIiifManifestNotNull(goodRecord.getIdentifier())).thenReturn(
+                Optional.of(goodRecord));
+        Mockito.when(recordsRepository.count()).thenReturn(1L);
+
+        ManifestRecreationResponse response = batchService.fixManifest(goodRecord.getIdentifier());
+
+        Assert.assertEquals(1L, response.getRecordsCount());
+        Assert.assertEquals(1L, response.getRecordsWithManifest());
+        Assert.assertEquals(0L, response.getRecreatedManifests());
     }
 }
