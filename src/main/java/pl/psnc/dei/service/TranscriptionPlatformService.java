@@ -259,8 +259,13 @@ public class TranscriptionPlatformService {
     }
 
     public long retrieveStoryId(Record record) {
-        JsonObject storyEnrichments = fetchMetadataEnrichmentsFor(record).getAsArray().get(0).getAsObject();
-        return storyEnrichments.get("StoryId").getAsNumber().value().longValue();
+        try {
+            JsonObject storyEnrichments = fetchMetadataEnrichmentsFor(record).getAsArray().get(0).getAsObject();
+            return storyEnrichments.get("StoryId").getAsNumber().value().longValue();
+        } catch (Exception e) {
+            logger.error("StoryId for record {} not found", record.getIdentifier());
+            throw new TranscriptionPlatformException("StoryId for record " + record.getIdentifier() + " not found", e);
+        }
     }
 
     /**
