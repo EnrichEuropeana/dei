@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
 import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.controllers.responses.CallToActionResponse;
 import pl.psnc.dei.controllers.responses.ManifestRecreationResponse;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.Import;
@@ -155,6 +156,13 @@ public class BatchController {
 		} catch (NotFoundException e) {
 			return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
 		}
+		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	@PostMapping(path = "/calltoaction", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<CallToActionResponse> callToAction(@RequestParam(defaultValue = "false") boolean validateManifest,
+			@RequestParam(defaultValue = "false") boolean simulate) {
+		CallToActionResponse response = batchService.callToAction(validateManifest, simulate);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 }

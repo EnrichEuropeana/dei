@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import lombok.SneakyThrows;
 import org.apache.commons.io.IOUtils;
+import org.apache.jena.atlas.json.JSON;
+import org.apache.jena.atlas.json.JsonValue;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
@@ -17,18 +19,23 @@ import org.mockito.Spy;
 import org.mockito.invocation.InvocationOnMock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.util.ReflectionTestUtils;
 import pl.psnc.dei.controllers.requests.CreateImportFromDatasetRequest;
 import pl.psnc.dei.controllers.requests.UploadDatasetRequest;
+import pl.psnc.dei.controllers.responses.CallToActionResponse;
 import pl.psnc.dei.controllers.responses.ManifestRecreationResponse;
 import pl.psnc.dei.exception.NotFoundException;
+import pl.psnc.dei.model.Aggregator;
 import pl.psnc.dei.model.DAO.RecordsRepository;
 import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
+import pl.psnc.dei.util.IIIFManifestValidator;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -69,8 +76,12 @@ public class BatchServiceTest {
     @Value("classpath:iiif/iiif_good_manifest.json")
     private Resource iiifGoodManifest;
 
+    @Value("classpath:tp/story_enrichments_response.json")
+    private Resource storyEnrichments;
+
     private Record testRecord = new Record();
     private Record goodRecord = new Record();
+    private Record actionRecord = new Record();
 
     @Before
     @SneakyThrows
@@ -80,6 +91,7 @@ public class BatchServiceTest {
         project.setProjectId(PROJECT_NAME);
         project.setName(PROJECT_NAME);
         testRecord.setProject(project);
+        testRecord.setAggregator(Aggregator.EUROPEANA);
         String manifest =
                 String.join("",
                         IOUtils.readLines(
@@ -99,6 +111,11 @@ public class BatchServiceTest {
                         )
                 );
         goodRecord.setIiifManifest(goodManifest);
+        goodRecord.setAggregator(Aggregator.EUROPEANA);
+
+        actionRecord.setIdentifier("/111/abc");
+        actionRecord.setProject(project);
+        actionRecord.setAggregator(Aggregator.EUROPEANA);
 
         ReflectionTestUtils.setField(batchService, "iiifServerUrl", iiifServerUrl);
         ReflectionTestUtils.setField(batchService, "serverUrl", serverUrl);
@@ -109,6 +126,10 @@ public class BatchServiceTest {
     @Mock private EuropeanaSearchService europeanaSearchService;
     @Mock private ImportPackageService importPackageService;
     @Mock private RecordsRepository recordsRepository;
+    @Mock private TranscriptionPlatformService transcriptionPlatformService;
+    @Mock private IIIFManifestValidator iiifManifestValidator;
+    @Mock private GeneralRestRequestService generalRestRequestService;
+    @Mock private EuropeanaAnnotationsService europeanaAnnotationsService;
 
     @Rule public ExpectedException exceptionRule = ExpectedException.none();
 
@@ -221,7 +242,8 @@ public class BatchServiceTest {
 
     @Test
     public void shouldFixManifest() {
-        Mockito.when(recordsRepository.findAllByIiifManifestNotNull()).thenReturn(Set.of(testRecord));
+        Page<Record> page = new PageImpl<>(List.of(testRecord));
+        Mockito.when(recordsRepository.findAllByIiifManifestNotNull(any())).thenReturn(page);
         Mockito.when(recordsRepository.count()).thenReturn(1L);
 
         ManifestRecreationResponse response = batchService.fixManifests();
@@ -243,5 +265,43 @@ public class BatchServiceTest {
         Assert.assertEquals(1L, response.getRecordsCount());
         Assert.assertEquals(1L, response.getRecordsWithManifest());
         Assert.assertEquals(0L, response.getRecreatedManifests());
+    }
+
+    @Test
+    public void shouldSendCallToAction() {
+        Page<Record> page = new PageImpl<>(List.of(actionRecord));
+        Mockito.when(recordsRepository.findAllByStoryIdNull(any())).thenReturn(page);
+        Mockito.when(transcriptionPlatformService.retrieveStoryId(any())).thenCallRealMethod();
+        Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
+
+        CallToActionResponse response = batchService.callToAction(false, true);
+
+        Assert.assertEquals(1L, response.getSent().size());
+        Assert.assertEquals(actionRecord.getIdentifier(), response.getSent().get(0));
+    }
+
+    @Test
+    public void shouldNotSendCallToAction() {
+        Page<Record> page = new PageImpl<>(List.of(actionRecord));
+        Mockito.when(recordsRepository.findAllByStoryIdNull(any())).thenReturn(page);
+        Mockito.when(transcriptionPlatformService.retrieveStoryId(any())).thenCallRealMethod();
+        Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
+        Mockito.doThrow(IllegalArgumentException.class).when(europeanaAnnotationsService).postCallToAction(any());
+
+        CallToActionResponse response = batchService.callToAction(false, false);
+
+        Assert.assertEquals(0L, response.getSent().size());
+        Assert.assertEquals(1L, response.getSkipped().size());
+        Assert.assertEquals(actionRecord.getIdentifier(), response.getSkipped().get(0));
+    }
+
+    @SneakyThrows
+    private JsonValue readStoryEnrichmentsResponse() {
+        return JSON.parseAny(String.join("",
+                        IOUtils.readLines(
+                                this.storyEnrichments.getInputStream(),
+                                StandardCharsets.UTF_8
+                        )
+                ));
     }
 }
