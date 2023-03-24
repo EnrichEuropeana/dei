@@ -271,6 +271,7 @@ public class BatchServiceTest {
     public void shouldSendCallToAction() {
         Page<Record> page = new PageImpl<>(List.of(actionRecord));
         Mockito.when(recordsRepository.findAllByStoryIdNull(any())).thenReturn(page);
+        Mockito.when(recordsRepository.findAllByStoryIdNotNull(any())).thenReturn(page);
         Mockito.when(transcriptionPlatformService.retrieveStoryId(any())).thenCallRealMethod();
         Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
 
@@ -284,6 +285,7 @@ public class BatchServiceTest {
     public void shouldNotSendCallToAction() {
         Page<Record> page = new PageImpl<>(List.of(actionRecord));
         Mockito.when(recordsRepository.findAllByStoryIdNull(any())).thenReturn(page);
+        Mockito.when(recordsRepository.findAllByStoryIdNotNull(any())).thenReturn(page);
         Mockito.when(transcriptionPlatformService.retrieveStoryId(any())).thenCallRealMethod();
         Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
         Mockito.doThrow(IllegalArgumentException.class).when(europeanaAnnotationsService).postCallToAction(any());

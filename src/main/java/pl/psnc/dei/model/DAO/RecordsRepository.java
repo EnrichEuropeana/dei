@@ -43,6 +43,8 @@ public interface RecordsRepository extends PagingAndSortingRepository<Record, Lo
 
     Page<Record> findAllByStoryIdNull(Pageable pageable);
 
+    Page<Record> findAllByStoryIdNotNull(Pageable pageable);
+
     Page<Record> findAllByIiifManifestNotNull(Pageable pageable);
 
     Set<Record> findAllByAggregatorAndAnImportNull(Aggregator aggregator);

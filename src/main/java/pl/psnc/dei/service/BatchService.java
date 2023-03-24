@@ -588,7 +588,7 @@ public class BatchService {
     private CallToActionResponse sendCallToAction(boolean validateManifest, boolean simulate) {
         CallToActionResponse response = new CallToActionResponse();
 
-        Page<Record> records = recordsRepository.findAllByStoryIdNull(PageRequest.of(0, PAGE_SIZE));
+        Page<Record> records = recordsRepository.findAllByStoryIdNotNull(PageRequest.of(0, PAGE_SIZE));
         do {
             records.forEach(record -> {
                 try {
@@ -598,13 +598,15 @@ public class BatchService {
                             europeanaAnnotationsService.postCallToAction(record);
                         }
                         response.getSent().add(record.getIdentifier());
+                    } else {
+                        response.getSkipped().add(record.getIdentifier());
                     }
                 } catch (Exception e) {
                     log.error("Call to action skipped for record {} due to error {}", record.getIdentifier(), e.getMessage());
                     response.getSkipped().add(record.getIdentifier());
                 }
             });
-            records = recordsRepository.findAllByStoryIdNull(records.nextPageable());
+            records = recordsRepository.findAllByStoryIdNotNull(records.nextPageable());
         } while (records.hasNext());
         return response;
     }
@@ -629,6 +631,10 @@ public class BatchService {
 
     private String getIIIFManifest(Record record, JsonObject recordJson) {
         if (StringUtils.isNotBlank(record.getIiifManifest())) {
+            // we have to put it to recordJson because validation is done outside this service
+            recordJson.put("iiif_url",
+                    serverUrl + serverPath + "/api/transcription/iiif/manifest?recordId=" +
+                            record.getIdentifier());
             return record.getIiifManifest();
         } else {
             return generalRestRequestService.downloadFrom(
