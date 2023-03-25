@@ -534,11 +534,14 @@ public class BatchService {
 
         Page<Record> records = recordsRepository.findAllByIiifManifestNotNull(PageRequest.of(0, PAGE_SIZE));
         response.setRecordsWithManifest(records.getTotalElements());
+        log.info("Found {} records with manifest (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
 
         do {
+            log.info("Processing page {}", records.getPageable().getPageNumber());
             records.forEach(record -> fixManifest(response, oldUrl, record));
             records = recordsRepository.findAllByIiifManifestNotNull(records.nextPageable());
         } while (records.hasNext());
+        log.info("Finished fixing manifests.");
 
         return response;
     }
@@ -576,6 +579,7 @@ public class BatchService {
         response.setRecordsCount(1L);
         response.setRecordsWithManifest(1L);
         fixManifest(response, iiifServerUrl.replace("https://", ""), record);
+        log.info("Manifest fixed");
         return response;
     }
 
