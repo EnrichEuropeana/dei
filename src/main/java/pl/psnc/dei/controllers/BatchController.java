@@ -144,12 +144,14 @@ public class BatchController {
 
 	@PostMapping(path = "/fix-manifests", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ManifestRecreationResponse> fixManifests() {
+		logger.info("Fix all manifests started");
 		ManifestRecreationResponse response = batchService.fixManifests();
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 
 	@PostMapping(path = "/fix-manifest", produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<ManifestRecreationResponse> fixManifest(@RequestParam String recordId) {
+		logger.info("Fix manifest for record {} started", recordId);
 		ManifestRecreationResponse response = null;
 		try {
 			response = batchService.fixManifest(recordId);
