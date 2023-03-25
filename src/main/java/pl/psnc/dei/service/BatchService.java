@@ -593,7 +593,9 @@ public class BatchService {
         CallToActionResponse response = new CallToActionResponse();
 
         Page<Record> records = recordsRepository.findAllByStoryIdNotNull(PageRequest.of(0, PAGE_SIZE));
+        log.info("Starting sending Call to action for {} records (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
         do {
+            log.info("Sending Call to action for page {} of records", records.getPageable().getPageNumber());
             records.forEach(record -> {
                 try {
                     boolean valid = !validateManifest || validateManifest(record);
@@ -612,6 +614,7 @@ public class BatchService {
             });
             records = recordsRepository.findAllByStoryIdNotNull(records.nextPageable());
         } while (records.hasNext());
+        log.info("Sending Call to action finished");
         return response;
     }
 
@@ -649,7 +652,9 @@ public class BatchService {
 
     private void updateStoryId() {
         Page<Record> records = recordsRepository.findAllByStoryIdNull(PageRequest.of(0, PAGE_SIZE));
+        log.info("Found {} records without story id (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
         do {
+            log.info("Updating story id for page {} of records", records.getPageable().getPageNumber());
             records.forEach(record -> {
                 try {
                     record.setStoryId(transcriptionPlatformService.retrieveStoryId(record));
@@ -659,5 +664,6 @@ public class BatchService {
                 }
             });
         } while (records.hasNext());
+        log.info("Story id updated");
     }
 }
