@@ -16,7 +16,7 @@
 
     <properties>
       <java.version>11</java.version>
-      <vaadin.version>14.6.5</vaadin.version>
+      <vaadin.version>14.6.8</vaadin.version>
       <keycloak.version>4.8.3.Final</keycloak.version>
       <jena.version>3.11.0</jena.version>
       <lombok.version>1.18.20</lombok.version>
