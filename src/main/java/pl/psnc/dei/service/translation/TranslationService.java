@@ -29,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -122,7 +123,7 @@ public class TranslationService {
 
         if (applied) {
             log.info("Applying record {}", translationsDTO.getIdentifier());
-            String originalFile = new String(Files.readAllBytes(Path.of(xmlFolder, translationsDTO.getIdentifier() + ".xml")));
+            String originalFile = Files.readString(Path.of(xmlFolder, translationsDTO.getIdentifier() + ".xml"));
             String appliedValues = getAppliedValues((NodeList) expr.evaluate(input, XPathConstants.NODESET));
             applyToOriginalFile(appliedValues, originalFile).ifPresent(s -> {
                 try {
