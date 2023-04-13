@@ -64,6 +64,7 @@ public class TasksFactory {
     private RecordsRepository rr;
 
     @Autowired
+    @Lazy
     private TranscriptionConverter tc;
 
     @Autowired
