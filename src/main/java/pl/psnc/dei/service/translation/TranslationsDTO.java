@@ -1,5 +1,6 @@
 package pl.psnc.dei.service.translation;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
@@ -18,6 +19,12 @@ public class TranslationsDTO {
     private List<String> detectedLanguages = new ArrayList<>();
     @JsonProperty("translation")
     private List<String> translations = new ArrayList<>();
+
+    @JsonIgnore
+    private String recordDclanguage;
+
+    @JsonIgnore
+    private String descriptionDetectedLang;
 
     @JsonProperty
     private String tool;

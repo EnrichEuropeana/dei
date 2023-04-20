@@ -25,10 +25,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.xpath.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+import java.nio.file.*;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -46,7 +43,9 @@ public class TranslationService {
     private static final String SOFTWARE_AGENT = "SoftwareAgent";
     private static final String WHITESPACE_REGEX = "[ \n\t]";
     private static final String XML_DECLARATION = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    private static final Pattern PATTERN = Pattern.compile("(?s)<edm:ProvidedCHO.*?(<dc:description.*</dc:description>).*?</edm:ProvidedCHO>");
+    private static final Pattern PATTERN = Pattern.compile(
+            "(?s)<edm:ProvidedCHO.*?(<dc:description.*</dc:description>).*?</edm:ProvidedCHO>");
+    private static final String GLOB_PATTERN = "glob:*-%s.*";
 
     private ObjectMapper objectMapper;
     private DocumentBuilderFactory factory;
@@ -95,14 +94,14 @@ public class TranslationService {
         final XPathExpression expr = xpath.compile(
                 String.format("//*[name()='edm:ProvidedCHO']/*[local-name()='%s']", fieldName));
 
-		streamTranslations(translationsFolder)
-				.forEach(translationsDTO -> {
-					try {
-						applyTranslation(translationsDTO, xmlFolder, expr);
-					} catch (ParserConfigurationException | IOException | SAXException | XPathExpressionException | TransformerException e) {
-						log.error("Applying translation failed", e);
-					}
-				});
+        streamTranslations(translationsFolder)
+                .forEach(translationsDTO -> {
+                    try {
+                        applyTranslation(translationsDTO, xmlFolder, expr);
+                    } catch (ParserConfigurationException | IOException | SAXException | XPathExpressionException | TransformerException e) {
+                        log.error("Applying translation failed", e);
+                    }
+                });
     }
 
     private void applyTranslation(TranslationsDTO translationsDTO, String xmlFolder, XPathExpression expr) throws
@@ -110,10 +109,14 @@ public class TranslationService {
         boolean applied = true;
         Document input = factory
                 .newDocumentBuilder()
-                .parse(Path.of(xmlFolder, translationsDTO.getIdentifier() + ".xml").toString());
+                .parse(getFilePath(translationsDTO, xmlFolder, "xml").toString());
         NodeList nodes = (NodeList) expr.evaluate(input, XPathConstants.NODESET);
         for (int i = 0; i < translationsDTO.getOriginalValues().size(); i++) {
-            applied = applyTranslation(translationsDTO.getOriginalValues().get(i), translationsDTO.getTranslations().get(i),
+            String translation = translationsDTO.getTranslations().size() > i
+                    ? translationsDTO.getTranslations().get(i)
+                    : null;
+            applied = applyTranslation(translationsDTO.getOriginalValues().get(i),
+                    translation,
                     translationsDTO.getDetectedLanguages().get(i), (Element) nodes.item(i));
             if (!applied) {
                 log.warn("Translation {} was not be applied to record {}", i, translationsDTO.getIdentifier());
@@ -122,16 +125,29 @@ public class TranslationService {
 
         if (applied) {
             log.info("Applying record {}", translationsDTO.getIdentifier());
-            String originalFile = new String(Files.readAllBytes(Path.of(xmlFolder, translationsDTO.getIdentifier() + ".xml")));
+            String originalFile = new String(Files.readAllBytes(getFilePath(translationsDTO, xmlFolder, "xml")));
             String appliedValues = getAppliedValues((NodeList) expr.evaluate(input, XPathConstants.NODESET));
             applyToOriginalFile(appliedValues, originalFile).ifPresent(s -> {
                 try {
-                    Files.writeString(Path.of(xmlFolder, translationsDTO.getIdentifier() + ".applied"),
+                    Files.writeString(getFilePath(translationsDTO, xmlFolder, "applied"),
                             s, StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                 } catch (IOException e) {
                     log.error("Could not write file {}", translationsDTO.getIdentifier() + ".applied");
                 }
             });
+        }
+    }
+
+    private Path getFilePath(TranslationsDTO translationsDTO, String folder, String extension) throws IOException {
+        PathMatcher matcher = FileSystems.getDefault()
+                .getPathMatcher(String.format(GLOB_PATTERN, translationsDTO.getIdentifier()));
+        try (Stream<Path> stream = Files.list(Paths.get(folder))) {
+            return stream
+                    .filter(file -> !Files.isDirectory(file) && matcher.matches(file.getFileName()))
+                    .map(path -> Path.of(folder,
+                            path.getFileName().toString().replaceAll("(?<!^)[.].*", "") + "." + extension))
+                    .findFirst().orElseThrow(() -> new FileNotFoundException(
+                            String.format("File for identifier %s does not exist", translationsDTO.getIdentifier())));
         }
     }
 
@@ -159,8 +175,10 @@ public class TranslationService {
                 new StreamResult(buffer));
         return buffer.toString();
     }
+
     private String getSnippet(String fullValue, boolean escape) {
-        String clean = escape ? StringEscapeUtils.escapeXml(fullValue).replaceAll(WHITESPACE_REGEX, "") : fullValue.replaceAll(WHITESPACE_REGEX, "");
+        String clean = escape ? StringEscapeUtils.escapeXml(fullValue)
+                .replaceAll(WHITESPACE_REGEX, "") : fullValue.replaceAll(WHITESPACE_REGEX, "");
         return clean.substring(0, Math.min(clean.length(), 50));
     }
 
@@ -171,7 +189,7 @@ public class TranslationService {
             value.setAttribute(XML_LANG, language);
             applied = true;
         }
-        if (!language.equals("en")) {
+        if (!language.equals("en") && translation != null) {
             Element translationElement = (Element) value.cloneNode(true);
             translationElement.getFirstChild().setTextContent(translation);
             translationElement.setAttribute(XML_LANG, "en");
