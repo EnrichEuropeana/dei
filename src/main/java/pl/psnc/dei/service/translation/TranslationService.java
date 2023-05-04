@@ -106,6 +106,8 @@ public class TranslationService {
 
     private void applyTranslation(TranslationsDTO translationsDTO, String xmlFolder, XPathExpression expr) throws
             ParserConfigurationException, IOException, SAXException, XPathExpressionException, TransformerException {
+        log.info("Applying translations for {}", translationsDTO.getIdentifier());
+
         boolean applied = true;
         Document input = factory
                 .newDocumentBuilder()
@@ -115,9 +117,14 @@ public class TranslationService {
             String translation = translationsDTO.getTranslations().size() > i
                     ? translationsDTO.getTranslations().get(i)
                     : null;
+            Element element = (Element) nodes.item(i);
+            if (element == null) {
+                log.warn("No element for i={}. Nodes={}", i, nodes);
+                continue;
+            }
             applied = applyTranslation(translationsDTO.getOriginalValues().get(i),
                     translation,
-                    translationsDTO.getDetectedLanguages().get(i), (Element) nodes.item(i));
+                    translationsDTO.getDetectedLanguages().get(i), element);
             if (!applied) {
                 log.warn("Translation {} was not be applied to record {}", i, translationsDTO.getIdentifier());
             }
