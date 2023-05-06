@@ -36,6 +36,7 @@ import javax.transaction.Transactional;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
@@ -534,7 +535,8 @@ public class BatchService {
 
         Page<Record> records = recordsRepository.findAllByIiifManifestNotNull(PageRequest.of(0, PAGE_SIZE));
         response.setRecordsWithManifest(records.getTotalElements());
-        log.info("Found {} records with manifest (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
+        log.info("Found {} records with manifest (divided into {} pages)", records.getTotalElements(),
+                records.getTotalPages());
 
         do {
             log.info("Processing page {}", records.getPageable().getPageNumber());
@@ -583,20 +585,30 @@ public class BatchService {
         return response;
     }
 
-    public CallToActionResponse callToAction(boolean validateManifest, boolean simulate) {
+    @Transactional(Transactional.TxType.SUPPORTS)
+    public CallToActionResponse callToAction(boolean validateManifest, boolean simulate, boolean includeRecords,
+            Set<String> recordsIds) {
         // get all records, for each record with empty StoryId call TP API to get it, validate manifest if necessary, send call to action
-        updateStoryId();
-        return sendCallToAction(validateManifest, simulate);
+        long start = System.currentTimeMillis();
+        long updated = updateStoryId(includeRecords, recordsIds);
+        log.info("{} story ids updated in {} ms", updated, System.currentTimeMillis() - start);
+        CallToActionResponse response = sendCallToAction(validateManifest, simulate, includeRecords, recordsIds);
+        response.setUpdatedStories(updated);
+        response.setExecutionTime(System.currentTimeMillis() - start);
+        log.info("Sending Call to action finished in {} ms", response.getExecutionTime());
+        return response;
     }
 
-    private CallToActionResponse sendCallToAction(boolean validateManifest, boolean simulate) {
+    private CallToActionResponse sendCallToAction(boolean validateManifest, boolean simulate,
+            boolean includeRecords, Set<String> recordsIds) {
         CallToActionResponse response = new CallToActionResponse();
 
         Page<Record> records = recordsRepository.findAllByStoryIdNotNull(PageRequest.of(0, PAGE_SIZE));
-        log.info("Starting sending Call to action for {} records (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
+        log.info("Starting sending Call to action for {} records (divided into {} pages)", records.getTotalElements(),
+                records.getTotalPages());
         do {
             log.info("Sending Call to action for page {} of records", records.getPageable().getPageNumber());
-            records.forEach(record -> {
+            records.filter(record -> includeRecords == recordsIds.contains(record.getIdentifier())).forEach(record -> {
                 try {
                     boolean valid = !validateManifest || validateManifest(record);
                     if (valid) {
@@ -608,13 +620,13 @@ public class BatchService {
                         response.getSkipped().add(record.getIdentifier());
                     }
                 } catch (Exception e) {
-                    log.error("Call to action skipped for record {} due to error {}", record.getIdentifier(), e.getMessage());
+                    log.warn("Call to action skipped for record {} due to error {}", record.getIdentifier(),
+                            e.getMessage());
                     response.getSkipped().add(record.getIdentifier());
                 }
             });
             records = recordsRepository.findAllByStoryIdNotNull(records.nextPageable());
         } while (records.hasNext());
-        log.info("Sending Call to action finished");
         return response;
     }
 
@@ -650,20 +662,25 @@ public class BatchService {
         }
     }
 
-    private void updateStoryId() {
+    private long updateStoryId(boolean includeRecords, Set<String> recordsIds) {
+        AtomicLong updated = new AtomicLong();
         Page<Record> records = recordsRepository.findAllByStoryIdNull(PageRequest.of(0, PAGE_SIZE));
-        log.info("Found {} records without story id (divided into {} pages)", records.getTotalElements(), records.getTotalPages());
+        log.info("Found {} records without story id (divided into {} pages)", records.getTotalElements(),
+                records.getTotalPages());
         do {
             log.info("Updating story id for page {} of records", records.getPageable().getPageNumber());
-            records.forEach(record -> {
+            records.filter(record -> includeRecords == recordsIds.contains(record.getIdentifier())).forEach(record -> {
                 try {
                     record.setStoryId(transcriptionPlatformService.retrieveStoryId(record));
                     recordsRepository.save(record);
+                    updated.getAndIncrement();
                 } catch (TranscriptionPlatformException e) {
-                    log.error("StoryId not found for record {}. Skipping.", record.getIdentifier());
+                    log.warn("StoryId not found for record {}. Skipping.", record.getIdentifier());
                 }
             });
+            records = recordsRepository.findAllByStoryIdNull(records.nextPageable());
         } while (records.hasNext());
         log.info("Story id updated");
+        return updated.get();
     }
 }
