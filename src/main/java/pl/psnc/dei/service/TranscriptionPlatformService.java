@@ -705,7 +705,12 @@ public class TranscriptionPlatformService {
     public JsonArray fetchHTRTranscriptions(Record record, List<Long> exclude) {
         logger.info("Retrieving HTR transcriptions from TP for record {}", record.getIdentifier());
         if (record.getStoryId() == null) {
-            throw new IllegalArgumentException("No story id in record " + record.getIdentifier());
+            try {
+                record.setStoryId(retrieveStoryId(record));
+                recordsRepository.save(record);
+            } catch (TranscriptionPlatformException e) {
+                throw new IllegalArgumentException("No story id in record " + record.getIdentifier());
+            }
         }
         JsonArray htrs = new JsonArray();
         List<Long> itemIds = fetchItemIds(record.getStoryId());
