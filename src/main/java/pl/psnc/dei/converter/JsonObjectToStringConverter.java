@@ -15,6 +15,6 @@ public class JsonObjectToStringConverter implements AttributeConverter<JsonObjec
 
     @Override
     public JsonObject convertToEntityAttribute(String s) {
-        return JSON.parse(s);
+        return s == null ? new JsonObject() : JSON.parse(s);
     }
 }
