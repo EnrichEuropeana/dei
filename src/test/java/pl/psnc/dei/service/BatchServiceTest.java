@@ -275,7 +275,7 @@ public class BatchServiceTest {
         Mockito.when(transcriptionPlatformService.retrieveStoryId(any())).thenCallRealMethod();
         Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
 
-        CallToActionResponse response = batchService.callToAction(false, true, false, Collections.emptySet());
+        CallToActionResponse response = batchService.callToAction(true,false, true, false, Collections.emptySet());
 
         Assert.assertEquals(1L, response.getSent().size());
         Assert.assertEquals(actionRecord.getIdentifier(), response.getSent().get(0));
@@ -290,7 +290,7 @@ public class BatchServiceTest {
         Mockito.when(transcriptionPlatformService.fetchMetadataEnrichmentsFor(any())).thenReturn(readStoryEnrichmentsResponse());
         Mockito.doThrow(IllegalArgumentException.class).when(europeanaAnnotationsService).postCallToAction(any());
 
-        CallToActionResponse response = batchService.callToAction(false, false, false, Collections.emptySet());
+        CallToActionResponse response = batchService.callToAction(true, false, false, false, Collections.emptySet());
 
         Assert.assertEquals(0L, response.getSent().size());
         Assert.assertEquals(1L, response.getSkipped().size());

@@ -162,10 +162,11 @@ public class BatchController {
 	}
 
 	@PostMapping(path = "/calltoaction", produces = MediaType.APPLICATION_JSON_VALUE)
-	public ResponseEntity<CallToActionResponse> callToAction(@RequestParam(required = false, defaultValue = "false") boolean validateManifest,
+	public ResponseEntity<CallToActionResponse> callToAction(@RequestParam(required = false, defaultValue = "false") boolean updateStoryId,
+			@RequestParam(required = false, defaultValue = "false") boolean validateManifest,
 			@RequestParam(required = false, defaultValue = "true") boolean simulate, @RequestParam(required = false, defaultValue = "true") boolean includeRecords,
 			@RequestBody Set<String> recordsIds) {
-		CallToActionResponse response = batchService.callToAction(validateManifest, simulate, includeRecords, recordsIds);
+		CallToActionResponse response = batchService.callToAction(updateStoryId, validateManifest, simulate, includeRecords, recordsIds);
 		return new ResponseEntity<>(response, HttpStatus.OK);
 	}
 }

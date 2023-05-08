@@ -586,12 +586,17 @@ public class BatchService {
     }
 
     @Transactional(Transactional.TxType.SUPPORTS)
-    public CallToActionResponse callToAction(boolean validateManifest, boolean simulate, boolean includeRecords,
+    public CallToActionResponse callToAction(boolean updateStoryId, boolean validateManifest, boolean simulate, boolean includeRecords,
             Set<String> recordsIds) {
         // get all records, for each record with empty StoryId call TP API to get it, validate manifest if necessary, send call to action
         long start = System.currentTimeMillis();
-        long updated = updateStoryId(includeRecords, recordsIds);
-        log.info("{} story ids updated in {} ms", updated, System.currentTimeMillis() - start);
+        long updated = 0;
+        if (updateStoryId) {
+            updated = updateStoryId(includeRecords, recordsIds);
+            log.info("{} story ids updated in {} ms", updated, System.currentTimeMillis() - start);
+        } else {
+            log.info("Skipping updating story id");
+        }
         CallToActionResponse response = sendCallToAction(validateManifest, simulate, includeRecords, recordsIds);
         response.setUpdatedStories(updated);
         response.setExecutionTime(System.currentTimeMillis() - start);
