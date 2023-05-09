@@ -33,9 +33,9 @@ public class DateEnrichmentDTO extends MetadataEnrichmentDTO {
                 .ifPresent(s -> builder.item(TranscribathonItemDTO.builder().itemURL(s)
                         .pageNo(dateEnrichment.getPageNo()).build()));
         Optional.ofNullable(dateEnrichment.getDateStart())
-                .ifPresent(instant -> builder.begin(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
+                .ifPresent(instant -> builder.begin(LocalDate.ofInstant(instant, ZoneId.systemDefault()).toString()));
         Optional.ofNullable(dateEnrichment.getDateEnd())
-                .ifPresent(instant -> builder.end(LocalDate.ofInstant(instant, ZoneId.of("UTC")).toString()));
+                .ifPresent(instant -> builder.end(LocalDate.ofInstant(instant, ZoneId.systemDefault()).toString()));
         return builder.build();
     }
 }

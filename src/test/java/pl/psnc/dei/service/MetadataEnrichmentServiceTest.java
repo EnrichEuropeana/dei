@@ -1,8 +1,6 @@
 package pl.psnc.dei.service;
 
-import org.custommonkey.xmlunit.NodeTestException;
 import org.junit.Assert;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
@@ -19,12 +17,8 @@ import pl.psnc.dei.model.enrichments.MetadataEnrichment;
 import pl.psnc.dei.model.enrichments.PlaceEnrichment;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
 
-import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
