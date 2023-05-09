@@ -16,10 +16,10 @@ import pl.psnc.dei.model.enrichments.PlaceEnrichment;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 
 import java.time.Instant;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -109,8 +109,10 @@ public class MetadataEnrichmentExtractor {
             // end has to be set, so try to extract year from display date and in case it's there set end date to
             // end of the year, otherwise set the same value as in begin
             extractDisplayStartDate(item.getAsObject()).ifPresentOrElse(jsonValue -> Optional.ofNullable(enrichment.getDateStart()).ifPresent(instant -> {
-                if (LocalDate.ofInstant(instant, ZoneId.systemDefault()).getYear() == Integer.parseInt(jsonValue.getAsString().value())) {
-                    enrichment.setDateEnd(instant.plus(1, ChronoUnit.YEARS));
+                LocalDateTime localDate = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
+                if (localDate.getYear() == Integer.parseInt(jsonValue.getAsString().value())) {
+                        enrichment.setDateEnd(LocalDateTime.of(localDate.getYear(), 12, 31, 12, 0, 0).toInstant(
+                                ZoneOffset.UTC));
                 }
             }), () -> enrichment.setDateEnd(enrichment.getDateStart()));
         }
