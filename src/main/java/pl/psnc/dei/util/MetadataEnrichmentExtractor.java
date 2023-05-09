@@ -16,7 +16,10 @@ import pl.psnc.dei.model.enrichments.PlaceEnrichment;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -101,6 +104,19 @@ public class MetadataEnrichmentExtractor {
                         jsonValue -> Instant.from(DateTimeFormatter.ISO_ZONED_DATE_TIME.parse(jsonValue.getAsString().value())))
                 .ifPresent(
                         enrichment::setDateEnd);
+
+        if (enrichment.getDateEnd() == null) {
+            // end has to be set, so try to extract year from display date and in case it's there set end date to
+            // end of the year, otherwise set the same value as in begin
+            extractDisplayStartDate(item.getAsObject()).ifPresentOrElse(jsonValue -> Optional.ofNullable(enrichment.getDateStart()).ifPresent(instant -> {
+                if (LocalDate.ofInstant(instant, ZoneId.systemDefault()).getYear() == Integer.parseInt(jsonValue.getAsString().value())) {
+                    enrichment.setDateEnd(instant.plus(1, ChronoUnit.YEARS));
+                }
+            }), () -> enrichment.setDateEnd(enrichment.getDateStart()));
+        }
+        if (enrichment.getDateStart() == null && enrichment.getDateEnd() != null) {
+            enrichment.setDateStart(enrichment.getDateEnd());
+        }
         return enrichment;
     }
 
@@ -110,6 +126,10 @@ public class MetadataEnrichmentExtractor {
 
     public Optional<JsonValue> extractStartDate(JsonObject item) {
         return Optional.ofNullable(item.get(ItemFieldsNames.DATE_START));
+    }
+
+    public Optional<JsonValue> extractDisplayStartDate(JsonObject item) {
+        return Optional.ofNullable(item.get(ItemFieldsNames.DATE_START_DISPLAY));
     }
 
     public Optional<JsonValue> extractEndDate(JsonObject item) {
