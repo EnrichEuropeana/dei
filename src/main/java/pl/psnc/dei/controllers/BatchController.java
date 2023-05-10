@@ -17,6 +17,8 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.BatchService;
 import pl.psnc.dei.service.ImportPackageService;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Set;
@@ -45,8 +47,8 @@ public class BatchController {
 	 */
 	@PostMapping("/records")
 	public ResponseEntity<String> uploadRecords(@RequestParam(value = "projectName") String projectName,
-												@RequestParam(value = "datasetName", required = false) String datasetName,
-												@RequestBody Set<String> recordsIds) {
+			@RequestParam(value = "datasetName", required = false) String datasetName,
+			@RequestBody Set<String> recordsIds) {
 		try {
 			batchService.uploadRecords(projectName, datasetName, recordsIds);
 		} catch (NotFoundException e) {
@@ -65,9 +67,9 @@ public class BatchController {
 	 */
 	@PostMapping("/imports")
 	public ResponseEntity<Import> uploadRecordsAndCreateImport(@RequestParam(value = "projectName") String projectName,
-															   @RequestParam(value = "datasetName", required = false) String datasetName,
-															   @RequestParam(value = "name", required = false) String name,
-															   @RequestBody Set<String> recordsIds) {
+			@RequestParam(value = "datasetName", required = false) String datasetName,
+			@RequestParam(value = "name", required = false) String name,
+			@RequestBody Set<String> recordsIds) {
 		try {
 			Set<Record> records = this.batchService.uploadRecordsToProject(projectName, datasetName, recordsIds);
 			if (records.isEmpty()) {
@@ -91,9 +93,9 @@ public class BatchController {
 	 */
 	@PostMapping(path = "/complex-imports", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<List<Import>> splitImport(@RequestParam(value = "projectName") String projectName,
-													@RequestParam(value = "datasetName", required = false) String datasetName,
-													@RequestParam(value = "name", required = false) String name,
-													@RequestBody @RequestParam("file") MultipartFile file) throws IOException {
+			@RequestParam(value = "datasetName", required = false) String datasetName,
+			@RequestParam(value = "name", required = false) String name,
+			@RequestBody @RequestParam("file") MultipartFile file) throws IOException {
 		try {
 			return ResponseEntity.ok(this.batchService.makeComplexImport(file, name, projectName, datasetName));
 		} catch (NotFoundException e) {
@@ -103,7 +105,7 @@ public class BatchController {
 
 	@PostMapping(path = "/fix-dimensions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
 	public ResponseEntity<Set<String>> fixDimensions(@RequestParam(required = false, defaultValue = "false") boolean fix,
-													 @RequestBody @RequestParam("file") MultipartFile file) throws IOException {
+			@RequestBody @RequestParam("file") MultipartFile file) throws IOException {
 		Set<String> fileToDimension = batchService.fixDimensions(fix, file);
 		return ResponseEntity.ok(fileToDimension);
 	}
@@ -167,6 +169,19 @@ public class BatchController {
 			@RequestParam(required = false, defaultValue = "true") boolean simulate, @RequestParam(required = false, defaultValue = "true") boolean includeRecords,
 			@RequestBody Set<String> recordsIds) {
 		CallToActionResponse response = batchService.callToAction(updateStoryId, validateManifest, simulate, includeRecords, recordsIds);
+		writeResponse(response);
 		return new ResponseEntity<>(response, HttpStatus.OK);
+	}
+
+	private void writeResponse(CallToActionResponse response) {
+		File tmpFile;
+		try {
+			tmpFile = File.createTempFile("response_call_to_action_" + System.currentTimeMillis(), ".tmp");
+			try (FileWriter writer = new FileWriter(tmpFile)) {
+				writer.write(response.toString());
+			}
+		} catch (IOException e) {
+			logger.warn("Failed to write response to file");
+		}
 	}
 }
