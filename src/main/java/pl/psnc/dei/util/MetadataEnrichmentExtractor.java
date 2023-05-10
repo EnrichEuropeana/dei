@@ -110,9 +110,14 @@ public class MetadataEnrichmentExtractor {
             // end of the year, otherwise set the same value as in begin
             extractDisplayStartDate(item.getAsObject()).ifPresentOrElse(jsonValue -> Optional.ofNullable(enrichment.getDateStart()).ifPresent(instant -> {
                 LocalDateTime localDate = LocalDateTime.ofInstant(instant, ZoneId.systemDefault());
-                if (localDate.getYear() == Integer.parseInt(jsonValue.getAsString().value())) {
+                try {
+                    if (localDate.getYear() == Integer.parseInt(jsonValue.getAsString().value())) {
                         enrichment.setDateEnd(LocalDateTime.of(localDate.getYear(), 12, 31, 12, 0, 0).toInstant(
                                 ZoneOffset.UTC));
+                    }
+                } catch (NumberFormatException e) {
+                    // parsing display date failed, set end date the same as start date
+                    enrichment.setDateEnd(enrichment.getDateStart());
                 }
             }), () -> enrichment.setDateEnd(enrichment.getDateStart()));
         }
