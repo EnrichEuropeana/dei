@@ -1,5 +1,8 @@
 package pl.psnc.dei.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
+import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -178,7 +181,9 @@ public class BatchController {
 		try {
 			tmpFile = File.createTempFile("response_call_to_action_" + System.currentTimeMillis(), ".tmp");
 			try (FileWriter writer = new FileWriter(tmpFile)) {
-				writer.write(response.toString());
+				ObjectWriter ow = new ObjectMapper().writer().withDefaultPrettyPrinter();
+				String json = ow.writeValueAsString(response);
+				writer.write(json);
 			}
 		} catch (IOException e) {
 			logger.warn("Failed to write response to file");
