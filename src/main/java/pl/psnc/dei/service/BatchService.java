@@ -615,8 +615,7 @@ public class BatchService {
             log.info("Sending Call to action for page {} of records", records.getPageable().getPageNumber());
             records.filter(record -> includeRecords == recordsIds.contains(record.getIdentifier())).forEach(record -> {
                 try {
-                    boolean valid = !validateManifest || validateManifest(record);
-                    if (valid) {
+                    if (!validateManifest || validateManifest(record)) {
                         if (!simulate) {
                             europeanaAnnotationsService.postCallToAction(record);
                         }
@@ -637,6 +636,9 @@ public class BatchService {
 
     private boolean validateManifest(Record record) {
         try {
+            if (record.isValidated()) {
+                return true;
+            }
             JsonObject recordJson = europeanaSearchService.retrieveRecordAndConvertToJsonLd(record.getIdentifier());
             String iiifManifest = getIIIFManifest(record, recordJson);
             iiifManifestValidator.validateIIIFManifest(
@@ -647,6 +649,8 @@ public class BatchService {
                 log.error("Image {}  not available", s);
                 throw new ImageNotAvailableException("Images for record " + record.getId() + " not available.");
             }, () -> log.info("All images for record {} available", record.getIdentifier()));
+            record.setValidated(true);
+            recordsRepository.save(record);
             return true;
         } catch (Exception e) {
             return false;
