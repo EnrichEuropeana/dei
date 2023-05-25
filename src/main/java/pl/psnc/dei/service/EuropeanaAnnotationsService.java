@@ -119,12 +119,18 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(BodyInserters.fromObject(transcription.getTranscriptionContent().toString()))
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
-                    logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase());
-                    return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
-                            clientResponse.statusCode().getReasonPhrase()));
-                })
+                .onStatus(HttpStatus::is4xxClientError,
+                        clientResponse -> clientResponse.bodyToMono(String.class).flatMap(s -> {
+                            if (clientResponse.statusCode().equals(HttpStatus.FORBIDDEN)) {
+                                logger.warn("Send update transcription - FORBIDDEN. Response: {}", s);
+                                return Mono.empty();
+                            }
+                            logger.error("Error {} while posting update transcription. Cause: {}",
+                                    clientResponse.rawStatusCode(),
+                                    s);
+                            return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(),
+                                    s));
+                        }))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.error("Error {} while updating transcription. Cause: {}", clientResponse.rawStatusCode(),
                             clientResponse.statusCode().getReasonPhrase());
