@@ -89,6 +89,7 @@ public class UpdateTask extends Task {
         this.contextMediator = contextMediator;
         this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
         Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
+        newTranscription.setTranscriptionType(TranscriptionType.MANUAL);
         record.getTranscriptions().add(newTranscription);
         queueRecordService.saveRecord(record);
         transcriptions = Arrays.asList(newTranscription);
