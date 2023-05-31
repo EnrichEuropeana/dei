@@ -99,7 +99,7 @@ public class EuropeanaAnnotationsService extends RestRequestExecutor {
                 .doOnError(throwable -> logger.error(throwable.getMessage()))
                 .block();
         if (!(annotationResponse == null || annotationResponse.isEmpty())) {
-            logger.info("Transcription annotation: {}", annotationResponse);
+            logger.debug("Transcription annotation: {}", annotationResponse);
         }
         return extractAnnotationId(annotationResponse);
     }

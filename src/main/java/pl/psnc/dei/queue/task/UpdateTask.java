@@ -17,9 +17,7 @@ import pl.psnc.dei.service.context.ContextUtils;
 import pl.psnc.dei.service.search.EuropeanaSearchService;
 import pl.psnc.dei.util.TranscriptionConverter;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class UpdateTask extends Task {
 
@@ -88,11 +86,9 @@ public class UpdateTask extends Task {
         Record record = this.queueRecordService.getRecord(recordIdentifier);
         this.contextMediator = contextMediator;
         this.context = (UpdateTaskContext) this.contextMediator.get(record, UpdateTaskContext.class);
-        Transcription newTranscription = new Transcription(transcriptionId, record, annotationId);
-        newTranscription.setTranscriptionType(TranscriptionType.MANUAL);
-        record.getTranscriptions().add(newTranscription);
-        queueRecordService.saveRecord(record);
-        transcriptions = Arrays.asList(newTranscription);
+        transcriptions = new ArrayList<>();
+        // find the actual transcription in record and if present add it to the list of transcriptions to process
+        findTranscription(record, transcriptionId, annotationId).ifPresent(transcriptions::add);
         // state should be changed here and only here
         // moving it earlier could possibly leave us, in case of crash, with task that have no new records, then
         // there is no point for further processing
@@ -100,6 +96,12 @@ public class UpdateTask extends Task {
         state = TaskState.U_GET_TRANSCRIPTION_FROM_TP;
         ContextUtils.executeIfPresent(this.context.getTaskState(),
                 () -> this.state = this.context.getTaskState());
+    }
+
+    private Optional<Transcription> findTranscription(Record record, String transcriptionId, String annotationId) {
+        return record.getTranscriptions().stream()
+                .filter(transcription -> transcription.getTpId().equals(transcriptionId) &&
+                        transcription.getAnnotationId().equals(annotationId)).findFirst();
     }
 
     @Override
