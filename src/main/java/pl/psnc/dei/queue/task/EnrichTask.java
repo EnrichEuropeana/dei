@@ -88,7 +88,9 @@ public class EnrichTask extends Task {
         ContextUtils.executeIf(!this.context.isHasDownloadedEnrichment(),
                 () -> {
                     collectManualTranscriptions(transcriptions);
-                    collectHTRTranscriptions(transcriptions);
+                    if (tps.isHTRenabled()) {
+                        collectHTRTranscriptions(transcriptions);
+                    }
                     this.queueRecordService.saveTranscriptions(new ArrayList<>(transcriptions.values()));
                     this.context.setHasDownloadedEnrichment(true);
                     this.context.setSavedTranscriptions(new ArrayList<>(transcriptions.values()));

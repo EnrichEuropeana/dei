@@ -3,6 +3,7 @@ package pl.psnc.dei.service;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import io.netty.handler.timeout.WriteTimeoutHandler;
+import lombok.Getter;
 import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
@@ -85,6 +86,14 @@ public class TranscriptionPlatformService {
 
     @Value("${europeana.new.api.tp.authorization-token}")
     private String authNewApiToken;
+
+    /**
+     * HTRenabled indicates that HTR transcriptions are also retrieved for each record. If false then only manual
+     * transcriptions will be retrieved.
+     */
+    @Getter
+    @Value("${htr.enabled}")
+    private boolean HTRenabled;
 
     private List<Project> availableProjects;
     private final UrlBuilder urlBuilder;
