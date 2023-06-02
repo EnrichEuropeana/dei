@@ -126,11 +126,15 @@ public class QueueRecordService {
                     transcription.getAnnotationId())) {
                 this.saveTranscription(transcription);
                 return true;
+            } else {
+                transcriptionRepository.findByTpIdAndAnnotationId(transcription.getTpId(), transcription.getAnnotationId()).ifPresent(t -> transcription.setId(t.getId()));
             }
         } else {
             if (!transcriptionRepository.existsByTpId(transcription.getTpId())) {
                 this.saveTranscription(transcription);
                 return true;
+            } else {
+                transcriptionRepository.findByTpId(transcription.getTpId()).ifPresent(t -> transcription.setId(t.getId()));
             }
         }
         return false;
