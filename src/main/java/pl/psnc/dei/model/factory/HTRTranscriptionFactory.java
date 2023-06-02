@@ -39,7 +39,8 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
         transcription.setTranscriptionContent(
                 converter.convert(record, original, this));
         JsonValue europeanaAnnotationId = original.get("EuropeanaAnnotationId");
-        if (europeanaAnnotationId != null && !"0".equals(europeanaAnnotationId.toString())) {
+        if (europeanaAnnotationId != null && !("0".equals(europeanaAnnotationId.toString())
+                || "null".equals(europeanaAnnotationId.toString()))) {
             transcription.setAnnotationId(europeanaAnnotationId.toString());
         }
         return transcription;
