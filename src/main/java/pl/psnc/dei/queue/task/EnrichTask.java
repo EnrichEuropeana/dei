@@ -128,9 +128,8 @@ public class EnrichTask extends Task {
             try {
                 Transcription transcription = transcriptionFactories.get(TranscriptionType.HTR)
                         .createTranscription(record, val.getAsObject(), transcriptionConverter);
-                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
-                    transcriptions.put(transcription.getTpId(), transcription);
-                }
+                queueRecordService.saveTranscriptionIfNotExist(transcription);
+                transcriptions.put(transcription.getTpId(), transcription);
             } catch (IllegalArgumentException e) {
                 logger.error("Transcription was corrupted: {}", val);
             }
@@ -143,9 +142,8 @@ public class EnrichTask extends Task {
                 // by default this request retrieves only manual transcriptions
                 Transcription transcription = transcriptionFactories.get(TranscriptionType.MANUAL)
                         .createTranscription(record, val.getAsObject(), transcriptionConverter);
-                if (queueRecordService.saveTranscriptionIfNotExist(transcription)) {
-                    transcriptions.put(transcription.getTpId(), transcription);
-                }
+                queueRecordService.saveTranscriptionIfNotExist(transcription);
+                transcriptions.put(transcription.getTpId(), transcription);
             } catch (IllegalArgumentException e) {
                 logger.error("Transcription was corrupted: {}", val);
             }
