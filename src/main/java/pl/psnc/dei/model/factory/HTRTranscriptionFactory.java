@@ -80,7 +80,10 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
             bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE,
                     languages.getAsArray().get(0).getAsObject().get(TranscriptionFieldsNames.CODE));
         } else {
-            throw new IllegalArgumentException("Mandatory language property is missing.");
+            // temporal solution - set language to English as default
+            bodyObject.put(AnnotationFieldsNames.BODY_LANGUAGE,
+                    new JsonString("en"));
+            //throw new IllegalArgumentException("Mandatory language property is missing.");
         }
     }
 
