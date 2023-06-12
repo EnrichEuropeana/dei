@@ -785,11 +785,15 @@ public class TranscriptionPlatformService {
                 .uri(urlBuilder.urlForItem(id))
                 .header("Authorization", "Bearer " + authNewApiToken)
                 .retrieve()
-                .onStatus(HttpStatus::is4xxClientError, clientResponse -> {
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> clientResponse.bodyToMono(String.class).flatMap(s -> {
+                    if (clientResponse.statusCode().equals(HttpStatus.NOT_FOUND)) {
+                        logger.warn("Item information not found. Response: {}", s);
+                        return Mono.empty();
+                    }
                     logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
                             clientResponse.statusCode().getReasonPhrase());
                     return Mono.error(new TranscriptionPlatformException());
-                })
+                }))
                 .onStatus(HttpStatus::is5xxServerError, clientResponse -> {
                     logger.info("Error while fetching transcription {} {}", clientResponse.rawStatusCode(),
                             clientResponse.statusCode().getReasonPhrase());
