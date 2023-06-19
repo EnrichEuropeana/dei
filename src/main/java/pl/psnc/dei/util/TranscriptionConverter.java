@@ -54,6 +54,9 @@ public class TranscriptionConverter {
         String tpImageLink = extractImageLink(item.getAsObject());
         int tpOrderIndex = extractOrderIndex(item.getAsObject());
         String correctedImageLink = iiifMappingService.getSourceLink(record, tpOrderIndex, tpImageLink);
+        if (!(correctedImageLink.startsWith("https://") || correctedImageLink.startsWith("http://"))) {
+            return transcriptionFactory.prepareTargetObject(record, transcription, "https://" + correctedImageLink);
+        }
         return transcriptionFactory.prepareTargetObject(record, transcription, correctedImageLink);
     }
 
