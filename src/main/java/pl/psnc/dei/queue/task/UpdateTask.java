@@ -140,6 +140,6 @@ public class UpdateTask extends Task {
         JsonObject retrieved = TranscriptionType.MANUAL.equals(
                 transcription.getTranscriptionType()) ? tps.fetchTranscriptionUpdate(
                 transcription) : tps.fetchHTRTranscriptionUpdate(transcription);
-        return transcriptionConverter.convert(record, retrieved, transcriptionFactories.get(TranscriptionType.MANUAL));
+        return transcriptionConverter.convert(record, retrieved, transcriptionFactories.get(transcription.getTranscriptionType()));
     }
 }
