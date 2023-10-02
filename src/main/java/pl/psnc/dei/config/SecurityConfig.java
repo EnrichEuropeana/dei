@@ -93,6 +93,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 				.and()
 				.requiresChannel()
 				.requestMatchers(r -> r.getHeader("X-Forwarded-Proto") != null).requiresSecure();
+		http.cors();
 	}
 
 	@Override
