@@ -83,6 +83,7 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 		http.anonymous().disable();
 		http
 				.csrf().disable()
+				.cors().and()
 				.authorizeRequests()
 				// allow Vaadin URLs and the login URL without authentication
 				.regexMatchers("/frontend/.*", "/VAADIN/.*").permitAll()
@@ -93,7 +94,6 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 				.and()
 				.requiresChannel()
 				.requestMatchers(r -> r.getHeader("X-Forwarded-Proto") != null).requiresSecure();
-		http.cors();
 	}
 
 	@Override
