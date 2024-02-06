@@ -264,6 +264,7 @@ public class Converter {
 	 * @throws IOException
 	 */
 	private File copyURLToFile(ConversionDataHolder.ConversionData data) throws IOException, DownloadFileException {
+		java.lang.System.setProperty("https.protocols", "TLSv1,TLSv1.1,TLSv1.2");
 		HttpURLConnection connection;
 		URLConnection urlConnection = data.srcFileUrl.openConnection();
 		if (!(urlConnection instanceof HttpURLConnection)) {
