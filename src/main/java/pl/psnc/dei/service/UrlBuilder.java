@@ -7,7 +7,7 @@ import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 
 /**
- * Class responsible for building urls to different endpoints;
+ * Class responsible for building urls to different endpoints of transcription api;
  * <p>
  * Created by pwozniak on 3/20/19
  */
@@ -17,19 +17,23 @@ public class UrlBuilder {
 	private static final String DATASETS_SUFFIX = "/datasets";
 	private static final String IMPORTS_ADD_SUFFIX = "/";
 	private static final String STORIES_SUFFIX = "/stories";
+	private static final String ITEMS_SUFFIX = "/items";
 	private static final String ENRICHMENTS_SUFFIX = "/enrichments";
 	private static final String TRANSCRIPTION_SUFFIX = "/transcription";
 	private static final String DATASET_PARAM = "datasetId=";
 	private static final String IMPORT_NAME_PARAM = "importName=";
 	private static final String STORY_ID_PARAM = "storyId=";
+	private static final String RECORD_ID_PARAM = "recordId=";
 	private static final String EUROPEANA_ANNOTATION_ID_PARAM = "europeanaAnnotationId=";
 	private static final String ANNOTATION_ID = "annotationId=";
 	private static final String MOTIVATION = "motivation=";
 	private static final String INCLUDE_EXPORTED_PARAM = "includeExported=";
 
-
 	@Value("${transcription.api.url}")
 	private String transcriptionPlatformLocation;
+
+	@Value("${transcription.new.api.url}")
+	private String transcriptionPlatformAPILocation;
 
 	public String getBaseUrl() {
 		return transcriptionPlatformLocation;
@@ -57,7 +61,7 @@ public class UrlBuilder {
 	}
 
     public String urlForTranscription(Transcription transcription) {
-        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + TRANSCRIPTION_SUFFIX + "/" + transcription.getTp_id();
+        return transcriptionPlatformLocation + ENRICHMENTS_SUFFIX + TRANSCRIPTION_SUFFIX + "/" + transcription.getTpId();
     }
 
     public String urlForProjectDatasets(Project project) {
@@ -93,4 +97,39 @@ public class UrlBuilder {
 
         return url;
     }
+
+	public String urlForRecordMetadataEnrichments(Record record) {
+		return transcriptionPlatformLocation
+				+ STORIES_SUFFIX
+				+ '?'
+				+ RECORD_ID_PARAM
+				+ record.getIdentifier();
+	}
+
+	public String urlForItemMetadataEnrichments(long itemId) {
+		return transcriptionPlatformLocation
+				+ ITEMS_SUFFIX
+				+ '/'
+				+ itemId;
+	}
+
+	public String urlForItem(long itemId) {
+		return transcriptionPlatformAPILocation
+				+ ITEMS_SUFFIX
+				+ '/'
+				+ itemId;
+	}
+
+	public String urlForStory(long storyId) {
+		return transcriptionPlatformAPILocation
+				+ STORIES_SUFFIX
+				+ '/'
+				+ storyId;
+	}
+
+	public String urlForItemHTR(Long itemId) {
+		return urlForItem(itemId)
+				+ '/'
+				+ "htrdata";
+	}
 }

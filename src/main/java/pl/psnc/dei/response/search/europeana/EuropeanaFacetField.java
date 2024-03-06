@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import lombok.Getter;
+import lombok.Setter;
 import pl.psnc.dei.response.search.FacetField;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -11,36 +13,14 @@ import pl.psnc.dei.response.search.FacetField;
         "label",
         "count"
 })
+@Getter
+@Setter
 public class EuropeanaFacetField implements FacetField {
 
     @JsonProperty("label")
     private String label;
     @JsonProperty("count")
     private Integer count;
-
-    @JsonProperty("label")
-    @Override
-    public String getLabel() {
-        return label;
-    }
-
-    @JsonProperty("label")
-    @Override
-    public void setLabel(String label) {
-        this.label = label;
-    }
-
-    @JsonProperty("count")
-    @Override
-    public Integer getCount() {
-        return count;
-    }
-
-    @JsonProperty("count")
-    @Override
-    public void setCount(Integer count) {
-        this.count = count;
-    }
 
     @JsonIgnore
     @Override

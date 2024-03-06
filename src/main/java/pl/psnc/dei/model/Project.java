@@ -2,6 +2,10 @@ package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.io.Serializable;
@@ -15,6 +19,10 @@ import java.util.Set;
  * Created by pwozniak on 3/20/19
  */
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Project implements Serializable {
 
 	@Id
@@ -35,46 +43,6 @@ public class Project implements Serializable {
 	@JsonIgnore
 	@OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "project")
 	private Set<Record> records;
-
-	public long getId() {
-		return id;
-	}
-
-	public void setId(long id) {
-		this.id = id;
-	}
-
-	public String getProjectId() {
-		return projectId;
-	}
-
-	public void setProjectId(String projectId) {
-		this.projectId = projectId;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
-
-	public Set<Record> getRecords() {
-		return records;
-	}
-
-	public void setRecords(Set<Record> records) {
-		this.records = records;
-	}
-
-	public List<Dataset> getDatasets() {
-		return datasets;
-	}
-
-	public void setDatasets(List<Dataset> datasets) {
-		this.datasets = datasets;
-	}
 
 	@Override
 	public String toString() {

@@ -1,6 +1,5 @@
 package pl.psnc.dei.service;
 
-import org.assertj.core.util.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -15,9 +14,7 @@ import pl.psnc.dei.model.Import;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 
-import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.mockito.Mockito.*;

@@ -1,5 +1,8 @@
 package pl.psnc.dei.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+
 /**
  * Import status:
  * NEW when an import was created but it is not stored in DB yet,
@@ -8,6 +11,8 @@ package pl.psnc.dei.model;
  * FAILED when an import was sent but there was a failure
  * SENT when an import was sent successfully
  */
+@Getter
+@AllArgsConstructor
 public enum ImportStatus {
     NEW(0),
     CREATED(1),
@@ -16,12 +21,4 @@ public enum ImportStatus {
     SENT(4);
 
     private final int status;
-
-    ImportStatus(int status) {
-        this.status = status;
-    }
-
-    public int getStatus() {
-        return status;
-    }
 }

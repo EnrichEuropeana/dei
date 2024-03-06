@@ -7,6 +7,10 @@ import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConf
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.HttpMethod;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 import pl.psnc.dei.service.TranscriptionPlatformService;
 import pl.psnc.dei.ui.MainView;
 
@@ -28,5 +32,14 @@ public class DeiApplication extends SpringBootServletInitializer {
             transcriptionPlatformService.refreshAvailableProjects();
         };
     }
-}
+
+    @Bean
+    public WebMvcConfigurer corsConfigurer() {
+        return new WebMvcConfigurerAdapter() {
+            @Override
+            public void addCorsMappings(CorsRegistry registry) {
+                registry.addMapping("/api/transcription/iiif/manifest**").allowedOrigins("*").allowedMethods(HttpMethod.GET.name());
+            }
+        };
+    }}
 

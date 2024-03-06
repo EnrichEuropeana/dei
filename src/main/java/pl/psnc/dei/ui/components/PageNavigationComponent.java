@@ -9,7 +9,7 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import java.util.HashMap;
 import java.util.Map;
 
-@StyleSheet("frontend://styles/styles.css")
+@StyleSheet("./styles/styles.css")
 class PageNavigationComponent extends HorizontalLayout {
 
 	private static final Map<Integer, Integer> THRESHOLDS;

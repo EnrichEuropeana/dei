@@ -26,6 +26,7 @@ import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.ui.components.CommonComponentsFactory;
 import pl.psnc.dei.ui.pages.ImportPage;
 import pl.psnc.dei.util.ImportNameCreatorUtil;
 
@@ -89,10 +90,8 @@ public class CreateImportComponent extends VerticalLayout {
 	}
 
 	private Component createProjectSelection() {
-		Select<Project> projectSelection = new Select<>();
-		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projectSelection.setDataProvider(listDataProvider);
-
+		ListDataProvider<Project> projectsProvider = new ListDataProvider<>(projectsRepository.findAll());
+		Select<Project> projectSelection = CommonComponentsFactory.getProjectSelector(projectsProvider);
 		projectSelection.setEnabled(anImport == null);
 		projectSelection.addValueChangeListener(event -> {
 			project = event.getValue();
@@ -101,8 +100,6 @@ public class CreateImportComponent extends VerticalLayout {
 			importName.setValue(ImportNameCreatorUtil.generateImportName(project.getName()));
 			refresh();
 		});
-
-		projectSelection.setLabel("Select project");
 		return projectSelection;
 	}
 

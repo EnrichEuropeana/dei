@@ -1,0 +1,71 @@
+[
+  {
+    "ExternalRecordId": "http://data.europeana.eu/item/2025902/_nnVvzlT",
+    "Items": [
+      {
+        "Annotations": [],
+        "AutomatedEnrichments": [],
+        "Comments": [],
+        "CompletionStatusColorCode": "#fff700",
+        "CompletionStatusId": 2,
+        "CompletionStatusName": "Edit",
+        "DatasetId": 0,
+        "Description": "Ulotka działaczy \"Solidarności\" nakłaniająca ludzi do manifestacji ich przynależności do \"Solidarności\" oraz braku zgody na dalsze działania komunistów w Polsce.",
+        "DescriptionLanguage": 19,
+        "ImageLink": "{\"@id\":\"rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/4//2025902/_nnVvzlT/waw089.tif/full/full/0/default.jpg\",\"@type\":\"dctypes:Image\",\"width\":1059,\"height\":874,\"service\":{\"@id\":\"rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/4//2025902/_nnVvzlT/waw089.tif\",\"@context\":\"http://iiif.io/api/image/2/context.json\",\"profile\":\"http://iiif.io/api/image/2/level1.json\"}}",
+        "ItemId": 452399,
+        "LockedTime": "2020-01-25 12:11:20",
+        "LockedUser": 76,
+        "Manifest": "https://fresenia.man.poznan.pl/dei/api/transcription/iiif/manifest?recordId=/2025902/_nnVvzlT",
+        "OldItemId": 0,
+        "OrderIndex": 1,
+        "Persons": [],
+        "Places": [
+          {
+            "Comment": "Poland",
+            "Latitude": 52,
+            "Link": "",
+            "Longitude": 19,
+            "Name": "Poland",
+            "PlaceId": 266,
+            "UserGenerated": "1",
+            "UserId": 96,
+            "WikidataId": " Q36",
+            "WikidataName": "Poland",
+            "Zoom": 10
+          }
+        ],
+        "Properties": [],
+        "Timestamp": "2020-01-16 20:15:54",
+        "Title": "Apel Item 1",
+        "Transcriptions": []
+      }
+    ],
+    "OrderIndex": 0,
+    "ParentStory": 0,
+    "PlaceLatitude": 52.2297,
+    "PlaceLongitude": 21.0122,
+    "PlaceUserGenerated": "1",
+    "PlaceUserId": 0,
+    "PlaceZoom": "10",
+    "PreviewImage": "{\"@id\":\"rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/4//2025902/_nnVvzlT/waw089.tif/full/full/0/default.jpg\",\"@type\":\"dctypes:Image\",\"width\":1059,\"height\":874,\"service\":{\"@id\":\"rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/4//2025902/_nnVvzlT/waw089.tif\",\"@context\":\"http://iiif.io/api/image/2/context.json\",\"profile\":\"http://iiif.io/api/image/2/level1.json\"}}",
+    "ProjectId": 11,
+    "StoryId": 14361,
+    "dcCreator": "#agentOf:nnVvzlT_1",
+    "dcDescription": "Europeana 1989 - Warszawa, 8-9.06.2013 || Apel, odpowiedź na ograniczenie wolności związków zawodowych, informacje o sposobach przeprowadzania manifestacji",
+    "dcIdentifier": "#nnVvzlT || WAW089",
+    "dcLanguage": "pol || pol",
+    "dcRights": "http://creativecommons.org/publicdomain/mark/1.0/ Domena publiczna - obiekt nie jest chroniony prawem autorskim",
+    "dcTitle": "Apel",
+    "dcType": "dokument || dokument życia społecznego",
+    "dctermsProvenance": "Poland",
+    "edmCountry": "Poland",
+    "edmDataProvider": "Europeana 1989",
+    "edmDatasetName": "2025902_Ag_EU_1989_Poland",
+    "edmIsShownAt": "http://fbc.pionier.net.pl/id/oai:europeana1989.eu:125",
+    "edmLandingPage": "https://www.europeana.eu/portal/record/2025902/_nnVvzlT.html",
+    "edmLanguage": "pl",
+    "edmProvider": "Europeana 1989",
+    "edmRights": "http://creativecommons.org/publicdomain/mark/1.0/ || http://creativecommons.org/publicdomain/mark/1.0/"
+  }
+]

@@ -3,9 +3,11 @@ package pl.psnc.dei.service;
 import com.github.tomakehurst.wiremock.junit.WireMockRule;
 import org.apache.jena.atlas.json.JsonArray;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -18,6 +20,7 @@ import pl.psnc.dei.model.DAO.DatasetsRepository;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.DAO.RecordsRepository;
+import pl.psnc.dei.model.ImportProgress;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.Transcription;
 import pl.psnc.dei.model.exception.TranscriptionPlatformException;
@@ -25,6 +28,9 @@ import pl.psnc.dei.queue.task.TasksFactory;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @ContextConfiguration
@@ -62,6 +68,9 @@ public class TranscriptionPlatformServiceTest {
     @MockBean
     private TasksFactory tasksFactory;
 
+    @MockBean
+    private ImportProgressService importProgressService;
+
     @TestConfiguration
     static class TranscriptionPlatformServiceContextConfiguration {
 
@@ -79,6 +88,13 @@ public class TranscriptionPlatformServiceTest {
         public TranscriptionPlatformService tpService(UrlBuilder urlBuilder, WebClient.Builder builder) {
             return new TranscriptionPlatformService(urlBuilder, builder);
         }
+    }
+
+    @Before
+    public void setupImportProgressService() {
+        when(importProgressService.initImportProgress(anyInt()))
+                .thenReturn(new ImportProgress());
+        doNothing().when(importProgressService).reportProgress(ArgumentMatchers.any());
     }
 
     @Test
@@ -151,7 +167,7 @@ public class TranscriptionPlatformServiceTest {
 
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
 
@@ -167,7 +183,7 @@ public class TranscriptionPlatformServiceTest {
                         .withFixedDelay(3000)));
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
     }
@@ -181,7 +197,7 @@ public class TranscriptionPlatformServiceTest {
                         .withFixedDelay(2000)));
         //
         Transcription testTranscription = new Transcription();
-        testTranscription.setTp_id("sampleIdentifierFromTP");
+        testTranscription.setTpId("sampleIdentifierFromTP");
         testTranscription.setAnnotationId("sampleAnnotationId");
         transcriptionPlatformService.sendAnnotationUrl(testTranscription);
 
