@@ -7,4 +7,5 @@ public class TranslationRequest {
     String xmlFolder;
     String translationsFolder;
     String fieldName;
+    String mappingFile;
 }

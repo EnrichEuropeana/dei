@@ -26,9 +26,7 @@ import javax.xml.xpath.*;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -87,21 +85,57 @@ public class TranslationService {
      * @return
      */
     public void applyTranslations(@NonNull String xmlFolder, @NonNull String translationsFolder,
-            @NonNull String fieldName) throws IOException, XPathExpressionException {
+                                  @NonNull String fieldName, String mappingFile) throws IOException, XPathExpressionException {
         XPath xpath = XPathFactory
                 .newInstance()
                 .newXPath();
         final XPathExpression expr = xpath.compile(
                 String.format("//*[name()='edm:ProvidedCHO']/*[local-name()='%s']", fieldName));
 
-        streamTranslations(translationsFolder)
+        List<TranslationsDTO> translationsDTOs = streamTranslations(translationsFolder);
+        if (mappingFile != null) {
+            remapIdentifiers(translationsDTOs, mappingFile);
+        }
+        translationsDTOs
                 .forEach(translationsDTO -> {
                     try {
                         applyTranslation(translationsDTO, xmlFolder, expr);
-                    } catch (ParserConfigurationException | IOException | SAXException | XPathExpressionException | TransformerException e) {
+                    } catch (ParserConfigurationException | IOException | SAXException | XPathExpressionException |
+                             TransformerException e) {
                         log.error("Applying translation failed", e);
                     }
                 });
+    }
+
+    private void remapIdentifiers(List<TranslationsDTO> translationsDTOs, String mappingFile) {
+        Map<String, String> mapping = readMappingFile(mappingFile);
+        translationsDTOs.forEach(translationsDTO ->
+                translationsDTO.setIdentifier(mapping.getOrDefault(translationsDTO.getRecordId(), translationsDTO.getIdentifier())));
+    }
+
+    /**
+     * Mapping file should have key=value in each line
+     *
+     * @param mappingFile
+     * @return
+     */
+    private Map<String, String> readMappingFile(String mappingFile) {
+        Map<String, String> map = new HashMap<>();
+
+        try {
+            List<String> lines = Files.readAllLines(Paths.get(mappingFile));
+            for (String line : lines) {
+                String[] parts = line.split("=", 2);
+                if (parts.length == 2) {
+                    String key = parts[0];
+                    String value = parts[1];
+                    map.put(key, value);
+                }
+            }
+        } catch (IOException e) {
+            log.error("Cannot read mapping file", e);
+        }
+        return map;
     }
 
     private void applyTranslation(TranslationsDTO translationsDTO, String xmlFolder, XPathExpression expr) throws

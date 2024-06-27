@@ -37,7 +37,7 @@ public class TranslationController {
 			return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
 		}
 		try {
-			translationService.applyTranslations(translationRequest.getXmlFolder(), translationRequest.getTranslationsFolder(), translationRequest.getFieldName());
+			translationService.applyTranslations(translationRequest.getXmlFolder(), translationRequest.getTranslationsFolder(), translationRequest.getFieldName(), translationRequest.getMappingFile());
 		} catch (IOException | XPathExpressionException e) {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
 		}
