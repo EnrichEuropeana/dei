@@ -48,6 +48,11 @@ public class ImportPackageService extends RestRequestExecutor {
 		return StringUtil.isNullOrEmpty(name) ? generateImportName(projectName) : name;
 	}
 
+	/**
+	 * Remove or Add new records to existing import so it have same records as record set
+	 * @param updatedImport import to update
+	 * @param records records to be contained in updated import
+	 */
 	public void updateImport(Import updatedImport, Set<Record> records) {
 		importsRepository.findById(updatedImport.getId()).ifPresent(oldImport -> {
 
@@ -70,6 +75,7 @@ public class ImportPackageService extends RestRequestExecutor {
 
 
 	/**
+	 * Returns candidates selected earlier on from given project and dataset
 	 * @param projectId project id for searching candidates
 	 * @param datasetId dataset id (optional)
 	 * @return list of records which are candidates
@@ -134,22 +140,25 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
-	 * Send import to TP
-	 *
-	 * @param importName name of the import which should be send
+	 * Send import to Transcription Platform
+	 * Sending is possible for imports that have previously failed or have not been sent already
+	 * Empty imports are not send too
+	 * @param importName name of the import which should be send, import with given name must exist
 	 */
 	public void sendExistingImport(String importName) throws NotFoundException {
 		log.info("Sending existing import {}", importName);
-		Optional<Import> anImport = importsRepository.findImportByName(importName);
-		if (!anImport.isPresent()) {
+		Optional<Import> importOptional = importsRepository.findImportByName(importName);
+		if (importOptional.isEmpty()) {
 			throw new NotFoundException("Import not found");
 		}
+		Import anImport = importOptional.get();
+		// mentioned checks
 		// sending is possible only for created (first attempt) or failed (another attempt) imports with non empty records list
-		if ((ImportStatus.CREATED.equals(anImport.get().getStatus()) || ImportStatus.FAILED.equals(anImport.get().getStatus()))
-			&& !anImport.get().getRecords().isEmpty()) {
-			anImport.get().setStatus(ImportStatus.IN_PROGRESS);
-			importsRepository.save(anImport.get());
-			transcriptionPlatformService.sendImport(anImport.get().getName());
+		if ((ImportStatus.CREATED.equals(anImport.getStatus()) || ImportStatus.FAILED.equals(anImport.getStatus()))
+			&& !anImport.getRecords().isEmpty()) {
+			anImport.setStatus(ImportStatus.IN_PROGRESS);
+			importsRepository.save(anImport);
+			transcriptionPlatformService.sendImport(anImport.getName());
 		}
 	}
 
@@ -165,13 +174,14 @@ public class ImportPackageService extends RestRequestExecutor {
 	}
 
 	/**
+	 * Checks and returns failures if any occurred
 	 * @param importName name of the import which status and failure should be returned
 	 * @return import status and import failure information
 	 */
 	public ImportReport getStatusWithFailure(String importName) throws NotFoundException {
 		log.info("Getting status with failure {}", importName);
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
-		if (!anImport.isPresent()) {
+		if (anImport.isEmpty()) {
 			log.error("Empty import name for getting import status");
 			throw new NotFoundException("Import not found");
 		}
@@ -181,13 +191,18 @@ public class ImportPackageService extends RestRequestExecutor {
 	public Import addRecordsToImport(String importName, Set<Record> records) throws NotFoundException {
 		log.info("Adding records to import {}, records {}", importName, records);
 		Optional<Import> anImport = importsRepository.findImportByName(importName);
-		if (!anImport.isPresent()) {
+		if (anImport.isEmpty()) {
 			throw new NotFoundException("Import not found");
 		}
 		updateRecords(records, anImport.get());
 		return anImport.get();
 	}
 
+	/**
+	 * saves relation on records back to newly created import
+	 * @param records records which was added to import
+	 * @param anImport import on its own
+	 */
 	private void updateRecords(Set<Record> records, Import anImport) {
 		records.forEach(record -> {
 			record.setAnImport(anImport);

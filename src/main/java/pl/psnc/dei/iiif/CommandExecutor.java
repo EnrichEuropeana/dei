@@ -38,8 +38,13 @@ class CommandExecutor {
 		int executionResult = process.exitValue();
 
 		if (executionResult != 0) {
-			throw new ConversionException("Command execution failed for: " + command.toString());
+			throw new ConversionException("Command execution failed for: " + command + ". Reason: " + getLastLine(output.get()));
 		}
 		return output.get();
+	}
+
+	private String getLastLine(String str) {
+		String[] split = str.split("\n");
+		return split[split.length-1];
 	}
 }

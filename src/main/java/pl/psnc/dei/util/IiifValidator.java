@@ -1,18 +1,18 @@
 package pl.psnc.dei.util;
 
+import lombok.experimental.UtilityClass;
 import org.apache.jena.atlas.json.JsonObject;
 import pl.psnc.dei.model.Aggregator;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+@UtilityClass
 public class IiifValidator {
 
 	private static final List<String> ALLOWED_TYPES = new ArrayList<>();
 
 	static {
+		ALLOWED_TYPES.add("image/jp2");
 		ALLOWED_TYPES.add("image/jpeg");
 		ALLOWED_TYPES.add("image/tiff");
 		ALLOWED_TYPES.add("image/png");
@@ -135,6 +135,7 @@ public class IiifValidator {
 		TYPES_SHORT_TO_FULL.put("jck","application/liquidmotion");
 		TYPES_SHORT_TO_FULL.put("jcz","application/liquidmotion");
 		TYPES_SHORT_TO_FULL.put("jfif","image/pjpeg");
+		TYPES_SHORT_TO_FULL.put("jp2", "image/jp2");
 		TYPES_SHORT_TO_FULL.put("jpb","application/octet-stream");
 		TYPES_SHORT_TO_FULL.put("jpe","image/jpeg");
 		TYPES_SHORT_TO_FULL.put("jpeg","image/jpeg");
@@ -401,6 +402,9 @@ public class IiifValidator {
 	}
 
 	public static String getMimeTypeFromShort(String shortMimeType) {
+		if (Objects.isNull(shortMimeType)) {
+			return null;
+		}
 		return TYPES_SHORT_TO_FULL.get(shortMimeType.toLowerCase());
 	}
 }

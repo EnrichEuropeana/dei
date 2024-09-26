@@ -28,6 +28,14 @@ public class SearchController {
         this.europeanaSearchService = europeanaSearchService;
     }
 
+    /**
+     * Fetches data about given records matching query
+     * @param aggregatorId id of aggregator to fetch from
+     * @param query query to ask aggregator
+     * @param rows number of rows to fetch
+     * @param allParams other params
+     * @return all rows matching query
+     */
     @GetMapping(value = "/api/search", produces = "application/json")
     public Mono<SearchResponse> search(@RequestParam(value = "aggregator") Integer aggregatorId,
                                        @RequestParam(value = "query") String query,

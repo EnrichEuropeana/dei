@@ -1,5 +1,6 @@
 package pl.psnc.dei.service.search;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.jena.atlas.json.JSON;
 import org.apache.jena.atlas.json.JsonObject;
 import org.slf4j.Logger;
@@ -10,14 +11,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriUtils;
+import pl.psnc.dei.exception.AggregatorException;
 import pl.psnc.dei.exception.DEIHttpException;
+import pl.psnc.dei.exception.EuropeanaAggregatorException;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.request.RestRequestExecutor;
 import pl.psnc.dei.response.search.SearchResponse;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
+import pl.psnc.dei.response.search.europeana.EuropeanaFacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaSearchResponse;
 import reactor.core.publisher.Mono;
 
 import javax.annotation.PostConstruct;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static pl.psnc.dei.ui.components.facets.EuropeanaFacetComponent.FACET_SEPARATOR;
 import static pl.psnc.dei.ui.pages.SearchPage.ONLY_IIIF_PARAM_NAME;
@@ -42,6 +49,13 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
     @Value("${europeana.search.api.iiif.query}")
     private String searchApiIiifQuery;
+
+    private static final Map<String, String> ALL_DATASET_RECORDS_QUERY_PARAMS = ImmutableMap.of(
+            "facet", "europeana_id",
+            "profile", "facets",
+            "f.europeana_id.facet.limit", "500000",
+            "rows", "0"
+    );
 
     public EuropeanaSearchService(WebClient.Builder webClientBuilder) {
         configure(webClientBuilder);
@@ -110,6 +124,14 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                     return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(cause -> {
+                    if (cause instanceof DEIHttpException) {
+                        String message = cause.toString();
+                        throw new EuropeanaAggregatorException(message, cause);
+                    } else {
+                        throw new EuropeanaAggregatorException(cause.getMessage(), cause);
+                    }
+                })
                 .block();
         return JSON.parse(record);
     }
@@ -120,7 +142,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
      * @param recordId record identifier that will be used for retrieval
      * @return Retrieved record in JSON format
      */
-    public JsonObject retrieveRecordInJson(String recordId) {
+    public JsonObject retrieveRecordInJson(String recordId) throws AggregatorException {
         logger.info("Retrieving record from europeana {}", recordId);
         String record = webClient.get()
                 .uri(recordApiEndpoint + "/" + recordId + ".json?wskey=" + apiKey)
@@ -134,10 +156,21 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
                     return Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase()));
                 })
                 .bodyToMono(String.class)
+                .doOnError(cause -> {
+                    if (cause instanceof DEIHttpException) {
+                        String message = cause.toString();
+                        throw new EuropeanaAggregatorException(message, cause);
+                    } else {
+                        throw new EuropeanaAggregatorException(cause.getMessage(), cause);
+                    }
+                })
                 .block();
         return JSON.parse(record);
     }
 
+    /**
+     * Check if all arguments are not empty
+     */
     private void checkParameters(String query, String cursor) {
         if (StringUtils.isEmpty(query)) {
             throw new IllegalStateException("Mandatory parameter (query) is missing");
@@ -155,6 +188,7 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
 
         if (query.isEmpty()) {
             query = QUERY_ALL;
+            // default is *
         }
 
         String qfParam = requestParams.get(QF_PARAM_NAME);
@@ -191,5 +225,35 @@ public class EuropeanaSearchService extends RestRequestExecutor implements Aggre
         otherParams.put(ROWS_PARAM_NAME, String.valueOf(rowsPerPage));
 
         return search(query, qf, cursor, onlyIiif, otherParams);
+    }
+
+    @Override
+    public Set<String> getAllDatasetRecords(String datasetId) throws NotFoundException {
+        EuropeanaSearchResponse searchResponse = searchForAllDatasetRecords(datasetId).block();
+        if (searchResponse.getFacets() == null) {
+            throw new NotFoundException("Not found records for Europeana Dataset ID " + datasetId);
+        }
+        EuropeanaFacet idFacet = searchResponse.getFacets().stream()
+                .filter(facet -> "europeana_id".equals(facet.getName()))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("Error fetching records for dataset " + datasetId));
+        return idFacet.getFields().stream()
+                .map(EuropeanaFacetField::getLabel)
+                .collect(Collectors.toSet());
+    }
+
+    private Mono<EuropeanaSearchResponse> searchForAllDatasetRecords(String datasetId) {
+        return webClient
+                .get()
+                .uri(uriBuilder -> {
+                    uriBuilder.queryParam(API_KEY_PARAM_NAME, apiKey);
+                    uriBuilder.queryParam(QUERY_PARAM_NAME, UriUtils.encode(String.format("edm_datasetName:%s_*", datasetId), "UTF-8"));
+                    ALL_DATASET_RECORDS_QUERY_PARAMS.forEach((k, v) -> uriBuilder.queryParam(k.toLowerCase(), UriUtils.encode(v, "UTF-8")));
+                    return uriBuilder.build();
+                })
+                .retrieve()
+                .onStatus(HttpStatus::is4xxClientError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .onStatus(HttpStatus::is5xxServerError, clientResponse -> Mono.error(new DEIHttpException(clientResponse.rawStatusCode(), clientResponse.statusCode().getReasonPhrase())))
+                .bodyToMono(EuropeanaSearchResponse.class);
     }
 }

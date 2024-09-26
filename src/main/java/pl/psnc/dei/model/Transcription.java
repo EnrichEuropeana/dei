@@ -1,66 +1,56 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.converter.JsonObjectToStringConverter;
 
 import javax.persistence.*;
 
 @Entity
+@Data
+@NoArgsConstructor
+/**
+ * This class stores single transcription.
+ * This class seems to be a weak entity as it could be identified by only tpId and annotaionId,
+ * but on creation there not always is annotationId, thus we need to create surrogate id field
+ */
 public class Transcription {
 
-	@Id
-	@GeneratedValue
-	private long id;
+    @Id
+    @GeneratedValue
+    private Long id;
 
-	private String tp_id;
+    /**
+     * Identifier in TP
+     */
+    private String tpId;
 
-	@ManyToOne(fetch = FetchType.LAZY)
-	private Record record;
+    @Convert(converter = TranscriptionTypeConverter.class)
+    @Column(columnDefinition = "VARCHAR(10) default 'manual'")
+    private TranscriptionType transcriptionType;
 
-	@Transient
-	private JsonObject transcriptionContent;
+    /**
+     * Transcribathon item id. Used for retrieving information about the item and its manual or HTR transcriptions
+     */
+    private Long itemId;
 
-	private String annotationId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    private Record record;
 
-	public Transcription() {
-	}
+    @Convert(converter = JsonObjectToStringConverter.class)
+    @Column(columnDefinition = "LONGTEXT default '{}'")
+    private JsonObject transcriptionContent;
 
-	public Transcription(String tp_id, Record record, String annotationId) {
-		this.tp_id = tp_id;
-		this.record = record;
-		this.annotationId = annotationId;
-	}
+    @JsonProperty("EuropeanaAnnotationId")
+    private String annotationId;
 
-	public String getTp_id() {
-		return tp_id;
-	}
+    public Transcription(String tpId, Record record, String annotationId) {
+        this.tpId = tpId;
+        this.record = record;
+        this.annotationId = annotationId;
+        this.transcriptionContent = new JsonObject();
+    }
 
-	public void setTp_id(String tp_id) {
-		this.tp_id = tp_id;
-	}
-
-	public Record getRecord() {
-		return record;
-	}
-
-	public void setRecord(Record record) {
-		this.record = record;
-	}
-
-	@JsonProperty("EuropeanaAnnotationId")
-	public String getAnnotationId() {
-		return annotationId;
-	}
-
-	public void setAnnotationId(String annotationId) {
-		this.annotationId = annotationId;
-	}
-
-	public JsonObject getTranscriptionContent() {
-		return transcriptionContent;
-	}
-
-	public void setTranscriptionContent(JsonObject transcriptionContent) {
-		this.transcriptionContent = transcriptionContent;
-	}
 }

@@ -1,0 +1,463 @@
+{
+  "@graph": [
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#agentOf:nnVvzlT_1",
+      "@type": "edm:Agent",
+      "skos:prefLabel": "Zbigniew Bujak"
+    },
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#conceptOf:nnVvzlT_1",
+      "@type": "skos:Concept",
+      "skos:prefLabel": "protest"
+    },
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#conceptOf:nnVvzlT_2",
+      "@type": "skos:Concept",
+      "skos:prefLabel": "ruch obywatelski"
+    },
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#placeOf:nnVvzlT_1",
+      "@type": "edm:Place",
+      "wgs84_pos:lat": "52.229675",
+      "wgs84_pos:long": "21.01223"
+    },
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#timeSpanOf:nnVvzlT_1",
+      "@type": "edm:TimeSpan",
+      "skos:prefLabel": "1981"
+    },
+    {
+      "@id": "file:///usr/local/tomcat/webapps/#timeSpanOf:nnVvzlT_2",
+      "@type": "edm:TimeSpan",
+      "skos:prefLabel": "1989"
+    },
+    {
+      "@id": "http://data.europeana.eu/aggregation/europeana/2025902/_nnVvzlT",
+      "@type": "edm:EuropeanaAggregation",
+      "dcterms:created": "2019-09-17T15:07:38.863Z",
+      "dcterms:modified": "2019-09-17T15:07:38.863Z",
+      "edm:aggregatedCHO": {
+        "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT"
+      },
+      "edm:completeness": "8",
+      "edm:country": "Poland",
+      "edm:datasetName": "2025902_Ag_EU_1989_Poland",
+      "edm:landingPage": {
+        "@id": "https://www.europeana.eu/item/2025902/_nnVvzlT"
+      },
+      "edm:language": "pl",
+      "edm:preview": {
+        "@id": "https://api.europeana.eu/thumbnail/v2/url.json?uri=http%3A%2F%2Ffbc.pionier.net.pl%2Fzbiorki%2FContent%2F125%2Fwaw089.jpg&type=TEXT"
+      },
+      "dqv:hasQualityAnnotation": [
+        {
+          "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT#metadataTier"
+        },
+        {
+          "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT#contentTier"
+        }
+      ]
+    },
+    {
+      "@id": "http://data.europeana.eu/aggregation/provider/2025902/_nnVvzlT",
+      "@type": "ore:Aggregation",
+      "edm:aggregatedCHO": {
+        "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT"
+      },
+      "edm:dataProvider": {
+        "@id": "http://data.europeana.eu/organization/1482250000004503438"
+      },
+      "edm:isShownAt": {
+        "@id": "http://fbc.pionier.net.pl/id/oai:europeana1989.eu:125"
+      },
+      "edm:isShownBy": {
+        "@id": "http://fbc.pionier.net.pl/zbiorki/Content/125/waw089.jpg"
+      },
+      "edm:object": {
+        "@id": "http://fbc.pionier.net.pl/zbiorki/Content/125/waw089.jpg"
+      },
+      "edm:provider": {
+        "@id": "http://data.europeana.eu/organization/1482250000004503438"
+      },
+      "edm:rights": {
+        "@id": "http://creativecommons.org/publicdomain/mark/1.0/"
+      },
+      "edm:ugc": "true"
+    },
+    {
+      "@id": "http://data.europeana.eu/concept/2884",
+      "@type": "skos:Concept",
+      "skos:broader": {
+        "@id": "http://data.europeana.eu/concept/2840"
+      },
+      "skos:exactMatch": [
+        {
+          "@id": "http://babelnet.org/rdf/s00025804n"
+        },
+        {
+          "@id": "https://d-nb.info/gnd/4062132-7"
+        },
+        {
+          "@id": "https://g.co/kg/m/01xyfy"
+        },
+        {
+          "@id": "http://vocab.getty.edu/aat/300027249"
+        },
+        {
+          "@id": "http://id.loc.gov/authorities/genreForms/gf2011026193"
+        },
+        {
+          "@id": "http://id.loc.gov/authorities/names/sh85036372"
+        },
+        {
+          "@id": "https://www.freebase.com/m/01xyfy"
+        },
+        {
+          "@id": "http://www.wikidata.org/entity/Q705914"
+        }
+      ],
+      "skos:note": [
+        {
+          "@language": "it",
+          "@value": "Tipo di documento legale"
+        },
+        {
+          "@language": "eu",
+          "@value": "Notario batek fede emaniko agiri publikoa."
+        },
+        {
+          "@language": "ro",
+          "@value": "Document legal"
+        },
+        {
+          "@language": "bg",
+          "@value": "Вид правен инструмент"
+        },
+        {
+          "@language": "es",
+          "@value": "Tipo de documento legal"
+        },
+        {
+          "@language": "ru",
+          "@value": "Юридически оформленное дело, часто сделка"
+        },
+        {
+          "@language": "cs",
+          "@value": "Písemný úřední dokument"
+        },
+        {
+          "@language": "en",
+          "@value": "Type of legal instrument in Common law"
+        },
+        {
+          "@language": "de",
+          "@value": "Schriftstück, das einen Tatbestand bzw. Sachverhalt fixiert"
+        },
+        {
+          "@language": "fr",
+          "@value": "Document légal"
+        },
+        {
+          "@language": "el",
+          "@value": "Τύπος νομικού αντικειμένου"
+        }
+      ],
+      "skos:prefLabel": [
+        {
+          "@language": "hu",
+          "@value": "Okirat"
+        },
+        {
+          "@language": "nl",
+          "@value": "Oorkonde"
+        },
+        {
+          "@language": "pl",
+          "@value": "Dokument"
+        },
+        {
+          "@language": "sv",
+          "@value": "Uppbud"
+        },
+        {
+          "@language": "it",
+          "@value": "Deed"
+        },
+        {
+          "@language": "en",
+          "@value": "Deed"
+        },
+        {
+          "@language": "es",
+          "@value": "Escritura"
+        },
+        {
+          "@language": "ga",
+          "@value": "Gníomhas"
+        },
+        {
+          "@language": "ru",
+          "@value": "Акт"
+        },
+        {
+          "@language": "ca",
+          "@value": "Escriptura"
+        },
+        {
+          "@language": "bg",
+          "@value": "Акт"
+        },
+        {
+          "@language": "lv",
+          "@value": "Akts"
+        },
+        {
+          "@language": "de",
+          "@value": "Urkunde"
+        },
+        {
+          "@language": "fi",
+          "@value": "Lainhuuto"
+        },
+        {
+          "@language": "fr",
+          "@value": "Certificat"
+        },
+        {
+          "@language": "ro",
+          "@value": "Certificat"
+        },
+        {
+          "@language": "el",
+          "@value": "Τίτλος"
+        },
+        {
+          "@language": "eu",
+          "@value": "Eskritura"
+        },
+        {
+          "@language": "da",
+          "@value": "Bekendtgørelse"
+        },
+        {
+          "@language": "cs",
+          "@value": "Listina"
+        },
+        {
+          "@language": "sk",
+          "@value": "Listina"
+        },
+        {
+          "@language": "sl",
+          "@value": "Listina"
+        }
+      ]
+    },
+    {
+      "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT",
+      "@type": "edm:ProvidedCHO"
+    },
+    {
+      "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT#contentTier",
+      "@type": "dqv:QualityAnnotation",
+      "dcterms:created": "2019-09-17T15:07:38.837Z",
+      "oa:hasBody": {
+        "@id": "http://www.europeana.eu/schemas/epf/contentTier2"
+      },
+      "oa:hasTarget": {
+        "@id": "http://data.europeana.eu/aggregation/provider/2025902/_nnVvzlT"
+      }
+    },
+    {
+      "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT#metadataTier",
+      "@type": "dqv:QualityAnnotation",
+      "dcterms:created": "2019-09-17T15:07:38.837Z",
+      "oa:hasBody": {
+        "@id": "http://www.europeana.eu/schemas/epf/metadataTierA"
+      },
+      "oa:hasTarget": {
+        "@id": "http://data.europeana.eu/aggregation/provider/2025902/_nnVvzlT"
+      }
+    },
+    {
+      "@id": "http://data.europeana.eu/organization/1482250000004503438",
+      "@type": "foaf:Organization",
+      "skos:prefLabel": {
+        "@language": "en",
+        "@value": "Europeana 1989"
+      }
+    },
+    {
+      "@id": "http://data.europeana.eu/proxy/europeana/2025902/_nnVvzlT",
+      "@type": "ore:Proxy",
+      "dc:identifier": "#nnVvzlT",
+      "dc:language": "pol",
+      "dc:type": {
+        "@id": "http://data.europeana.eu/concept/2884"
+      },
+      "edm:europeanaProxy": "true",
+      "edm:type": "TEXT",
+      "ore:proxyFor": {
+        "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT"
+      },
+      "ore:proxyIn": {
+        "@id": "http://data.europeana.eu/aggregation/europeana/2025902/_nnVvzlT"
+      }
+    },
+    {
+      "@id": "http://data.europeana.eu/proxy/provider/2025902/_nnVvzlT",
+      "@type": "ore:Proxy",
+      "dc:creator": {
+        "@id": "file:///usr/local/tomcat/webapps/#agentOf:nnVvzlT_1"
+      },
+      "dc:description": [
+        {
+          "@language": "pl",
+          "@value": "Europeana 1989 - Warszawa, 8-9.06.2013"
+        },
+        {
+          "@language": "pl",
+          "@value": "Apel, odpowiedź na ograniczenie wolności związków zawodowych, informacje o sposobach przeprowadzania manifestacji"
+        }
+      ],
+      "dc:identifier": "WAW089",
+      "dc:language": "pol",
+      "dc:rights": {
+        "@language": "pl",
+        "@value": "http://creativecommons.org/publicdomain/mark/1.0/ Domena publiczna - obiekt nie jest chroniony prawem autorskim"
+      },
+      "dc:subject": [
+        {
+          "@id": "file:///usr/local/tomcat/webapps/#conceptOf:nnVvzlT_2"
+        },
+        {
+          "@id": "file:///usr/local/tomcat/webapps/#conceptOf:nnVvzlT_1"
+        }
+      ],
+      "dc:title": {
+        "@language": "pl",
+        "@value": "Apel"
+      },
+      "dc:type": [
+        {
+          "@language": "pl",
+          "@value": "dokument"
+        },
+        {
+          "@language": "pl",
+          "@value": "dokument życia społecznego"
+        }
+      ],
+      "dcterms:isPartOf": "Europeana 1989 - Warszawa, 8-9.06.2013",
+      "dcterms:provenance": {
+        "@language": "en",
+        "@value": "Poland"
+      },
+      "dcterms:spatial": {
+        "@id": "file:///usr/local/tomcat/webapps/#placeOf:nnVvzlT_1"
+      },
+      "dcterms:temporal": [
+        {
+          "@id": "file:///usr/local/tomcat/webapps/#timeSpanOf:nnVvzlT_2"
+        },
+        {
+          "@id": "file:///usr/local/tomcat/webapps/#timeSpanOf:nnVvzlT_1"
+        }
+      ],
+      "edm:currentLocation": {
+        "@id": "file:///usr/local/tomcat/webapps/#locationOf:nnVvzlT"
+      },
+      "edm:europeanaProxy": "false",
+      "edm:type": "TEXT",
+      "ore:proxyFor": {
+        "@id": "http://data.europeana.eu/item/2025902/_nnVvzlT"
+      },
+      "ore:proxyIn": {
+        "@id": "http://data.europeana.eu/aggregation/provider/2025902/_nnVvzlT"
+      }
+    },
+    {
+      "@id": "http://fbc.pionier.net.pl/id/oai:europeana1989.eu:125",
+      "@type": [
+        "edm:FullTextResource",
+        "edm:WebResource"
+      ],
+      "ebucore:fileByteSize": {
+        "@type": "http://www.w3.org/2001/XMLSchema#long",
+        "@value": "59214"
+      },
+      "ebucore:hasMimeType": "application/xhtml+xml"
+    },
+    {
+      "@id": "http://fbc.pionier.net.pl/zbiorki/Content/125/waw089.jpg",
+      "@type": "edm:WebResource",
+      "dcterms:isReferencedBy": {
+        "@id": "https://iiif.europeana.eu/presentation/2025902/_nnVvzlT/manifest"
+      },
+      "ebucore:fileByteSize": {
+        "@type": "http://www.w3.org/2001/XMLSchema#long",
+        "@value": "218747"
+      },
+      "ebucore:hasMimeType": "image/jpeg",
+      "ebucore:height": 874,
+      "ebucore:orientation": "landscape",
+      "ebucore:width": 1059,
+      "edm:componentColor": [
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#EEE8AA"
+        },
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#D3D3D3"
+        },
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#DCDCDC"
+        },
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#C0C0C0"
+        },
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#A9A9A9"
+        },
+        {
+          "@type": "http://www.w3.org/2001/XMLSchema#hexBinary",
+          "@value": "#F5DEB3"
+        }
+      ],
+      "edm:hasColorSpace": "sRGB",
+      "edm:rights": {
+        "@id": "http://creativecommons.org/publicdomain/mark/1.0/"
+      }
+    },
+    {
+      "@id": "https://iiif.europeana.eu/presentation/2025902/_nnVvzlT/manifest",
+      "@type": [
+        "http://iiif.io/api/presentation/3#Manifest",
+        "edm:WebResource"
+      ]
+    }
+  ],
+  "@context": {
+    "rdf": "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "dc": "http://purl.org/dc/elements/1.1/",
+    "dcterms": "http://purl.org/dc/terms/",
+    "edm": "http://www.europeana.eu/schemas/edm/",
+    "owl": "http://www.w3.org/2002/07/owl#",
+    "wgs84_pos": "http://www.w3.org/2003/01/geo/wgs84_pos#",
+    "skos": "http://www.w3.org/2004/02/skos/core#",
+    "rdaGr2": "http://rdvocab.info/ElementsGr2/",
+    "foaf": "http://xmlns.com/foaf/0.1/",
+    "ebucore": "http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#",
+    "doap": "http://usefulinc.com/ns/doap#",
+    "odrl": "http://www.w3.org/ns/odrl/2/",
+    "cc": "http://creativecommons.org/ns#",
+    "ore": "http://www.openarchives.org/ore/terms/",
+    "svcs": "http://rdfs.org/sioc/services#",
+    "oa": "http://www.w3.org/ns/oa#",
+    "dqv": "http://www.w3.org/ns/dqv#"
+  }
+}
