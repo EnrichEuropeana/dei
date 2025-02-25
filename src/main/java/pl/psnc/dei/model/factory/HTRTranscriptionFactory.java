@@ -49,7 +49,8 @@ public class HTRTranscriptionFactory implements TranscriptionFactory {
     public void validateTranscription(JsonObject transcription) {
         Objects.requireNonNull(transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA),
                 "HTR Transcription content cannot be null");
-        if (StringUtils.isBlank(transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA).getAsString().value())) {
+        JsonValue data = transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA);
+        if (!data.isString() || StringUtils.isBlank(transcription.get(TranscriptionFieldsNames.TRANSCRIPTION_DATA).getAsString().value())) {
             throw new IllegalArgumentException("HTR Transcription content cannot be empty");
         }
     }
