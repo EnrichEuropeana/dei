@@ -36,6 +36,10 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration
 @TestPropertySource(properties = {
         "transcription.api.url=http://127.0.0.1:8181",
+        "transcription.new.api.url=http://127.0.0.1:8181",
+        "europeana.api.tp.authorization-token=wh2B55drz8lGyTDnTYO0nT1Dr6FBKGR0",
+        "europeana.new.api.tp.authorization-token=Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK",
+        "htr.enabled=false"
 })
 public class TranscriptionPlatformServiceTest {
 

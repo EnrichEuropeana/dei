@@ -7,7 +7,7 @@
       "@type" : "sc:Sequence" ,
       "canvases" : [
         {
-          "@id" : "rhus-148.man.poznan.pl/canvas/1//137/_nnVV2z6/BJC00154.tif" ,
+          "@id" : "iiif-test.man.poznan.pl/canvas/1//137/_nnVV2z6/BJC00154.tif" ,
           "@type" : "sc:canvas" ,
           "label" : "1//137/_nnVV2z6/BJC00154.tif" ,
           "width" : 1148 ,
@@ -16,14 +16,14 @@
             {
               "@type" : "oa:Annotation" ,
               "motivation" : "sc:painting" ,
-              "on" : "rhus-148.man.poznan.pl/canvas/1//137/_nnVV2z6/BJC00154.tif" ,
+              "on" : "iiif-test.man.poznan.pl/canvas/1//137/_nnVV2z6/BJC00154.tif" ,
               "resource" : {
-                "@id" : "rhus-148.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//137/_nnVV2z6/BJC00154.tif/full/full/0/default.jpg" ,
+                "@id" : "iiif-test.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//137/_nnVV2z6/BJC00154.tif/full/full/0/default.jpg" ,
                 "@type" : "dctypes:Image" ,
                 "width" : 1148 ,
                 "height" : 764 ,
                 "service" : {
-                  "@id" : "rhus-148.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//137/_nnVV2z6/BJC00154.tif" ,
+                  "@id" : "iiif-test.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//137/_nnVV2z6/BJC00154.tif" ,
                   "@context" : "http://iiif.io/api/image/2/context.json" ,
                   "profile" : "http://iiif.io/api/image/2/level1.json"
                 }
