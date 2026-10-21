@@ -45,7 +45,7 @@ import static org.mockito.ArgumentMatchers.*;
 
 @RunWith(SpringRunner.class)
 @TestPropertySource(properties = {
-        "conversion.iiif.server.url=https://rhus-148.man.poznan.pl",
+        "conversion.iiif.server.url=https://iiif-test.man.poznan.pl",
         "application.server.url=https://fresenia-dev.man.poznan.pl",
         "server.servlet.context-path=/dei-test",
 })
