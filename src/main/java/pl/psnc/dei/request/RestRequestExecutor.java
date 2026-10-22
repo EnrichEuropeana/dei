@@ -2,8 +2,10 @@ package pl.psnc.dei.request;
 
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import reactor.netty.http.client.HttpClient;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -14,14 +16,17 @@ public class RestRequestExecutor {
 
     /**
      * Creates an instance of web client used by the executor.
+     *
      * @param webClientBuilder web client builder (by default automatically created by spring)
      */
     protected void configure(WebClient.Builder webClientBuilder) {
-        this.webClient = webClientBuilder.build();
+        this.webClient = webClientBuilder.clientConnector(
+                new ReactorClientHttpConnector(HttpClient.create().compress(true).followRedirect(true))).build();
     }
 
     /**
      * Sets the root URI in the web client used by the executor.
+     *
      * @param rootUri root URI used for each request
      */
     protected void setRootUri(String rootUri) {

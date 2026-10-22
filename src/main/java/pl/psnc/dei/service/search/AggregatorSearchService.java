@@ -1,10 +1,12 @@
 package pl.psnc.dei.service.search;
 
 import org.apache.jena.atlas.json.JsonObject;
+import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.response.search.SearchResponse;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.Set;
 
 public interface AggregatorSearchService {
 
@@ -16,4 +18,6 @@ public interface AggregatorSearchService {
 
 	JsonObject retrieveRecordAndConvertToJsonLd(String recordId);
 
-	}
+	Set<String> getAllDatasetRecords(String datasetId) throws NotFoundException;
+
+}

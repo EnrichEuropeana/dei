@@ -43,7 +43,7 @@
     margin-left: 0;
     margin-bottom: 5px;
     padding: 0;
-    max-width:1000px;
+    max-width: 1000px;
 }
 
 .search-result-element-enabled {
@@ -141,13 +141,13 @@
     width: 80px;
 }
 
-.button-as-text{
-    background:none!important;
-     color:inherit;
-     border:none;
-     font: inherit;
-     border:0;
-     cursor: pointer;
+.button-as-text {
+    background: none !important;
+    color: inherit;
+    border: none;
+    font: inherit;
+    border: 0;
+    cursor: pointer;
 }
 
 .confirmation-dialog-title {
@@ -169,10 +169,53 @@
 
 .underlined-item {
     font-weight: bold;
-    padding-left: 15px!important;
+    padding-left: 15px !important;
 }
 
 .button-disabled {
     opacity: 0.5;
     background-color: lightgray
+}
+
+#batch-import-component {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+#batch-import-component > *:not(:last-child) {
+    margin-bottom: 16px;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.vertically-centered-row {
+    display: flex;
+    align-items: center
+}
+
+.margin-top-16px {
+    margin-top: 16px;
+}
+
+.padding-top-6px {
+    padding-top: 6px;
+}
+
+.margin-left-6px {
+    margin-left: 6px;
+}
+
+.flex-column {
+    display: inline-flex;
+    flex-direction: column;
+}
+
+.align-flex-end {
+    align-self: flex-end;
+}
+
+.records-text-area {
+    min-height: 150px;
 }

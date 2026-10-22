@@ -1,9 +1,14 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import org.hibernate.annotations.Cascade;
 import pl.psnc.dei.converter.AggregatorConverter;
 import pl.psnc.dei.converter.RecordStateConverter;
+import pl.psnc.dei.model.enrichments.MetadataEnrichment;
 
 import javax.persistence.*;
 import java.util.HashMap;
@@ -11,17 +16,34 @@ import java.util.List;
 import java.util.Map;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
 public class Record {
 
 	@Id
 	@GeneratedValue
-	private long id;
+	private Long id;
 
 	/**
 	 * Record identifier from aggregator (Europeana or Deutsche Digitale Bibliothek)
 	 * Europeana id looks like: "/[DATASET_ID]/[LOCAL_ID]"
 	 */
 	private String identifier;
+
+	/**
+	 * Story Id is retrieved from TP API once the record is sent. Each time we send the record (maybe there is a
+	 * retry or it is sent again for some reason) this story id might be updated.
+	 */
+	@JsonIgnore
+	private Long storyId;
+
+	/**
+	 * Set this flag to true only when the validation of IIIF manifest and files has been performed successfully
+	 */
+	@JsonIgnore
+	@Column(columnDefinition = "boolean default false")
+	private boolean validated;
 
 	@Convert(converter = RecordStateConverter.class)
 	@Column(columnDefinition = "int default 0")
@@ -37,12 +59,16 @@ public class Record {
 	private Dataset dataset;
 
 	@JsonIgnore
-	@ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+	@ManyToOne(fetch = FetchType.EAGER)
 	private Import anImport;
 
 	@JsonIgnore
-	@OneToMany(cascade = {CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.EAGER)
+	@OneToMany(cascade = {CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.EAGER, mappedBy = "record")
 	private List<Transcription> transcriptions;
+
+	@JsonIgnore
+	@OneToMany(cascade = {CascadeType.MERGE}, orphanRemoval = true, fetch = FetchType.LAZY, mappedBy = "record")
+	private List<MetadataEnrichment> metadataEnrichments;
 
 	@JsonIgnore
 	@Lob
@@ -55,9 +81,6 @@ public class Record {
 	@JsonIgnore
 	@Lob
 	private String title;
-
-	public Record() {
-	}
 
 	public Record(String identifier, String title) {
 		this.identifier = identifier;
@@ -80,82 +103,6 @@ public class Record {
 		this.title = title;
 	}
 
-	public String getTitle() {
-		return title;
-	}
-
-	public void setTitle(String title) {
-		this.title = title;
-	}
-
-	public long getId() {
-		return id;
-	}
-
-	public String getIdentifier() {
-		return identifier;
-	}
-
-	public void setIdentifier(String identifier) {
-		this.identifier = identifier;
-	}
-
-	public RecordState getState() {
-		return state;
-	}
-
-	public void setState(RecordState state) {
-		this.state = state;
-	}
-
-	public Project getProject() {
-		return project;
-	}
-
-	public void setProject(Project project) {
-		this.project = project;
-	}
-
-	public Dataset getDataset() {
-		return dataset;
-	}
-
-	public void setDataset(Dataset dataset) {
-		this.dataset = dataset;
-	}
-
-	public Import getAnImport() {
-		return anImport;
-	}
-
-	public void setAnImport(Import anImport) {
-		this.anImport = anImport;
-	}
-
-	public List<Transcription> getTranscriptions() {
-		return transcriptions;
-	}
-
-	public void setTranscriptions(List<Transcription> transcriptions) {
-		this.transcriptions = transcriptions;
-	}
-
-	public String getIiifManifest() {
-		return iiifManifest;
-	}
-
-	public void setIiifManifest(String iiifManifest) {
-		this.iiifManifest = iiifManifest;
-	}
-
-	public Aggregator getAggregator() {
-		return aggregator;
-	}
-
-	public void setAggregator(Aggregator aggregator) {
-		this.aggregator = aggregator;
-	}
-
 	/**
 	 * States representing record state, meanings:
 	 * NORMAL - no action needed, just a normal record
@@ -166,7 +113,12 @@ public class Record {
 	 * C_FAILED - Record isn't in IIIF, and record conversion failed
 	 * T_FAILED - Transcription process has started and there was an attempt to transfer the record to TP which failed
 	 * T_SENT - Transcription process has started and the record was successfully transferred to TP
+	 * M_PENDING - Metadata enrichment process for given record is pending, metadata enrichments are ready to be retrieved from TP
+	 * ME_PENDING - complex state used when E_PENDING and M_PENDING are valid at the same time, this state can be computed by adding integer
+	 * values of E_PENDING and M_PENDING
 	 */
+	@Getter
+	@AllArgsConstructor
 	public enum RecordState {
 
 		NORMAL(0),
@@ -176,7 +128,11 @@ public class Record {
 		C_PENDING(4),
 		C_FAILED(5),
 		T_FAILED(6),
-		T_SENT(7);
+		T_SENT(7),
+		M_PENDING(8),
+		ME_PENDING(9),
+		V_PENDING(10),
+		V_FAILED(11);
 
 
 		private static final Map<Integer, RecordState> map = new HashMap<>();
@@ -188,16 +144,8 @@ public class Record {
 
 		private final int value;
 
-		RecordState(int value) {
-			this.value = value;
-		}
-
 		public static RecordState getState(int value) {
 			return map.get(value);
-		}
-
-		public int getValue() {
-			return value;
 		}
 	}
 }

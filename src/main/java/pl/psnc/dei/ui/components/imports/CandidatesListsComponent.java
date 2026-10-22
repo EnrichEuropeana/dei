@@ -18,11 +18,10 @@ import pl.psnc.dei.model.DAO.ProjectsRepository;
 import pl.psnc.dei.model.Project;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.service.ImportPackageService;
+import pl.psnc.dei.ui.components.CommonComponentsFactory;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 public class CandidatesListsComponent extends VerticalLayout {
 
@@ -112,10 +111,7 @@ public class CandidatesListsComponent extends VerticalLayout {
 	}
 
 	private Select<Aggregator> aggregatorSelector(){
-		aggregators = new Select<>();
-		ListDataProvider<Aggregator> aggregatorsDataProvider = new ListDataProvider<>(Arrays.stream(Aggregator.values()).filter(e -> !e.equals(Aggregator.UNKNOWN)).collect(Collectors.toList()));
-		aggregators.setDataProvider(aggregatorsDataProvider);
-		aggregators.setLabel("Select aggregator");
+		aggregators = CommonComponentsFactory.getAggregatorSelector();
 		aggregators.addValueChangeListener(event -> {
 			aggregator = event.getValue();
 			projects.setReadOnly(false);
@@ -125,10 +121,8 @@ public class CandidatesListsComponent extends VerticalLayout {
 	}
 
 	private Select<Project> projectSelector(){
-		projects = new Select<>();
-		ListDataProvider<Project> listDataProvider = new ListDataProvider<>(projectsRepository.findAll());
-		projects.setDataProvider(listDataProvider);
-		projects.setLabel("Select project");
+		ListDataProvider<Project> projectsProvider = new ListDataProvider<>(projectsRepository.findAll());
+		projects = CommonComponentsFactory.getProjectSelector(projectsProvider);
 		projects.setReadOnly(true);
 		projects.addValueChangeListener(event -> {
 			project = event.getValue();

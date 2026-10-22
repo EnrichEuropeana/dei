@@ -10,7 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@StyleSheet("frontend://styles/styles.css")
+@StyleSheet("./styles/styles.css")
 public abstract class FacetBox extends AccordionPanel {
 
     protected transient Map<Checkbox, FacetField> values;

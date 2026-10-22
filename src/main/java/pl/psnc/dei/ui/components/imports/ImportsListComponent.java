@@ -6,11 +6,13 @@ import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.grid.GridSortOrderBuilder;
 import com.vaadin.flow.component.grid.HeaderRow;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.data.provider.ListDataProvider;
 import com.vaadin.flow.data.value.ValueChangeMode;
@@ -20,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import pl.psnc.dei.exception.NotFoundException;
 import pl.psnc.dei.model.DAO.ImportsRepository;
 import pl.psnc.dei.model.Import;
+import pl.psnc.dei.model.ImportProgress;
 import pl.psnc.dei.model.ImportStatus;
 import pl.psnc.dei.service.ImportPackageService;
 import pl.psnc.dei.ui.pages.ImportPage;
@@ -65,11 +68,20 @@ public class ImportsListComponent extends VerticalLayout {
 		ListDataProvider<Import> dataProvider = new ListDataProvider<>(imports);
 		importsGrid.setDataProvider(dataProvider);
 
-		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName).setHeader("Name").setSortable(true).setFlexGrow(20);
-		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate).setHeader("Creation date").setSortable(true).setFlexGrow(10);
-		Grid.Column<Import> statusColumn = importsGrid.addColumn(Import::getStatus).setHeader("Status").setSortable(true).setFlexGrow(4);
+		Grid.Column<Import> importNameColumn = importsGrid.addColumn(Import::getName)
+				.setHeader("Name")
+				.setSortable(true)
+				.setFlexGrow(20);
+		Grid.Column<Import> creationDateColumn = importsGrid.addColumn(Import::getCreationDate)
+				.setHeader("Creation date")
+				.setSortable(true)
+				.setFlexGrow(10);
+		Grid.Column<Import> statusColumn = importsGrid.addComponentColumn(this::addStatusComponent)
+				.setHeader("Status")
+				.setComparator(Comparator.comparing(Import::getStatus))
+				.setSortable(true)
+				.setFlexGrow(4);
 		importsGrid.addComponentColumn(this::addActionButtons).setHeader("Action").setFlexGrow(4);
-
 		//
 		HeaderRow filterRow = importsGrid.appendHeaderRow();
 		addFilter(dataProvider, filterRow, importNameColumn, nameFilter);
@@ -104,6 +116,23 @@ public class ImportsListComponent extends VerticalLayout {
 		layout.add(editImportButton);
 		layout.add(sendImportButton);
 		return layout;
+	}
+
+	private Component addStatusComponent(Import anImport) {
+		ImportStatus status = anImport.getStatus();
+		if (ImportStatus.IN_PROGRESS.equals(status)) {
+			ProgressBar progressBar = new ProgressBar();
+			ImportProgress progress = anImport.getProgress();
+			if (progress.getCompletedTasks() == 0) {
+				progressBar.setIndeterminate(true);
+			} else {
+				progressBar.setIndeterminate(false);
+				double calcProgress = progress.getCompletedTasks() / (double) progress.getEstimatedTasks();
+				progressBar.setValue(calcProgress);
+			}
+			return progressBar;
+		}
+		return new Span(status.name());
 	}
 
 	private boolean shouldShowSendButton(Import anImport) {

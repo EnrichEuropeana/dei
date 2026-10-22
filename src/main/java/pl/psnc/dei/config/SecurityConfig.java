@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FilterType;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.authority.mapping.SimpleAuthorityMapper;
 import org.springframework.security.core.session.SessionRegistryImpl;
@@ -87,10 +88,16 @@ class SecurityConfig extends KeycloakWebSecurityConfigurerAdapter {
 				.regexMatchers("/frontend/.*", "/VAADIN/.*").permitAll()
 				.requestMatchers(SecurityUtils::isFrameworkInternalRequest).permitAll()
 				.antMatchers("/api/transcription/iiif/manifest**", "/accessdenied*", "/logout*", "/sso/login*").permitAll()
-				.and()
+				.and().cors().and()
 				.authorizeRequests().anyRequest().hasAuthority("operator")
 				.and()
 				.requiresChannel()
 				.requestMatchers(r -> r.getHeader("X-Forwarded-Proto") != null).requiresSecure();
+	}
+
+	@Override
+	public void configure(WebSecurity web) throws Exception {
+		super.configure(web);
+		web.ignoring().antMatchers("/api/transcription/iiif/manifest**");
 	}
 }

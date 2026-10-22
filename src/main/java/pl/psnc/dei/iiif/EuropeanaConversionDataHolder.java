@@ -154,8 +154,8 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		String type;
 
-		if(!typeRaw.isPresent()){
-			logger.info("Missing file type");
+		if(typeRaw.isEmpty()){
+			logger.debug("Missing file type");
 			int dotIndex = id.lastIndexOf('.');
 			if(dotIndex != -1 && id.length() - dotIndex <= 5) {
 				type = id.substring(dotIndex + 1);
@@ -165,13 +165,13 @@ public class EuropeanaConversionDataHolder extends ConversionDataHolder {
 
 		} else {
 			String[] types = typeRaw.get().split("/");
-			logger.info("Present file type");
 			type = types[types.length-1];
+			logger.debug("Found file type: {}", type);
 		}
 		return type;
 	}
 
-	EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
+	public EuropeanaConversionDataHolder(String recordId, JsonObject aggregatorData, JsonObject record, JsonObject recordRaw) {
 		createConversionDataHolder(recordId, aggregatorData, record, recordRaw);
 	}
 

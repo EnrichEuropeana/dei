@@ -1,13 +1,20 @@
 package pl.psnc.dei.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import javax.persistence.*;
 import java.util.Date;
 import java.util.Set;
 
 @Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class Import {
     @Id
     @GeneratedValue
@@ -28,58 +35,14 @@ public class Import {
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY, mappedBy = "anImport")
     private Set<ImportFailure> failures;
 
+    @JsonIgnore
+    @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)
+    private ImportProgress progress;
+
     public static Import from(String name, Date date) {
         Import anImport = new Import();
         anImport.setName(name);
         anImport.setCreationDate(date);
         return anImport;
-    }
-
-    public long getId() {
-        return id;
-    }
-
-    public void setId(long id) {
-        this.id = id;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public Date getCreationDate() {
-        return creationDate;
-    }
-
-    public void setCreationDate(Date creationDate) {
-        this.creationDate = creationDate;
-    }
-
-    public Set<Record> getRecords() {
-        return records;
-    }
-
-    public void setRecords(Set<Record> records) {
-        this.records = records;
-    }
-
-    public ImportStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ImportStatus status) {
-        this.status = status;
-    }
-
-    public Set<ImportFailure> getFailures() {
-        return failures;
-    }
-
-    public void setFailures(Set<ImportFailure> failures) {
-        this.failures = failures;
     }
 }

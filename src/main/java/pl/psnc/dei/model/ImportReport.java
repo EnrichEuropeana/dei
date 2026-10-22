@@ -1,8 +1,14 @@
 package pl.psnc.dei.model;
 
-import java.util.Collections;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.util.List;
 
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class ImportReport {
 
     private ImportStatus importStatus;
@@ -13,21 +19,5 @@ public class ImportReport {
         importReport.setImportFailure(importFailure);
         importReport.setImportStatus(importStatus);
         return importReport;
-    }
-
-    public ImportStatus getImportStatus() {
-        return importStatus;
-    }
-
-    public void setImportStatus(ImportStatus importStatus) {
-        this.importStatus = importStatus;
-    }
-
-    public List<ImportFailure> getImportFailure() {
-        return Collections.unmodifiableList(importFailure);
-    }
-
-    public void setImportFailure(List<ImportFailure> importFailure) {
-        this.importFailure = importFailure;
     }
 }

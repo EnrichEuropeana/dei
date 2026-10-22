@@ -10,7 +10,7 @@ import org.mockito.Mockito;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.util.UriBuilder;
-import pl.psnc.dei.response.search.*;
+import pl.psnc.dei.response.search.SearchResponse;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacet;
 import pl.psnc.dei.response.search.europeana.EuropeanaFacetField;
 import pl.psnc.dei.response.search.europeana.EuropeanaItem;
@@ -36,7 +36,7 @@ public class EuropeanaSearchServiceTest {
     private WebClient webTestClient;
 
     @InjectMocks
-    private EuropeanaSearchService europeanaSearchService = new EuropeanaSearchService(WebClient.builder());
+    private final EuropeanaSearchService europeanaSearchService = new EuropeanaSearchService(WebClient.builder());
 
     private void mockWebClientResponse(final EuropeanaSearchResponse resp) {
         final WebClient.RequestHeadersUriSpec uriSpecMock = Mockito.mock(WebClient.RequestHeadersUriSpec.class);
