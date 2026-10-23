@@ -40,7 +40,7 @@ public class Transcription {
     private Record record;
 
     @Convert(converter = JsonObjectToStringConverter.class)
-    @Column(columnDefinition = "LONGTEXT default '{}'")
+    @Column(columnDefinition = "LONGTEXT")
     private JsonObject transcriptionContent;
 
     @JsonProperty("EuropeanaAnnotationId")
