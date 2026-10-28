@@ -1,0 +1,306 @@
+apiVersion: template.openshift.io/v1
+kind: Template
+metadata:
+  name: dei-template
+  annotations:
+    description: "Template for deploying DEI (Data Exchange Infrastructure) on OKD / OpenShift"
+    tags: "java,spring-boot,dei,europeana"
+objects:
+  # 1. PersistentVolumeClaim for temporary conversion files
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      name: ${APP_NAME}-conversion-pvc
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      accessModes:
+        - ReadWriteOnce
+      resources:
+        requests:
+          storage: ${STORAGE_SIZE}
+
+  # 2. ConfigMap for application configuration and external services
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: ${APP_NAME}-config
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    data:
+      SERVER_PORT: "${SERVER_PORT}"
+      SERVER_SERVLET_CONTEXT_PATH: "${SERVER_SERVLET_CONTEXT_PATH}"
+      CONVERSION_DIRECTORY: "${CONVERSION_DIRECTORY}"
+      CONVERSION_IIIF_SERVER_URL: "${CONVERSION_IIIF_SERVER_URL}"
+      TRANSCRIPTION_API_URL: "${TRANSCRIPTION_API_URL}"
+      TRANSCRIPTION_NEW_API_URL: "${TRANSCRIPTION_NEW_API_URL}"
+      TRANSCRIPTION_HAU_NEW_API_URL: "${TRANSCRIPTION_HAU_NEW_API_URL}"
+      TRANSCRIPTION_KB_NEW_API_URL: "${TRANSCRIPTION_KB_NEW_API_URL}"
+      EUROPEANA_API_ANNOTATIONS_ENDPOINT: "${EUROPEANA_API_ANNOTATIONS_ENDPOINT}"
+      EUROPEANA_API_RECORD_ENDPOINT: "${EUROPEANA_API_RECORD_ENDPOINT}"
+      KEYCLOAK_REALM: "${KEYCLOAK_REALM}"
+      KEYCLOAK_RESOURCE: "${KEYCLOAK_RESOURCE}"
+      KEYCLOAK_AUTH_SERVER_URL: "${KEYCLOAK_AUTH_SERVER_URL}"
+      KEYCLOAK_CONFIDENTIAL_PORT: "${KEYCLOAK_CONFIDENTIAL_PORT}"
+      JAVA_OPTS: "${JAVA_OPTS}"
+
+  # 3. Secret for sensitive credentials (database & API tokens)
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: ${APP_NAME}-secret
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    type: Opaque
+    stringData:
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
+      SPRING_DATASOURCE_USERNAME: "${SPRING_DATASOURCE_USERNAME}"
+      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
+      EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN: "${EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN}"
+
+  # 4. DEI Application Deployment
+  - apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      replicas: ${{REPLICAS}}
+      strategy:
+        type: Recreate
+      selector:
+        matchLabels:
+          app: ${APP_NAME}
+      template:
+        metadata:
+          labels:
+            app: ${APP_NAME}
+            environment: ${ENVIRONMENT}
+        spec:
+          containers:
+            - name: dei-app
+              image: ${IMAGE_REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
+              imagePullPolicy: Always
+              ports:
+                - containerPort: 8080
+                  name: http
+                  protocol: TCP
+              env:
+                - name: SPRING_PROFILES_ACTIVE
+                  value: ${ENVIRONMENT}
+              envFrom:
+                - configMapRef:
+                    name: ${APP_NAME}-config
+                - secretRef:
+                    name: ${APP_NAME}-secret
+              volumeMounts:
+                - name: conversion-storage
+                  mountPath: /data/conversion
+              resources:
+                requests:
+                  memory: ${MEMORY_REQUEST}
+                  cpu: ${CPU_REQUEST}
+                limits:
+                  memory: ${MEMORY_LIMIT}
+                  cpu: ${CPU_LIMIT}
+              readinessProbe:
+                httpGet:
+                  path: ${SERVER_SERVLET_CONTEXT_PATH}/
+                  port: 8080
+                initialDelaySeconds: 45
+                periodSeconds: 10
+                timeoutSeconds: 5
+                failureThreshold: 5
+              livenessProbe:
+                httpGet:
+                  path: ${SERVER_SERVLET_CONTEXT_PATH}/
+                  port: 8080
+                initialDelaySeconds: 90
+                periodSeconds: 20
+                timeoutSeconds: 5
+                failureThreshold: 3
+          volumes:
+            - name: conversion-storage
+              persistentVolumeClaim:
+                claimName: ${APP_NAME}-conversion-pvc
+
+  # 5. Internal Service
+  - apiVersion: v1
+    kind: Service
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      ports:
+        - port: 8080
+          targetPort: 8080
+          name: http
+          protocol: TCP
+      selector:
+        app: ${APP_NAME}
+
+  # 6. Route with SSL termination
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: ${APP_NAME}
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      to:
+        kind: Service
+        name: ${APP_NAME}
+      port:
+        targetPort: http
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+
+parameters:
+  - name: APP_NAME
+    displayName: Application Name
+    description: "Name of the application and its Kubernetes resources"
+    value: "dei-test"
+    required: true
+
+  - name: ENVIRONMENT
+    displayName: Environment / Profile
+    description: "Active environment and Spring profile (e.g. test, prod)"
+    value: "test"
+    required: true
+
+  - name: IMAGE_REGISTRY
+    displayName: Container Image Registry
+    description: "Registry host and project/organization path for the container image (e.g. registry.example.com/enrich-europeana)"
+    value: "registry.example.com/enrich-europeana"
+    required: true
+
+  - name: IMAGE_NAME
+    displayName: Container Image Name
+    description: "Image repository name in the registry"
+    value: "dei"
+    required: true
+
+  - name: IMAGE_TAG
+    displayName: Image Tag
+    description: "Image tag to deploy"
+    value: "test"
+    required: true
+
+  - name: REPLICAS
+    displayName: Replica Count
+    description: "Number of application pod replicas"
+    value: "1"
+    required: true
+
+  - name: STORAGE_SIZE
+    displayName: Conversion PVC Storage Size
+    description: "Storage size for temporary conversion files"
+    value: "10Gi"
+    required: true
+
+  - name: SERVER_PORT
+    displayName: Server Port
+    value: "8080"
+
+  - name: SERVER_SERVLET_CONTEXT_PATH
+    displayName: Servlet Context Path
+    value: "/dei-test"
+
+  - name: CONVERSION_DIRECTORY
+    displayName: Conversion Mount Directory
+    value: "/data/conversion"
+
+  - name: CONVERSION_IIIF_SERVER_URL
+    displayName: IIIF Server URL
+    value: "https://iiif-test.man.poznan.pl"
+
+  - name: TRANSCRIPTION_API_URL
+    displayName: Transcription API URL
+    value: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
+
+  - name: TRANSCRIPTION_NEW_API_URL
+    displayName: Transcription New API URL
+    value: "https://api.fresenia-dev.man.poznan.pl/v2"
+
+  - name: TRANSCRIPTION_HAU_NEW_API_URL
+    displayName: HAU Transcription API URL
+    value: "https://annotations.fresenia-dev.man.poznan.pl/v2"
+
+  - name: TRANSCRIPTION_KB_NEW_API_URL
+    displayName: KB Transcription API URL
+    value: "https://transcribathon.fresenia-dev.man.poznan.pl/v2"
+
+  - name: EUROPEANA_API_ANNOTATIONS_ENDPOINT
+    displayName: Europeana Annotations Endpoint
+    value: "https://annotation-api-test.eanadev.org/annotation/"
+
+  - name: EUROPEANA_API_RECORD_ENDPOINT
+    displayName: Europeana Record Endpoint
+    value: "https://www.europeana.eu/api/v2/record"
+
+  - name: KEYCLOAK_REALM
+    displayName: Keycloak Realm
+    value: "enrich-europeana-dev"
+
+  - name: KEYCLOAK_RESOURCE
+    displayName: Keycloak Resource / Client ID
+    value: "fresenia-dev.man.poznan.pl"
+
+  - name: KEYCLOAK_AUTH_SERVER_URL
+    displayName: Keycloak Auth Server URL
+    value: "https://keycloak-dev.pcss.pl"
+
+  - name: KEYCLOAK_CONFIDENTIAL_PORT
+    displayName: Keycloak Confidential Port
+    value: "443"
+
+  - name: JAVA_OPTS
+    displayName: JVM Options
+    value: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"
+
+  - name: SPRING_DATASOURCE_URL
+    displayName: JDBC Datasource URL
+    description: "MySQL JDBC connection URL"
+    value: "jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee_test?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+    required: true
+
+  - name: SPRING_DATASOURCE_USERNAME
+    displayName: Database Username
+    value: "dei_ee"
+    required: true
+
+  - name: SPRING_DATASOURCE_PASSWORD
+    displayName: Database Password
+    description: "MySQL password"
+    value: "pass"
+    required: true
+
+  - name: EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN
+    displayName: Europeana TP Authorization Token
+    value: "Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK"
+    required: true
+
+  - name: MEMORY_REQUEST
+    displayName: Memory Request
+    value: "1Gi"
+
+  - name: MEMORY_LIMIT
+    displayName: Memory Limit
+    value: "3Gi"
+
+  - name: CPU_REQUEST
+    displayName: CPU Request
+    value: "500m"
+
+  - name: CPU_LIMIT
+    displayName: CPU Limit
+    value: "2"

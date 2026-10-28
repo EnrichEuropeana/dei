@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dei-test-config
+  labels:
+    app: dei-test
+    environment: test
+data:
+  SPRING_PROFILES_ACTIVE: "test"
+  SERVER_PORT: "8080"
+  SERVER_SERVLET_CONTEXT_PATH: "/dei-test"
+  
+  # PVC mount directory for storing temporary conversion files
+  CONVERSION_DIRECTORY: "/data/conversion"
+  
+  # External servers and IIIF / Transcribathon integrations
+  CONVERSION_IIIF_SERVER_URL: "https://iiif-test.man.poznan.pl"
+  TRANSCRIPTION_API_URL: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
+  TRANSCRIPTION_NEW_API_URL: "https://api.fresenia-dev.man.poznan.pl/v2"
+  TRANSCRIBATHON_URL: "https://europeana.fresenia-dev.man.poznan.pl/dev"
+  
+  # Europeana API Endpoints
+  EUROPEANA_API_ANNOTATIONS_ENDPOINT: "https://annotation-api-test.eanadev.org/annotation/"
+  EUROPEANA_API_RECORD_ENDPOINT: "https://www.europeana.eu/api/v2/record"
+  
+  # Keycloak configuration
+  KEYCLOAK_REALM: "enrich-europeana-dev"
+  KEYCLOAK_RESOURCE: "fresenia-dev.man.poznan.pl"
+  KEYCLOAK_AUTH_SERVER_URL: "https://keycloak-dev.pcss.pl"
+  KEYCLOAK_CONFIDENTIAL_PORT: "443"
+
+  # JVM options and TLS protocols
+  JAVA_OPTS: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"

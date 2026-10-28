@@ -1,0 +1,230 @@
+#!/usr/bin/env groovy
+
+pipeline {
+    agent any
+
+    parameters {
+        choice(
+            name: 'ENVIRONMENT',
+            choices: ['test', 'prod'],
+            description: 'Deployment target environment (test: staging namespace, prod: production namespace)'
+        )
+        booleanParam(
+            name: 'BUILD_IMAGE',
+            defaultValue: true,
+            description: 'Whether to build and push container image to the registry before deploying'
+        )
+        string(
+            name: 'IMAGE_TAG',
+            defaultValue: '',
+            description: 'Image tag to build and/or deploy (e.g. 1.0.0 or build-42). If empty during build, defaults to "build-${BUILD_NUMBER}". Same tag can be deployed to test and prod.'
+        )
+        string(
+            name: 'IMAGE_REGISTRY',
+            defaultValue: 'registry.example.com/enrich-europeana',
+            description: 'Container registry host and organization/project path'
+        )
+        string(
+            name: 'IMAGE_NAME',
+            defaultValue: 'dei',
+            description: 'Container image repository name'
+        )
+        string(
+            name: 'REGISTRY_CREDENTIALS_ID',
+            defaultValue: 'harbor-creds',
+            description: 'Jenkins credentials ID (Username with password) for Harbor / Container Registry'
+        )
+        string(
+            name: 'OKD_CREDENTIALS_ID',
+            defaultValue: 'okd-token',
+            description: 'Jenkins credentials ID (Secret text) for OKD / OpenShift API token (can be overridden if different per cluster/env)'
+        )
+        string(
+            name: 'OKD_SERVER',
+            defaultValue: 'https://bst2.paas.psnc.pl',
+            description: 'OpenShift API Server URL (defaults to https://bst2.paas.psnc.pl)'
+        )
+        string(
+            name: 'OKD_NAMESPACE',
+            defaultValue: '',
+            description: 'Target OpenShift namespace (leave empty to use default: enrich-europeana-dei-staging for test, enrich-europeana-dei-production for prod)'
+        )
+        password(
+            name: 'DB_PASSWORD',
+            defaultValue: '',
+            description: 'MySQL database password override (leave empty to use environment default)'
+        )
+        password(
+            name: 'EUROPEANA_TOKEN',
+            defaultValue: '',
+            description: 'Europeana API Token override (leave empty to use environment default)'
+        )
+    }
+
+    environment {
+        TEMPLATE_FILE = 'okd/template.yaml'
+    }
+
+    stages {
+        stage('Initialize Environment') {
+            steps {
+                script {
+                    // Predefined environment configuration
+                    def envConfigs = [
+                        'test': [
+                            namespace: 'enrich-europeana-dei-staging',
+                            server: 'https://bst2.paas.psnc.pl',
+                            credentialsId: 'okd-token',
+                            paramFile: 'okd/env-test.params',
+                            appName: 'dei-staging'
+                        ],
+                        'staging': [
+                            namespace: 'enrich-europeana-dei-staging',
+                            server: 'https://bst2.paas.psnc.pl',
+                            credentialsId: 'okd-token',
+                            paramFile: 'okd/env-test.params',
+                            appName: 'dei-staging'
+                        ],
+                        'prod': [
+                            namespace: 'enrich-europeana-dei-production',
+                            server: 'https://bst2.paas.psnc.pl',
+                            credentialsId: 'okd-token',
+                            paramFile: 'okd/env-prod.params',
+                            appName: 'dei-production'
+                        ],
+                        'production': [
+                            namespace: 'enrich-europeana-dei-production',
+                            server: 'https://bst2.paas.psnc.pl',
+                            credentialsId: 'okd-token',
+                            paramFile: 'okd/env-prod.params',
+                            appName: 'dei-production'
+                        ]
+                    ]
+
+                    def targetEnv = params.ENVIRONMENT ?: 'test'
+                    def config = envConfigs[targetEnv] ?: envConfigs['test']
+
+                    env.TARGET_ENV = targetEnv
+                    env.TARGET_NAMESPACE = params.OKD_NAMESPACE?.trim() ? params.OKD_NAMESPACE.trim() : config.namespace
+                    env.TARGET_SERVER = params.OKD_SERVER?.trim() ? params.OKD_SERVER.trim() : config.server
+                    env.TARGET_OKD_CREDS = params.OKD_CREDENTIALS_ID?.trim() ? params.OKD_CREDENTIALS_ID.trim() : config.credentialsId
+                    env.PARAM_FILE = config.paramFile
+                    env.APP_NAME = config.appName
+
+                    // Tag is environment-neutral (e.g. build-123 or explicit tag), allowing identical image promoting to prod
+                    def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : "build-${env.BUILD_NUMBER}"
+                    env.DEPLOY_TAG = tag
+                    env.FULL_IMAGE = "${params.IMAGE_REGISTRY}/${params.IMAGE_NAME}:${env.DEPLOY_TAG}"
+
+                    echo "================ DEPLOYMENT CONFIGURATION ================"
+                    echo "Target Environment : ${env.TARGET_ENV}"
+                    echo "Application Name   : ${env.APP_NAME}"
+                    echo "OKD Cluster Server : ${env.TARGET_SERVER}"
+                    echo "OKD Namespace      : ${env.TARGET_NAMESPACE}"
+                    echo "OKD Credentials ID : ${env.TARGET_OKD_CREDS}"
+                    echo "Container Image    : ${env.FULL_IMAGE}"
+                    echo "Build Image Stage  : ${params.BUILD_IMAGE}"
+                    echo "Param File Path    : ${env.PARAM_FILE}"
+                    echo "=========================================================="
+                }
+            }
+        }
+
+        stage('Build & Push Container Image') {
+            when {
+                expression { return params.BUILD_IMAGE == true }
+            }
+            steps {
+                script {
+                    echo "Building and pushing container image: ${env.FULL_IMAGE}"
+                    def registryHost = params.IMAGE_REGISTRY.split('/')[0]
+                    def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'harbor-creds'
+
+                    withCredentials([usernamePassword(credentialsId: credsId, usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        echo "Authenticating to container registry: ${registryHost}"
+                        sh """
+                            echo "\${REGISTRY_PASSWORD}" | docker login "\${registryHost}" -u "\${REGISTRY_USER}" --password-stdin
+                        """
+                        sh "docker build -t ${env.FULL_IMAGE} ."
+                        sh "docker push ${env.FULL_IMAGE}"
+                    }
+                }
+            }
+        }
+
+        stage('Login & Deploy to OKD') {
+            steps {
+                script {
+                    echo "Authenticating to OKD cluster: ${env.TARGET_SERVER}"
+
+                    withCredentials([string(credentialsId: env.TARGET_OKD_CREDS, variable: 'OKD_TOKEN')]) {
+                        sh """
+                            oc login --token="\${OKD_TOKEN}" \
+                                     --server="\${env.TARGET_SERVER}" \
+                                     --insecure-skip-tls-verify=true
+                        """
+                    }
+
+                    // Switch to target namespace
+                    sh "oc project ${env.TARGET_NAMESPACE}"
+
+                    echo "Processing OpenShift template: ${env.TEMPLATE_FILE}"
+                    echo "Deploying container image: ${env.FULL_IMAGE}"
+
+                    // Construct template parameters to override
+                    def templateParams = [
+                        "-p APP_NAME=${env.APP_NAME}",
+                        "-p ENVIRONMENT=${env.TARGET_ENV}",
+                        "-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY}",
+                        "-p IMAGE_NAME=${params.IMAGE_NAME}",
+                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
+                    ]
+
+                    // Optional overrides for database password and tokens
+                    if (params.DB_PASSWORD && params.DB_PASSWORD.trim() != '') {
+                        templateParams.add("-p SPRING_DATASOURCE_PASSWORD='${params.DB_PASSWORD}'")
+                    }
+                    if (params.EUROPEANA_TOKEN && params.EUROPEANA_TOKEN.trim() != '') {
+                        templateParams.add("-p EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN='${params.EUROPEANA_TOKEN}'")
+                    }
+
+                    def paramsString = templateParams.join(' ')
+                    def paramFileArg = fileExists(env.PARAM_FILE) ? "--param-file=${env.PARAM_FILE}" : ""
+
+                    // Process template with environment param-file and dynamic params, then apply
+                    sh """
+                        oc process -f ${env.TEMPLATE_FILE} ${paramFileArg} ${paramsString} -n ${env.TARGET_NAMESPACE} | oc apply -f - -n ${env.TARGET_NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Verify Rollout') {
+            steps {
+                script {
+                    echo "Waiting for deployment rollout to complete: ${env.APP_NAME}"
+                    sh "oc rollout status deployment/${env.APP_NAME} --timeout=5m -n ${env.TARGET_NAMESPACE}"
+
+                    // Display exposed route URL
+                    sh """
+                        echo "Deployment successful! Route details:"
+                        oc get route ${env.APP_NAME} -n ${env.TARGET_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline execution finished for build #${env.BUILD_NUMBER}"
+        }
+        success {
+            echo "DEI application successfully deployed to OKD environment: ${env.TARGET_ENV} (${env.TARGET_NAMESPACE}) with image tag: ${env.DEPLOY_TAG}!"
+        }
+        failure {
+            echo "DEI deployment failed. Check logs and OpenShift events."
+            sh "oc get events --sort-by='.metadata.creationTimestamp' -n ${env.TARGET_NAMESPACE} | tail -n 20 || true"
+        }
+    }
+}

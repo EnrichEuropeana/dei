@@ -26,8 +26,10 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends poppler-utils libvips-tools && \
     rm -rf /var/lib/apt/lists/*
 
-# Create working directory for temporary conversion files
-RUN mkdir -p /app/dei/temp
+# Create working directory for temporary conversion files and set OpenShift-compatible permissions
+RUN mkdir -p /app/dei/temp /data/conversion && \
+    chgrp -R 0 /app /data && \
+    chmod -R g=u /app /data
 
 # Copy built artifact from builder stage
 COPY --from=builder /build/target/dei-*.jar /app/app.jar

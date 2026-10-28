@@ -1,0 +1,27 @@
+ENVIRONMENT=prod
+APP_NAME=dei-production
+SERVER_PORT=8080
+SERVER_SERVLET_CONTEXT_PATH=/dei
+CONVERSION_DIRECTORY=/data/conversion
+CONVERSION_IIIF_SERVER_URL=https://rhus-209.man.poznan.pl
+TRANSCRIPTION_API_URL=http://fresenia.man.poznan.pl/tp-api
+TRANSCRIPTION_NEW_API_URL=https://api.fresenia.man.poznan.pl/v2
+TRANSCRIPTION_HAU_NEW_API_URL=https://annotations.fresenia.man.poznan.pl/v2
+TRANSCRIPTION_KB_NEW_API_URL=https://transcribathon.fresenia.man.poznan.pl/v2
+EUROPEANA_API_ANNOTATIONS_ENDPOINT=https://api.europeana.eu/annotation/
+EUROPEANA_API_RECORD_ENDPOINT=https://api.europeana.eu/record/v2
+KEYCLOAK_REALM=EnrichEuropeana
+KEYCLOAK_RESOURCE=dei-frontend-app-prod
+KEYCLOAK_AUTH_SERVER_URL=https://sso.apps.paas-dev.psnc.pl/auth
+KEYCLOAK_CONFIDENTIAL_PORT=443
+JAVA_OPTS=-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m
+SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
+SPRING_DATASOURCE_USERNAME=dei_ee
+SPRING_DATASOURCE_PASSWORD=pass
+EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN=
+STORAGE_SIZE=10Gi
+REPLICAS=1
+MEMORY_REQUEST=1Gi
+MEMORY_LIMIT=3Gi
+CPU_REQUEST=500m
+CPU_LIMIT=2

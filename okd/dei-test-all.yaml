@@ -1,0 +1,177 @@
+---
+# 1. PersistentVolumeClaim for temporary conversion files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dei-conversion-pvc
+  labels:
+    app: dei-test
+    environment: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: <optional_storage_class_name_e.g._gp3_ceph_nfs>
+
+---
+# 2. ConfigMap for application configuration and external services
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: dei-test-config
+  labels:
+    app: dei-test
+    environment: test
+data:
+  SPRING_PROFILES_ACTIVE: "test"
+  SERVER_PORT: "8080"
+  SERVER_SERVLET_CONTEXT_PATH: "/dei-test"
+  
+  # PVC mount directory for storing temporary conversion files
+  CONVERSION_DIRECTORY: "/data/conversion"
+  
+  # External servers and IIIF / Transcribathon integrations
+  CONVERSION_IIIF_SERVER_URL: "https://iiif-test.man.poznan.pl"
+  TRANSCRIPTION_API_URL: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
+  TRANSCRIPTION_NEW_API_URL: "https://api.fresenia-dev.man.poznan.pl/v2"
+  TRANSCRIBATHON_URL: "https://europeana.fresenia-dev.man.poznan.pl/dev"
+  
+  # Europeana API Endpoints
+  EUROPEANA_API_ANNOTATIONS_ENDPOINT: "https://annotation-api-test.eanadev.org/annotation/"
+  EUROPEANA_API_RECORD_ENDPOINT: "https://www.europeana.eu/api/v2/record"
+  
+  # Keycloak configuration
+  KEYCLOAK_REALM: "enrich-europeana-dev"
+  KEYCLOAK_RESOURCE: "fresenia-dev.man.poznan.pl"
+  KEYCLOAK_AUTH_SERVER_URL: "https://keycloak-dev.pcss.pl"
+  KEYCLOAK_CONFIDENTIAL_PORT: "443"
+
+  # JVM options and TLS protocols
+  JAVA_OPTS: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"
+
+---
+# 3. Secret for database credentials and API tokens
+apiVersion: v1
+kind: Secret
+metadata:
+  name: dei-test-secret
+  labels:
+    app: dei-test
+    environment: test
+type: Opaque
+stringData:
+  # External MySQL database configuration (host, port, database, parameters)
+  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee_test?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
+  SPRING_DATASOURCE_USERNAME: "dei_ee"
+  SPRING_DATASOURCE_PASSWORD: "pass"
+  
+  # Authorization tokens
+  EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN: "Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK"
+
+---
+# 4. DEI Application Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dei-test
+  labels:
+    app: dei-test
+    environment: test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dei-test
+  template:
+    metadata:
+      labels:
+        app: dei-test
+        environment: test
+    spec:
+      containers:
+        - name: dei-app
+          # Image URL in the external container registry
+          image: registry.example.com/enrich-europeana/dei:test
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: dei-test-config
+            - secretRef:
+                name: dei-test-secret
+          volumeMounts:
+            - name: conversion-storage
+              mountPath: /data/conversion
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: conversion-storage
+          persistentVolumeClaim:
+            claimName: dei-conversion-pvc
+
+---
+# 5. Internal Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: dei-test
+  labels:
+    app: dei-test
+    environment: test
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: dei-test
+
+---
+# 6. OpenShift/OKD Route (exposing application with SSL termination)
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: dei-test
+  labels:
+    app: dei-test
+    environment: test
+spec:
+  # host: dei-test.apps.your-cluster.com # Optional: uncomment to define a fixed domain
+  to:
+    kind: Service
+    name: dei-test
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None

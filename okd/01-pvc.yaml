@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dei-conversion-pvc
+  labels:
+    app: dei-test
+    environment: test
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+  # storageClassName: <optional_storage_class_name_e.g._gp3_ceph_nfs>
