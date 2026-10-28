@@ -1,9 +1,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dei-test
+  name: dei
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
   replicas: 1
@@ -11,17 +11,17 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: dei-test
+      app: dei
   template:
     metadata:
       labels:
-        app: dei-test
+        app: dei
         environment: test
     spec:
       containers:
         - name: dei-app
           # Image URL in the external container registry
-          image: registry.paas.psnc.pl/enrich-europeana/dei-test:${IMAGE_TAG}
+          image: registry.paas.psnc.pl/enrich-europeana/dei:${IMAGE_TAG}
           imagePullPolicy: Always
           ports:
             - name: http
@@ -29,9 +29,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: dei-test-config
+                name: dei-config
             - secretRef:
-                name: dei-test-secret
+                name: dei-secret
           volumeMounts:
             - name: conversion-storage
               mountPath: /data/conversion

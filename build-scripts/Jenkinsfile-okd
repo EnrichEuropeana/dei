@@ -21,7 +21,7 @@ pipeline {
         )
         string(
             name: 'IMAGE_REGISTRY',
-            defaultValue: 'registry.example.com/enrich-europeana',
+            defaultValue: 'registry.paas.psnc.pl/enrich-europeana',
             description: 'Container registry host and organization/project path'
         )
         string(
@@ -78,21 +78,7 @@ pipeline {
                             paramFile: 'okd/env-test.params',
                             appName: 'dei-staging'
                         ],
-                        'staging': [
-                            namespace: 'enrich-europeana-dei-staging',
-                            server: 'https://bst2.paas.psnc.pl',
-                            credentialsId: 'okd-token',
-                            paramFile: 'okd/env-test.params',
-                            appName: 'dei-staging'
-                        ],
                         'prod': [
-                            namespace: 'enrich-europeana-dei-production',
-                            server: 'https://bst2.paas.psnc.pl',
-                            credentialsId: 'okd-token',
-                            paramFile: 'okd/env-prod.params',
-                            appName: 'dei-production'
-                        ],
-                        'production': [
                             namespace: 'enrich-europeana-dei-production',
                             server: 'https://bst2.paas.psnc.pl',
                             credentialsId: 'okd-token',
@@ -141,12 +127,16 @@ pipeline {
                     def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'harbor-creds'
 
                     withCredentials([usernamePassword(credentialsId: credsId, usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                        echo "Authenticating to container registry: ${registryHost}"
-                        sh """
-                            echo "\${REGISTRY_PASSWORD}" | docker login "\${registryHost}" -u "\${REGISTRY_USER}" --password-stdin
-                        """
-                        sh "docker build -t ${env.FULL_IMAGE} ."
-                        sh "docker push ${env.FULL_IMAGE}"
+                        try {
+                            echo "Authenticating to container registry: ${registryHost}"
+                            sh """
+                                echo "\${REGISTRY_PASSWORD}" | docker login "${registryHost}" -u "\${REGISTRY_USER}" --password-stdin
+                            """
+                            sh "docker build -t ${env.FULL_IMAGE} ."
+                            sh "docker push ${env.FULL_IMAGE}"
+                        } finally {
+                            sh "docker logout ${registryHost} || true"
+                        }
                     }
                 }
             }

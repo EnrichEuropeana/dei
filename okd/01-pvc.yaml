@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: dei-conversion-pvc
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
   accessModes:

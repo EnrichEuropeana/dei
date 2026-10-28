@@ -1,15 +1,15 @@
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: dei-test
+  name: dei
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
-  # host: dei-test.apps.your-cluster.com # Optional: uncomment to define a fixed domain
+  # host: dei.apps.your-cluster.com # Optional: uncomment to define a fixed domain
   to:
     kind: Service
-    name: dei-test
+    name: dei
     weight: 100
   port:
     targetPort: http

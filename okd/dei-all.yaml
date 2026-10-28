@@ -5,7 +5,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: dei-conversion-pvc
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
   accessModes:
@@ -20,9 +20,9 @@ spec:
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dei-test-config
+  name: dei-config
   labels:
-    app: dei-test
+    app: dei
     environment: test
 data:
   SPRING_PROFILES_ACTIVE: "test"
@@ -56,9 +56,9 @@ data:
 apiVersion: v1
 kind: Secret
 metadata:
-  name: dei-test-secret
+  name: dei-secret
   labels:
-    app: dei-test
+    app: dei
     environment: test
 type: Opaque
 stringData:
@@ -75,9 +75,9 @@ stringData:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: dei-test
+  name: dei
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
   replicas: 1
@@ -85,17 +85,17 @@ spec:
     type: Recreate
   selector:
     matchLabels:
-      app: dei-test
+      app: dei
   template:
     metadata:
       labels:
-        app: dei-test
+        app: dei
         environment: test
     spec:
       containers:
         - name: dei-app
           # Image URL in the external container registry
-          image: registry.example.com/enrich-europeana/dei:test
+          image: registry.paas.psnc.pl/enrich-europeana/dei:test
           imagePullPolicy: Always
           ports:
             - name: http
@@ -103,9 +103,9 @@ spec:
               protocol: TCP
           envFrom:
             - configMapRef:
-                name: dei-test-config
+                name: dei-config
             - secretRef:
-                name: dei-test-secret
+                name: dei-secret
           volumeMounts:
             - name: conversion-storage
               mountPath: /data/conversion
@@ -140,9 +140,9 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: dei-test
+  name: dei
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
   type: ClusterIP
@@ -152,22 +152,22 @@ spec:
       targetPort: 8080
       protocol: TCP
   selector:
-    app: dei-test
+    app: dei
 
 ---
 # 6. OpenShift/OKD Route (exposing application with SSL termination)
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:
-  name: dei-test
+  name: dei
   labels:
-    app: dei-test
+    app: dei
     environment: test
 spec:
-  # host: dei-test.apps.your-cluster.com # Optional: uncomment to define a fixed domain
+  # host: dei.apps.your-cluster.com # Optional: uncomment to define a fixed domain
   to:
     kind: Service
-    name: dei-test
+    name: dei
     weight: 100
   port:
     targetPort: http

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: dei-test-config
+  name: dei-config
   labels:
-    app: dei-test
+    app: dei
     environment: test
 data:
   SPRING_PROFILES_ACTIVE: "test"

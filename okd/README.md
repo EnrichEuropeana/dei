@@ -10,12 +10,12 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
 - `env-test.params` – Parameter values for the test / staging environment (`enrich-europeana-dei-staging`).
 - `env-prod.params` – Parameter values for the production environment (`enrich-europeana-dei-production`).
 - `01-pvc.yaml` – `PersistentVolumeClaim` (`dei-conversion-pvc`) providing persistent storage for temporary conversion files (mounted at `/data/conversion`).
-- `02-configmap.yaml` – `ConfigMap` (`dei-test-config`) containing test environment configurations and external service endpoints.
-- `03-secret.yaml` – `Secret` (`dei-test-secret`) storing database credentials and API tokens.
+- `02-configmap.yaml` – `ConfigMap` (`dei-config`) containing test environment configurations and external service endpoints.
+- `03-secret.yaml` – `Secret` (`dei-secret`) storing database credentials and API tokens.
 - `04-deployment.yaml` – Application `Deployment` configured with `Recreate` strategy and health probes.
 - `05-service.yaml` – Internal cluster `Service` (`ClusterIP`).
 - `06-route.yaml` – OpenShift `Route` with SSL termination (`edge`).
-- `dei-test-all.yaml` – Consolidated static manifest containing all individual objects.
+- `dei-all.yaml` – Consolidated static manifest containing all individual objects.
 
 ---
 
@@ -40,7 +40,7 @@ Using `template.yaml` allows parameterizing all variables and deploying with a s
 
 ```bash
 oc process -f okd/template.yaml --param-file=okd/env-test.params \
-  -p IMAGE_REGISTRY=registry.example.com/enrich-europeana \
+  -p IMAGE_REGISTRY=registry.paas.psnc.pl/enrich-europeana \
   -p IMAGE_NAME=dei \
   -p IMAGE_TAG=build-12 \
   -n enrich-europeana-dei-staging | oc apply -f - -n enrich-europeana-dei-staging
@@ -50,7 +50,7 @@ oc process -f okd/template.yaml --param-file=okd/env-test.params \
 
 ```bash
 oc process -f okd/template.yaml --param-file=okd/env-prod.params \
-  -p IMAGE_REGISTRY=registry.example.com/enrich-europeana \
+  -p IMAGE_REGISTRY=registry.paas.psnc.pl/enrich-europeana \
   -p IMAGE_NAME=dei \
   -p IMAGE_TAG=build-12 \
   -p EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN="production-token" \
@@ -67,7 +67,7 @@ A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supp
    - `ENVIRONMENT` (Choice: `test`, `prod`): Target deployment environment. Automatically selects target namespace (`enrich-europeana-dei-staging` vs `enrich-europeana-dei-production`), OKD server (`https://bst2.paas.psnc.pl`), and parameter file.
    - `BUILD_IMAGE` (Boolean, default `true`): Whether to build and push the container image to the registry before deploying. Set to `false` when deploying an existing image tag.
    - `IMAGE_TAG` (String, default `''`): Tag of the image. Defaults to `build-${BUILD_NUMBER}`.
-   - `IMAGE_REGISTRY` (String, default `registry.example.com/enrich-europeana`): Registry host and namespace.
+   - `IMAGE_REGISTRY` (String, default `registry.paas.psnc.pl/enrich-europeana`): Registry host and namespace.
    - `IMAGE_NAME` (String, default `dei`): Repository name in registry.
    - `REGISTRY_CREDENTIALS_ID` (String, default `harbor-creds`): Jenkins credentials ID for robot account in Harbor.
    - `OKD_CREDENTIALS_ID` (String, default `okd-token`): Jenkins credentials ID for OKD API token.

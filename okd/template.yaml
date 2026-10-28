@@ -168,7 +168,7 @@ parameters:
   - name: APP_NAME
     displayName: Application Name
     description: "Name of the application and its Kubernetes resources"
-    value: "dei-test"
+    value: "dei"
     required: true
 
   - name: ENVIRONMENT
@@ -179,8 +179,8 @@ parameters:
 
   - name: IMAGE_REGISTRY
     displayName: Container Image Registry
-    description: "Registry host and project/organization path for the container image (e.g. registry.example.com/enrich-europeana)"
-    value: "registry.example.com/enrich-europeana"
+    description: "Registry host and project/organization path for the container image (e.g. registry.paas.psnc.pl/enrich-europeana)"
+    value: "registry.paas.psnc.pl/enrich-europeana"
     required: true
 
   - name: IMAGE_NAME
