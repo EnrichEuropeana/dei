@@ -53,6 +53,9 @@ pipeline {
 
     environment {
         TEMPLATE_FILE = 'okd/template.yaml'
+        M2_HOME = "${tool 'maven-3.5.0'}".trim()
+        JAVA_HOME = "${tool 'openjdk-11-dlteam'}".trim()
+        PATH = "${env.M2_HOME}/bin:${env.JAVA_HOME}/bin:${env.PATH}"
     }
 
     stages {
