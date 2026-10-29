@@ -41,8 +41,8 @@ pipeline {
         )
         string(
             name: 'OKD_SERVER',
-            defaultValue: 'https://bst2.paas.psnc.pl',
-            description: 'OpenShift API Server URL (defaults to https://bst2.paas.psnc.pl)'
+            defaultValue: 'https://api.bst2.paas.psnc.pl:6443/',
+            description: 'OpenShift API Server URL (defaults to https://api.bst2.paas.psnc.pl:6443/)'
         )
         string(
             name: 'OKD_NAMESPACE',
@@ -66,14 +66,14 @@ pipeline {
                     def envConfigs = [
                         'test': [
                             namespace: 'enrich-europeana-dei-staging',
-                            server: 'https://bst2.paas.psnc.pl',
+                            server: 'https://api.bst2.paas.psnc.pl:6443/',
                             credentialsId: 'okd-token',
                             paramFile: 'okd/env-test.params',
                             appName: 'dei-staging'
                         ],
                         'prod': [
                             namespace: 'enrich-europeana-dei-production',
-                            server: 'https://bst2.paas.psnc.pl',
+                            server: 'https://api.bst2.paas.psnc.pl:6443/',
                             credentialsId: 'okd-token',
                             paramFile: 'okd/env-prod.params',
                             appName: 'dei-production'

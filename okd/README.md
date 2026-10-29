@@ -99,7 +99,7 @@ A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supp
    - `IMAGE_NAME` (String, default `dei`): Repository name in registry.
    - `REGISTRY_CREDENTIALS_ID` (String, default `harbor-creds`): Jenkins credentials ID for robot account in Harbor.
    - `OKD_CREDENTIALS_ID` (String, default `okd-token`): Jenkins credentials ID for OKD API token.
-   - `OKD_SERVER` (String, default `https://bst2.paas.psnc.pl`): OKD API Server URL.
+   - `OKD_SERVER` (String, default `https://api.bst2.paas.psnc.pl:6443/`): OKD API Server URL.
    - `OKD_NAMESPACE` (String, optional): Namespace override (defaults to environment setting).
 
 2. **Pipeline Execution:**
