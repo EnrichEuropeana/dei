@@ -1,22 +1,3 @@
-# Stage 1: Build application with Maven and Java 11
-FROM maven:3.8.8-eclipse-temurin-11 AS builder
-
-WORKDIR /build
-
-# Copy dependency definitions for build caching
-COPY pom.xml ./
-COPY package.json package-lock.json ./
-RUN mvn dependency:go-offline -B || true
-
-# Copy source files and configuration
-COPY src ./src
-COPY webpack.config.js webpack.generated.js tsconfig.json types.d.ts ./
-
-# Build application package with Vaadin frontend pre-compiled (production mode)
-ARG BUILD_PROFILE=prod
-RUN mvn clean package -DskipTests -P ${BUILD_PROFILE}
-
-# Stage 2: Runtime environment with Java 11
 FROM eclipse-temurin:11-jre
 
 WORKDIR /app
@@ -31,8 +12,8 @@ RUN mkdir -p /app/dei/temp /data/conversion && \
     chgrp -R 0 /app /data && \
     chmod -R g=u /app /data
 
-# Copy built artifact from builder stage
-COPY --from=builder /build/target/dei-*.jar /app/app.jar
+# Copy built artifact from workspace
+COPY target/dei-*.jar /app/app.jar
 
 # Configuration environment variables
 ENV SPRING_PROFILES_ACTIVE=dev \
