@@ -52,26 +52,7 @@ data:
   JAVA_OPTS: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"
 
 ---
-# 3. Secret for database credentials and API tokens
-apiVersion: v1
-kind: Secret
-metadata:
-  name: dei-secret
-  labels:
-    app: dei
-    environment: test
-type: Opaque
-stringData:
-  # External MySQL database configuration (host, port, database, parameters)
-  SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee_test?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
-  SPRING_DATASOURCE_USERNAME: "dei_ee"
-  SPRING_DATASOURCE_PASSWORD: "pass"
-  
-  # Authorization tokens
-  EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN: "Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK"
-
----
-# 4. DEI Application Deployment
+# 3. DEI Application Deployment
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -136,7 +117,7 @@ spec:
             claimName: dei-conversion-pvc
 
 ---
-# 5. Internal Service
+# 4. Internal Service
 apiVersion: v1
 kind: Service
 metadata:
@@ -155,7 +136,7 @@ spec:
     app: dei
 
 ---
-# 6. OpenShift/OKD Route (exposing application with SSL termination)
+# 5. OpenShift/OKD Route (exposing application with SSL termination)
 apiVersion: route.openshift.io/v1
 kind: Route
 metadata:

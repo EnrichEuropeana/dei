@@ -15,10 +15,6 @@ KEYCLOAK_RESOURCE=fresenia-dev.man.poznan.pl
 KEYCLOAK_AUTH_SERVER_URL=https://keycloak-dev.pcss.pl
 KEYCLOAK_CONFIDENTIAL_PORT=443
 JAVA_OPTS=-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m
-SPRING_DATASOURCE_URL=jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee_test?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false
-SPRING_DATASOURCE_USERNAME=dei_ee
-SPRING_DATASOURCE_PASSWORD=pass
-EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN=Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK
 STORAGE_SIZE=10Gi
 REPLICAS=1
 MEMORY_REQUEST=1Gi

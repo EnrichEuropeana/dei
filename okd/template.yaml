@@ -46,22 +46,7 @@ objects:
       KEYCLOAK_CONFIDENTIAL_PORT: "${KEYCLOAK_CONFIDENTIAL_PORT}"
       JAVA_OPTS: "${JAVA_OPTS}"
 
-  # 3. Secret for sensitive credentials (database & API tokens)
-  - apiVersion: v1
-    kind: Secret
-    metadata:
-      name: ${APP_NAME}-secret
-      labels:
-        app: ${APP_NAME}
-        environment: ${ENVIRONMENT}
-    type: Opaque
-    stringData:
-      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL}"
-      SPRING_DATASOURCE_USERNAME: "${SPRING_DATASOURCE_USERNAME}"
-      SPRING_DATASOURCE_PASSWORD: "${SPRING_DATASOURCE_PASSWORD}"
-      EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN: "${EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN}"
-
-  # 4. DEI Application Deployment
+  # 3. DEI Application Deployment
   - apiVersion: apps/v1
     kind: Deployment
     metadata:
@@ -129,7 +114,7 @@ objects:
               persistentVolumeClaim:
                 claimName: ${APP_NAME}-conversion-pvc
 
-  # 5. Internal Service
+  # 4. Internal Service
   - apiVersion: v1
     kind: Service
     metadata:
@@ -146,7 +131,7 @@ objects:
       selector:
         app: ${APP_NAME}
 
-  # 6. Route with SSL termination
+  # 5. Route with SSL termination
   - apiVersion: route.openshift.io/v1
     kind: Route
     metadata:
@@ -266,28 +251,6 @@ parameters:
   - name: JAVA_OPTS
     displayName: JVM Options
     value: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"
-
-  - name: SPRING_DATASOURCE_URL
-    displayName: JDBC Datasource URL
-    description: "MySQL JDBC connection URL"
-    value: "jdbc:mysql://mysql-db1.man.poznan.pl:3307/dei_ee_test?useLegacyDatetimeCode=false&serverTimezone=UTC&allowPublicKeyRetrieval=true&useSSL=false"
-    required: true
-
-  - name: SPRING_DATASOURCE_USERNAME
-    displayName: Database Username
-    value: "dei_ee"
-    required: true
-
-  - name: SPRING_DATASOURCE_PASSWORD
-    displayName: Database Password
-    description: "MySQL password"
-    value: "pass"
-    required: true
-
-  - name: EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN
-    displayName: Europeana TP Authorization Token
-    value: "Ru8W3tsiZKefYLxkSkmNXE4smHGqBUNQHcmNqMULCsGuzE2bbSA4Sxe0BaGK"
-    required: true
 
   - name: MEMORY_REQUEST
     displayName: Memory Request

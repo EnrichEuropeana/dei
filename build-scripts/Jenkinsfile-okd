@@ -49,16 +49,6 @@ pipeline {
             defaultValue: '',
             description: 'Target OpenShift namespace (leave empty to use default: enrich-europeana-dei-staging for test, enrich-europeana-dei-production for prod)'
         )
-        password(
-            name: 'DB_PASSWORD',
-            defaultValue: '',
-            description: 'MySQL database password override (leave empty to use environment default)'
-        )
-        password(
-            name: 'EUROPEANA_TOKEN',
-            defaultValue: '',
-            description: 'Europeana API Token override (leave empty to use environment default)'
-        )
     }
 
     environment {
@@ -169,14 +159,6 @@ pipeline {
                         "-p IMAGE_NAME=${params.IMAGE_NAME}",
                         "-p IMAGE_TAG=${env.DEPLOY_TAG}"
                     ]
-
-                    // Optional overrides for database password and tokens
-                    if (params.DB_PASSWORD && params.DB_PASSWORD.trim() != '') {
-                        templateParams.add("-p SPRING_DATASOURCE_PASSWORD='${params.DB_PASSWORD}'")
-                    }
-                    if (params.EUROPEANA_TOKEN && params.EUROPEANA_TOKEN.trim() != '') {
-                        templateParams.add("-p EUROPEANA_NEW_API_TP_AUTHORIZATION_TOKEN='${params.EUROPEANA_TOKEN}'")
-                    }
 
                     def paramsString = templateParams.join(' ')
                     def paramFileArg = fileExists(env.PARAM_FILE) ? "--param-file=${env.PARAM_FILE}" : ""
