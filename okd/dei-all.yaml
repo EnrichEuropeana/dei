@@ -32,6 +32,13 @@ data:
   # PVC mount directory for storing temporary conversion files
   CONVERSION_DIRECTORY: "/data/conversion"
   
+  # Rsync cron job configuration
+  RSYNC_SRC_SUBDIR: "out"
+  RSYNC_DEST_HOST: "iiif-test.man.poznan.pl"
+  RSYNC_DEST_USER: "dei"
+  RSYNC_DEST_PATH: "iiifFiles"
+  RSYNC_DEST_PORT: "22"
+  
   # External servers and IIIF / Transcribathon integrations
   CONVERSION_IIIF_SERVER_URL: "https://iiif-test.man.poznan.pl"
   TRANSCRIPTION_API_URL: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
@@ -50,6 +57,62 @@ data:
 
   # JVM options and TLS protocols
   JAVA_OPTS: "-Dfile.encoding=UTF-8 -Dhttps.protocols=TLSv1.3,TLSv1.2 -Xms512m -Xmx2048m"
+
+  # Rsync synchronization script
+  sync.sh: |
+    #!/bin/sh
+    set -e
+
+    SRC_SUBDIR="${RSYNC_SRC_SUBDIR:-out}"
+    BASE_DIR="${CONVERSION_DIRECTORY:-/data/conversion}"
+    SRC_DIR="${BASE_DIR}/${SRC_SUBDIR}"
+
+    if [ ! -d "$SRC_DIR" ]; then
+      echo "Source directory $SRC_DIR does not exist. Nothing to sync."
+      exit 0
+    fi
+
+    if [ -z "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
+      echo "Source directory $SRC_DIR is empty. Nothing to sync."
+      exit 0
+    fi
+
+    echo "Preparing SSH credentials..."
+    mkdir -p /tmp/.ssh
+    export HOME=/tmp
+
+    SSH_KEY_FOUND=""
+    for key_file in /etc/ssh-key/id_ed25519 /etc/ssh-key/id_rsa /etc/ssh-key/ssh-privatekey /etc/ssh-key/*; do
+      if [ -f "$key_file" ]; then
+        cp "$key_file" /tmp/.ssh/id_ed25519
+        chmod 600 /tmp/.ssh/id_ed25519
+        SSH_KEY_FOUND="/tmp/.ssh/id_ed25519"
+        break
+      fi
+    done
+
+    if [ -z "$SSH_KEY_FOUND" ]; then
+      echo "Error: SSH private key not found in /etc/ssh-key (expected id_ed25519, id_rsa, or ssh-privatekey)."
+      exit 1
+    fi
+
+    DEST_USER="${RSYNC_DEST_USER:-dei}"
+    DEST_HOST="${RSYNC_DEST_HOST}"
+    DEST_PORT="${RSYNC_DEST_PORT:-22}"
+    DEST_PATH="${RSYNC_DEST_PATH:-iiifFiles}"
+
+    if [ -z "$DEST_HOST" ]; then
+      echo "Error: RSYNC_DEST_HOST is not configured."
+      exit 1
+    fi
+
+    echo "Starting synchronization of $SRC_DIR/ to ${DEST_USER}@${DEST_HOST}:${DEST_PATH}/ via SSH (port ${DEST_PORT})..."
+    rsync -avz \
+      -e "ssh -i ${SSH_KEY_FOUND} -p ${DEST_PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o LogLevel=ERROR" \
+      "$SRC_DIR/" \
+      "${DEST_USER}@${DEST_HOST}:${DEST_PATH}/"
+
+    echo "Rsync synchronization completed successfully at $(date -u '+%Y-%m-%d %H:%M:%S UTC')."
 
 ---
 # 3. DEI Application Deployment
@@ -156,3 +219,69 @@ spec:
     termination: edge
     insecureEdgeTerminationPolicy: Redirect
   wildcardPolicy: None
+
+---
+# 6. Rsync CronJob for synchronizing conversion output files to external server
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dei-rsync-cronjob
+  labels:
+    app: dei
+    environment: test
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: dei-rsync
+            environment: test
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: rsync
+              image: instrumentisto/rsync-ssh:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - /scripts/sync.sh
+              envFrom:
+                - configMapRef:
+                    name: dei-config
+              volumeMounts:
+                - name: conversion-storage
+                  mountPath: /data/conversion
+                  readOnly: true
+                - name: ssh-key-volume
+                  mountPath: /etc/ssh-key
+                  readOnly: true
+                - name: rsync-script
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          volumes:
+            - name: conversion-storage
+              persistentVolumeClaim:
+                claimName: dei-conversion-pvc
+            - name: ssh-key-volume
+              secret:
+                secretName: dei-ssh-secret
+                defaultMode: 256
+            - name: rsync-script
+              configMap:
+                name: dei-config
+                defaultMode: 0755
+                items:
+                  - key: sync.sh
+                    path: sync.sh

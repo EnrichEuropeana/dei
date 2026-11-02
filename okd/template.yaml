@@ -34,6 +34,11 @@ objects:
       SERVER_PORT: "${SERVER_PORT}"
       SERVER_SERVLET_CONTEXT_PATH: "${SERVER_SERVLET_CONTEXT_PATH}"
       CONVERSION_DIRECTORY: "${CONVERSION_DIRECTORY}"
+      RSYNC_SRC_SUBDIR: "${RSYNC_SRC_SUBDIR}"
+      RSYNC_DEST_HOST: "${RSYNC_DEST_HOST}"
+      RSYNC_DEST_USER: "${RSYNC_DEST_USER}"
+      RSYNC_DEST_PATH: "${RSYNC_DEST_PATH}"
+      RSYNC_DEST_PORT: "${RSYNC_DEST_PORT}"
       CONVERSION_IIIF_SERVER_URL: "${CONVERSION_IIIF_SERVER_URL}"
       TRANSCRIPTION_API_URL: "${TRANSCRIPTION_API_URL}"
       TRANSCRIPTION_NEW_API_URL: "${TRANSCRIPTION_NEW_API_URL}"
@@ -46,6 +51,60 @@ objects:
       KEYCLOAK_AUTH_SERVER_URL: "${KEYCLOAK_AUTH_SERVER_URL}"
       KEYCLOAK_CONFIDENTIAL_PORT: "${KEYCLOAK_CONFIDENTIAL_PORT}"
       JAVA_OPTS: "${JAVA_OPTS}"
+      sync.sh: |
+        #!/bin/sh
+        set -e
+
+        SRC_SUBDIR="${RSYNC_SRC_SUBDIR:-out}"
+        BASE_DIR="${CONVERSION_DIRECTORY:-/data/conversion}"
+        SRC_DIR="${BASE_DIR}/${SRC_SUBDIR}"
+
+        if [ ! -d "$SRC_DIR" ]; then
+          echo "Source directory $SRC_DIR does not exist. Nothing to sync."
+          exit 0
+        fi
+
+        if [ -z "$(ls -A "$SRC_DIR" 2>/dev/null)" ]; then
+          echo "Source directory $SRC_DIR is empty. Nothing to sync."
+          exit 0
+        fi
+
+        echo "Preparing SSH credentials..."
+        mkdir -p /tmp/.ssh
+        export HOME=/tmp
+
+        SSH_KEY_FOUND=""
+        for key_file in /etc/ssh-key/id_ed25519 /etc/ssh-key/id_rsa /etc/ssh-key/ssh-privatekey /etc/ssh-key/*; do
+          if [ -f "$key_file" ]; then
+            cp "$key_file" /tmp/.ssh/id_ed25519
+            chmod 600 /tmp/.ssh/id_ed25519
+            SSH_KEY_FOUND="/tmp/.ssh/id_ed25519"
+            break
+          fi
+        done
+
+        if [ -z "$SSH_KEY_FOUND" ]; then
+          echo "Error: SSH private key not found in /etc/ssh-key (expected id_ed25519, id_rsa, or ssh-privatekey)."
+          exit 1
+        fi
+
+        DEST_USER="${RSYNC_DEST_USER:-dei}"
+        DEST_HOST="${RSYNC_DEST_HOST}"
+        DEST_PORT="${RSYNC_DEST_PORT:-22}"
+        DEST_PATH="${RSYNC_DEST_PATH:-iiifFiles}"
+
+        if [ -z "$DEST_HOST" ]; then
+          echo "Error: RSYNC_DEST_HOST is not configured."
+          exit 1
+        fi
+
+        echo "Starting synchronization of $SRC_DIR/ to ${DEST_USER}@${DEST_HOST}:${DEST_PATH}/ via SSH (port ${DEST_PORT})..."
+        rsync -avz \
+          -e "ssh -i ${SSH_KEY_FOUND} -p ${DEST_PORT} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=30 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o LogLevel=ERROR" \
+          "$SRC_DIR/" \
+          "${DEST_USER}@${DEST_HOST}:${DEST_PATH}/"
+
+        echo "Rsync synchronization completed successfully at $(date -u '+%Y-%m-%d %H:%M:%S UTC')."
 
   # 3. DEI Application Deployment
   - apiVersion: apps/v1
@@ -149,6 +208,71 @@ objects:
       tls:
         termination: edge
         insecureEdgeTerminationPolicy: Redirect
+
+  # 6. Rsync CronJob for synchronizing conversion output files to external server
+  - apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: ${APP_NAME}-rsync-cronjob
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+    spec:
+      schedule: "${RSYNC_SCHEDULE}"
+      concurrencyPolicy: Forbid
+      successfulJobsHistoryLimit: 3
+      failedJobsHistoryLimit: 3
+      jobTemplate:
+        spec:
+          template:
+            metadata:
+              labels:
+                app: ${APP_NAME}-rsync
+                environment: ${ENVIRONMENT}
+            spec:
+              restartPolicy: OnFailure
+              containers:
+                - name: rsync
+                  image: ${RSYNC_IMAGE}
+                  imagePullPolicy: IfNotPresent
+                  command:
+                    - /bin/sh
+                    - /scripts/sync.sh
+                  envFrom:
+                    - configMapRef:
+                        name: ${APP_NAME}-config
+                  volumeMounts:
+                    - name: conversion-storage
+                      mountPath: ${CONVERSION_DIRECTORY}
+                      readOnly: true
+                    - name: ssh-key-volume
+                      mountPath: /etc/ssh-key
+                      readOnly: true
+                    - name: rsync-script
+                      mountPath: /scripts
+                      readOnly: true
+                  resources:
+                    requests:
+                      cpu: 50m
+                      memory: 64Mi
+                    limits:
+                      cpu: 500m
+                      memory: 256Mi
+              volumes:
+                - name: conversion-storage
+                  persistentVolumeClaim:
+                    claimName: ${APP_NAME}-conversion-pvc
+                - name: ssh-key-volume
+                  secret:
+                    secretName: ${RSYNC_SSH_SECRET_NAME}
+                    defaultMode: 256
+                - name: rsync-script
+                  configMap:
+                    name: ${APP_NAME}-config
+                    defaultMode: 0755
+                    items:
+                      - key: sync.sh
+                        path: sync.sh
 
 parameters:
   - name: APP_NAME
@@ -274,3 +398,51 @@ parameters:
   - name: CPU_LIMIT
     displayName: CPU Limit
     value: "2"
+
+  - name: RSYNC_SCHEDULE
+    displayName: Rsync CronJob Schedule
+    description: "Cron schedule expression for rsync job (e.g. */15 * * * * for every 15 minutes)"
+    value: "*/15 * * * *"
+    required: true
+
+  - name: RSYNC_IMAGE
+    displayName: Rsync Container Image
+    description: "Container image containing rsync and ssh utilities"
+    value: "instrumentisto/rsync-ssh:latest"
+    required: true
+
+  - name: RSYNC_SSH_SECRET_NAME
+    displayName: Rsync SSH Secret Name
+    description: "Name of the Secret containing the SSH private key (key: id_ed25519, id_rsa, or ssh-privatekey)"
+    value: "dei-ssh-secret"
+    required: true
+
+  - name: RSYNC_SRC_SUBDIR
+    displayName: Rsync Source Subdirectory
+    description: "Subdirectory inside CONVERSION_DIRECTORY to synchronize (e.g. out)"
+    value: "out"
+    required: true
+
+  - name: RSYNC_DEST_HOST
+    displayName: Rsync Destination Host / URL
+    description: "Destination server hostname or IP address for rsync"
+    value: "iiif-test.man.poznan.pl"
+    required: true
+
+  - name: RSYNC_DEST_USER
+    displayName: Rsync Destination SSH User
+    description: "SSH user on the destination server"
+    value: "dei"
+    required: true
+
+  - name: RSYNC_DEST_PATH
+    displayName: Rsync Destination Directory Path
+    description: "Target directory path on the remote server (e.g. iiifFiles or /data/iiifFiles)"
+    value: "iiifFiles"
+    required: true
+
+  - name: RSYNC_DEST_PORT
+    displayName: Rsync Destination SSH Port
+    description: "SSH port on the remote server"
+    value: "22"
+    required: true

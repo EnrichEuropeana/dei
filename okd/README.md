@@ -15,7 +15,8 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
 - `04-deployment.yaml` – Application `Deployment` configured with `Recreate` strategy and health probes.
 - `05-service.yaml` – Internal cluster `Service` (`ClusterIP`).
 - `06-route.yaml` – OpenShift `Route` with SSL termination (`edge`).
-- `dei-all.yaml` – Consolidated static manifest containing individual non-sensitive objects.
+- `07-cronjob.yaml` – `CronJob` (`dei-rsync-cronjob`) executing periodic synchronization (every 15 minutes) of conversion output files to the remote IIIF server via `rsync` over SSH (executes `/scripts/sync.sh` mounted from ConfigMap).
+- `dei-all.yaml` – Consolidated static manifest containing individual non-sensitive objects (including the rsync CronJob).
 
 ---
 
@@ -54,6 +55,20 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
        --from-literal=API_USERNAME="production-username" \
        --from-literal=API_PASSWORD="production-password" \
        --from-literal=DRI_API_TOKEN="production-dri-token" \
+       -n enrich-europeana-dei-production
+
+     # SSH Secrets for Rsync CronJob:
+     # 1. Generate ed25519 SSH key pair:
+     # ssh-keygen -t ed25519 -C "dei-rsync-key" -f ~/.ssh/id_ed25519
+     #
+     # 2. Staging SSH key secret:
+     oc create secret generic dei-staging-ssh-secret \
+       --from-file=id_ed25519=~/.ssh/id_ed25519 \
+       -n enrich-europeana-dei-staging
+
+     # 3. Production SSH key secret:
+     oc create secret generic dei-production-ssh-secret \
+       --from-file=id_ed25519=~/.ssh/id_ed25519 \
        -n enrich-europeana-dei-production
      ```
    - OKD token is stored in Jenkins Credentials as Secret Text (`okd-token`).
