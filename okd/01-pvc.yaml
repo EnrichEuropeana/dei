@@ -7,8 +7,8 @@ metadata:
     environment: test
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   resources:
     requests:
       storage: 10Gi
-  # storageClassName: <optional_storage_class_name_e.g._gp3_ceph_nfs>
+  storageClassName: manila-share

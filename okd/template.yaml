@@ -16,10 +16,11 @@ objects:
         environment: ${ENVIRONMENT}
     spec:
       accessModes:
-        - ReadWriteOnce
+        - ReadWriteMany
       resources:
         requests:
           storage: ${STORAGE_SIZE}
+      storageClassName: ${STORAGE_CLASS}
 
   # 2. ConfigMap for application configuration and external services
   - apiVersion: v1
@@ -190,6 +191,12 @@ parameters:
     displayName: Conversion PVC Storage Size
     description: "Storage size for temporary conversion files"
     value: "10Gi"
+    required: true
+
+  - name: STORAGE_CLASS
+    displayName: Conversion PVC Storage Class
+    description: "Storage class for the conversion PVC (e.g. manila-share for ReadWriteMany support)"
+    value: "manila-share"
     required: true
 
   - name: SERVER_PORT
