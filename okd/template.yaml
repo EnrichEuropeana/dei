@@ -289,8 +289,8 @@ parameters:
 
   - name: IMAGE_REGISTRY
     displayName: Container Image Registry
-    description: "Registry host and project/organization path for the container image (e.g. registry.paas.psnc.pl/enrich-europeana)"
-    value: "registry.paas.psnc.pl/enrich-europeana"
+    description: "Registry host and project/organization path for the container image (e.g. registry.example.com/enrich-europeana)"
+    value: "registry.example.com/enrich-europeana"
     required: true
 
   - name: IMAGE_NAME
@@ -302,7 +302,7 @@ parameters:
   - name: IMAGE_TAG
     displayName: Image Tag
     description: "Image tag to deploy"
-    value: "test"
+    value: "latest"
     required: true
 
   - name: REPLICAS
@@ -319,8 +319,8 @@ parameters:
 
   - name: STORAGE_CLASS
     displayName: Conversion PVC Storage Class
-    description: "Storage class for the conversion PVC (e.g. manila-share for ReadWriteMany support)"
-    value: "manila-share"
+    description: "Storage class for the conversion PVC (e.g. standard or manila-share for ReadWriteMany support)"
+    value: "standard"
     required: true
 
   - name: SERVER_PORT
@@ -329,7 +329,7 @@ parameters:
 
   - name: SERVER_SERVLET_CONTEXT_PATH
     displayName: Servlet Context Path
-    value: "/dei-test"
+    value: "/dei"
 
   - name: CONVERSION_DIRECTORY
     displayName: Conversion Mount Directory
@@ -337,43 +337,43 @@ parameters:
 
   - name: CONVERSION_IIIF_SERVER_URL
     displayName: IIIF Server URL
-    value: "https://iiif-test.man.poznan.pl"
+    value: "https://iiif.example.com"
 
   - name: TRANSCRIPTION_API_URL
     displayName: Transcription API URL
-    value: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
+    value: "https://transcription.example.com/api"
 
   - name: TRANSCRIPTION_NEW_API_URL
     displayName: Transcription New API URL
-    value: "https://api.fresenia-dev.man.poznan.pl/v2"
+    value: "https://api.transcription.example.com/v2"
 
   - name: TRANSCRIPTION_HAU_NEW_API_URL
     displayName: HAU Transcription API URL
-    value: "https://annotations.fresenia-dev.man.poznan.pl/v2"
+    value: "https://annotations.transcription.example.com/v2"
 
   - name: TRANSCRIPTION_KB_NEW_API_URL
     displayName: KB Transcription API URL
-    value: "https://transcribathon.fresenia-dev.man.poznan.pl/v2"
+    value: "https://transcribathon.example.com/v2"
 
   - name: EUROPEANA_API_ANNOTATIONS_ENDPOINT
     displayName: Europeana Annotations Endpoint
-    value: "https://annotation-api-test.eanadev.org/annotation/"
+    value: "https://api.europeana.eu/annotation/"
 
   - name: EUROPEANA_API_RECORD_ENDPOINT
     displayName: Europeana Record Endpoint
-    value: "https://www.europeana.eu/api/v2/record"
+    value: "https://api.europeana.eu/record/v2"
 
   - name: KEYCLOAK_REALM
     displayName: Keycloak Realm
-    value: "enrich-europeana-dev"
+    value: "enrich-europeana"
 
   - name: KEYCLOAK_RESOURCE
     displayName: Keycloak Resource / Client ID
-    value: "fresenia-dev.man.poznan.pl"
+    value: "dei-app"
 
   - name: KEYCLOAK_AUTH_SERVER_URL
     displayName: Keycloak Auth Server URL
-    value: "https://keycloak-dev.pcss.pl"
+    value: "https://sso.example.com/auth"
 
   - name: KEYCLOAK_CONFIDENTIAL_PORT
     displayName: Keycloak Confidential Port
@@ -426,7 +426,7 @@ parameters:
   - name: RSYNC_DEST_HOST
     displayName: Rsync Destination Host / URL
     description: "Destination server hostname or IP address for rsync"
-    value: "iiif-test.man.poznan.pl"
+    value: "iiif-storage.example.com"
     required: true
 
   - name: RSYNC_DEST_USER

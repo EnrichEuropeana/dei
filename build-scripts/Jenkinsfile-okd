@@ -21,7 +21,7 @@ pipeline {
         )
         string(
             name: 'IMAGE_REGISTRY',
-            defaultValue: 'registry.paas.psnc.pl/enrich-europeana',
+            defaultValue: 'registry.example.com/enrich-europeana',
             description: 'Container registry host and organization/project path'
         )
         string(
@@ -32,27 +32,38 @@ pipeline {
         string(
             name: 'REGISTRY_CREDENTIALS_ID',
             defaultValue: 'harbor-creds',
-            description: 'Jenkins credentials ID (Username with password) for Harbor / Container Registry'
+            description: 'Jenkins credentials ID (Username with password) for Container Registry'
         )
         string(
             name: 'OKD_CREDENTIALS_ID',
-            defaultValue: 'okd-token',
-            description: 'Jenkins credentials ID (Secret text) for OKD / OpenShift API token (can be overridden if different per cluster/env)'
+            defaultValue: '',
+            description: 'Optional override for Jenkins credentials ID (Secret text) for OKD / OpenShift API token (defaults to okd-token for test, okd-token-production for prod)'
         )
         string(
             name: 'OKD_SERVER',
-            defaultValue: 'https://api.bst2.paas.psnc.pl:6443/',
-            description: 'OpenShift API Server URL (defaults to https://api.bst2.paas.psnc.pl:6443/)'
+            defaultValue: '',
+            description: 'Optional override for OKD API Server URL (leave empty to resolve from env-*-private.params in private GitLab repository)'
+        )
+        booleanParam(
+            name: 'USE_PRIVATE_CONFIG',
+            defaultValue: true,
+            description: 'Whether to fetch and apply private environment parameters from the private GitLab configuration repository'
         )
         string(
-            name: 'OKD_NAMESPACE',
-            defaultValue: '',
-            description: 'Target OpenShift namespace (leave empty to use default: enrich-europeana-dei-staging for test, enrich-europeana-dei-production for prod)'
+            name: 'CONFIG_DEPLOY_TOKEN_CREDS_ID',
+            defaultValue: 'gitlab-config-deploy-token',
+            description: 'Jenkins credentials ID (Username with password) for GitLab Deploy Token'
+        )
+        string(
+            name: 'CONFIG_REPO_URL_CREDS_ID',
+            defaultValue: 'gitlab-config-repo-https-url',
+            description: 'Jenkins credentials ID (Secret text) containing private GitLab repository HTTPS URL'
         )
     }
 
     environment {
         TEMPLATE_FILE = 'okd/template.yaml'
+        PRIVATE_CONFIG_DIR = '.private-config'
         M2_HOME = "${tool 'maven-3.5.0'}".trim()
         JAVA_HOME = "${tool 'openjdk-11-dlteam'}".trim()
         PATH = "${env.M2_HOME}/bin:${env.JAVA_HOME}/bin:${env.PATH}"
@@ -62,20 +73,22 @@ pipeline {
         stage('Initialize Environment') {
             steps {
                 script {
-                    // Predefined environment configuration
+                    // Environment-specific configuration defaults
                     def envConfigs = [
                         'test': [
-                            namespace: 'enrich-europeana-dei-staging',
-                            server: 'https://api.bst2.paas.psnc.pl:6443/',
-                            credentialsId: 'okd-token',
+                            defaultNamespace: 'dei-staging',
+                            defaultServer: 'https://api.okd.example.com:6443/',
+                            credentialsId: params.OKD_CREDENTIALS_ID?.trim() ?: 'okd-token',
                             paramFile: 'okd/env-test.params',
+                            privateParamFile: 'env-test-private.params',
                             appName: 'dei-staging'
                         ],
                         'prod': [
-                            namespace: 'enrich-europeana-dei-production',
-                            server: 'https://api.bst2.paas.psnc.pl:6443/',
-                            credentialsId: 'okd-token',
+                            defaultNamespace: 'dei-production',
+                            defaultServer: 'https://api.okd.example.com:6443/',
+                            credentialsId: params.OKD_CREDENTIALS_ID?.trim() ?: 'okd-token-production',
                             paramFile: 'okd/env-prod.params',
+                            privateParamFile: 'env-prod-private.params',
                             appName: 'dei-production'
                         ]
                     ]
@@ -84,11 +97,16 @@ pipeline {
                     def config = envConfigs[targetEnv] ?: envConfigs['test']
 
                     env.TARGET_ENV = targetEnv
-                    env.TARGET_NAMESPACE = params.OKD_NAMESPACE?.trim() ? params.OKD_NAMESPACE.trim() : config.namespace
-                    env.TARGET_SERVER = params.OKD_SERVER?.trim() ? params.OKD_SERVER.trim() : config.server
-                    env.TARGET_OKD_CREDS = params.OKD_CREDENTIALS_ID?.trim() ? params.OKD_CREDENTIALS_ID.trim() : config.credentialsId
+                    env.TARGET_OKD_CREDS = config.credentialsId
                     env.PARAM_FILE = config.paramFile
+                    env.PRIVATE_PARAM_FILE = config.privateParamFile
                     env.APP_NAME = config.appName
+                    env.CONFIG_DEPLOY_TOKEN_CREDS = params.CONFIG_DEPLOY_TOKEN_CREDS_ID?.trim() ?: 'gitlab-config-deploy-token'
+                    env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: 'gitlab-config-repo-https-url'
+
+                    // Initial target server and namespace defaults
+                    env.TARGET_SERVER = params.OKD_SERVER?.trim() ?: config.defaultServer
+                    env.TARGET_NAMESPACE = config.defaultNamespace
 
                     // Tag is environment-neutral (e.g. build-123 or explicit tag), allowing identical image promoting to prod
                     def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : "build-${env.BUILD_NUMBER}"
@@ -96,15 +114,81 @@ pipeline {
                     env.FULL_IMAGE = "${params.IMAGE_REGISTRY}/${params.IMAGE_NAME}:${env.DEPLOY_TAG}"
 
                     echo "================ DEPLOYMENT CONFIGURATION ================"
-                    echo "Target Environment : ${env.TARGET_ENV}"
-                    echo "Application Name   : ${env.APP_NAME}"
-                    echo "OKD Cluster Server : ${env.TARGET_SERVER}"
-                    echo "OKD Namespace      : ${env.TARGET_NAMESPACE}"
-                    echo "OKD Credentials ID : ${env.TARGET_OKD_CREDS}"
-                    echo "Container Image    : ${env.FULL_IMAGE}"
-                    echo "Build Image Stage  : ${params.BUILD_IMAGE}"
-                    echo "Param File Path    : ${env.PARAM_FILE}"
+                    echo "Target Environment     : ${env.TARGET_ENV}"
+                    echo "Application Name       : ${env.APP_NAME}"
+                    echo "OKD Cluster Server     : ${env.TARGET_SERVER}"
+                    echo "OKD Namespace          : ${env.TARGET_NAMESPACE}"
+                    echo "OKD Token Creds ID     : ${env.TARGET_OKD_CREDS}"
+                    echo "Container Image        : ${env.FULL_IMAGE}"
+                    echo "Build Image Stage      : ${params.BUILD_IMAGE}"
+                    echo "Public Param File      : ${env.PARAM_FILE}"
+                    echo "Private Param File     : ${env.PRIVATE_PARAM_FILE}"
+                    echo "Use Private Config     : ${params.USE_PRIVATE_CONFIG}"
+                    echo "Config Token Creds ID  : ${env.CONFIG_DEPLOY_TOKEN_CREDS}"
+                    echo "Config Repo Creds ID   : ${env.CONFIG_REPO_URL_CREDS}"
                     echo "=========================================================="
+                }
+            }
+        }
+
+        stage('Fetch Private Configuration') {
+            when {
+                expression { return params.USE_PRIVATE_CONFIG == true }
+            }
+            steps {
+                script {
+                    echo "Fetching private deployment configuration from GitLab repository..."
+                    dir("${env.PRIVATE_CONFIG_DIR}") {
+                        deleteDir()
+                    }
+
+                    withCredentials([
+                        string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL'),
+                        usernamePassword(
+                            credentialsId: env.CONFIG_DEPLOY_TOKEN_CREDS,
+                            usernameVariable: 'GITLAB_USER',
+                            passwordVariable: 'GITLAB_TOKEN'
+                        )
+                    ]) {
+                        dir("${env.PRIVATE_CONFIG_DIR}") {
+                            // Format authenticated HTTPS URL: https://<username>:<token>@<domain>/<group>/<repo>.git
+                            def cleanUrl = env.CONFIG_REPO_URL.replaceFirst('^https?://', '')
+                            def authenticatedUrl = "https://${env.GITLAB_USER}:${env.GITLAB_TOKEN}@${cleanUrl}"
+
+                            // Clone shallowly to retrieve private parameter files
+                            sh """
+                                git clone --depth 1 "${authenticatedUrl}" .
+                            """
+                        }
+                    }
+
+                    // Extract OKD_SERVER and OKD_NAMESPACE from private params file if not explicitly overridden via build parameters
+                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PRIVATE_PARAM_FILE}"
+                    if (fileExists(privateParamPath)) {
+                        echo "Extracting infrastructure parameters from private config: ${privateParamPath}"
+
+                        if (!params.OKD_SERVER?.trim()) {
+                            def extractedServer = sh(
+                                script: "grep -E '^[[:space:]]*OKD_SERVER=' ${privateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                            if (extractedServer) {
+                                env.TARGET_SERVER = extractedServer
+                                echo "Resolved OKD Server URL from private config: ${env.TARGET_SERVER}"
+                            }
+                        } else {
+                            echo "Using explicit OKD_SERVER parameter override: ${env.TARGET_SERVER}"
+                        }
+
+                        def extractedNamespace = sh(
+                            script: "grep -E '^[[:space:]]*OKD_NAMESPACE=' ${privateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                            returnStdout: true
+                        ).trim()
+                        if (extractedNamespace) {
+                            env.TARGET_NAMESPACE = extractedNamespace
+                            echo "Resolved OKD Namespace from private config: ${env.TARGET_NAMESPACE}"
+                        }
+                    }
                 }
             }
         }
@@ -134,7 +218,7 @@ pipeline {
                 script {
                     echo "Building and pushing container image: ${env.FULL_IMAGE}"
                     def registryHost = params.IMAGE_REGISTRY.split('/')[0]
-                    def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'harbor-creds'
+                    def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'container-registry-creds'
 
                     withCredentials([usernamePassword(credentialsId: credsId, usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
                         try {
@@ -155,7 +239,7 @@ pipeline {
         stage('Login & Deploy to OKD') {
             steps {
                 script {
-                    echo "Authenticating to OKD cluster: ${env.TARGET_SERVER}"
+                    echo "Authenticating to OKD cluster: ${env.TARGET_SERVER} with token credentials ID: ${env.TARGET_OKD_CREDS}"
 
                     withCredentials([string(credentialsId: env.TARGET_OKD_CREDS, variable: 'OKD_TOKEN')]) {
                         sh """
@@ -181,11 +265,21 @@ pipeline {
                     ]
 
                     def paramsString = templateParams.join(' ')
-                    def paramFileArg = fileExists(env.PARAM_FILE) ? "--param-file=${env.PARAM_FILE}" : ""
+                    def baseParamArg = fileExists(env.PARAM_FILE) ? "--param-file=${env.PARAM_FILE}" : ""
 
-                    // Process template with environment param-file and dynamic params, then apply
+                    // Check for private environment parameter overrides from GitLab
+                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PRIVATE_PARAM_FILE}"
+                    def privateParamArg = ""
+                    if (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) {
+                        echo "Applying private configuration overrides from: ${privateParamPath}"
+                        privateParamArg = "--param-file=${privateParamPath}"
+                    } else if (params.USE_PRIVATE_CONFIG) {
+                        echo "Notice: Private param file '${env.PRIVATE_PARAM_FILE}' not found in '${env.PRIVATE_CONFIG_DIR}'. Proceeding with base parameter file."
+                    }
+
+                    // Process template with public and private param files (private params override base params), then apply
                     sh """
-                        oc process -f ${env.TEMPLATE_FILE} ${paramFileArg} ${paramsString} -n ${env.TARGET_NAMESPACE} | oc apply -f - -n ${env.TARGET_NAMESPACE}
+                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.TARGET_NAMESPACE} | oc apply -f - -n ${env.TARGET_NAMESPACE}
                     """
                 }
             }
@@ -209,6 +303,10 @@ pipeline {
 
     post {
         always {
+            // Securely clean up private configuration files from agent workspace
+            dir("${env.PRIVATE_CONFIG_DIR}") {
+                deleteDir()
+            }
             echo "Pipeline execution finished for build #${env.BUILD_NUMBER}"
         }
         success {

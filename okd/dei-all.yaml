@@ -34,25 +34,25 @@ data:
   
   # Rsync cron job configuration
   RSYNC_SRC_SUBDIR: "out"
-  RSYNC_DEST_HOST: "iiif-test.man.poznan.pl"
+  RSYNC_DEST_HOST: "iiif-storage.example.com"
   RSYNC_DEST_USER: "dei"
   RSYNC_DEST_PATH: "iiifFiles"
   RSYNC_DEST_PORT: "22"
   
   # External servers and IIIF / Transcribathon integrations
-  CONVERSION_IIIF_SERVER_URL: "https://iiif-test.man.poznan.pl"
-  TRANSCRIPTION_API_URL: "http://fresenia-dev.man.poznan.pl/dev/tp-api"
-  TRANSCRIPTION_NEW_API_URL: "https://api.fresenia-dev.man.poznan.pl/v2"
-  TRANSCRIBATHON_URL: "https://europeana.fresenia-dev.man.poznan.pl/dev"
+  CONVERSION_IIIF_SERVER_URL: "https://iiif.example.com"
+  TRANSCRIPTION_API_URL: "https://transcription.example.com/api"
+  TRANSCRIPTION_NEW_API_URL: "https://api.transcription.example.com/v2"
+  TRANSCRIBATHON_URL: "https://transcribathon.example.com"
   
   # Europeana API Endpoints
-  EUROPEANA_API_ANNOTATIONS_ENDPOINT: "https://annotation-api-test.eanadev.org/annotation/"
-  EUROPEANA_API_RECORD_ENDPOINT: "https://www.europeana.eu/api/v2/record"
+  EUROPEANA_API_ANNOTATIONS_ENDPOINT: "https://api.europeana.eu/annotation/"
+  EUROPEANA_API_RECORD_ENDPOINT: "https://api.europeana.eu/record/v2"
   
   # Keycloak configuration
-  KEYCLOAK_REALM: "enrich-europeana-dev"
-  KEYCLOAK_RESOURCE: "fresenia-dev.man.poznan.pl"
-  KEYCLOAK_AUTH_SERVER_URL: "https://keycloak-dev.pcss.pl"
+  KEYCLOAK_REALM: "enrich-europeana"
+  KEYCLOAK_RESOURCE: "dei-app"
+  KEYCLOAK_AUTH_SERVER_URL: "https://sso.example.com/auth"
   KEYCLOAK_CONFIDENTIAL_PORT: "443"
 
   # JVM options and TLS protocols
@@ -139,7 +139,7 @@ spec:
       containers:
         - name: dei-app
           # Image URL in the external container registry
-          image: registry.paas.psnc.pl/enrich-europeana/dei:test
+          image: registry.example.com/enrich-europeana/dei:latest
           imagePullPolicy: Always
           ports:
             - name: http
