@@ -50,14 +50,14 @@ pipeline {
             description: 'Whether to fetch and apply private environment parameters from the private GitLab configuration repository'
         )
         string(
-            name: 'CONFIG_DEPLOY_TOKEN_CREDS_ID',
-            defaultValue: 'gitlab-config-deploy-token',
-            description: 'Jenkins credentials ID (Username with password) for GitLab Deploy Token'
+            name: 'CONFIG_REPO_CREDS_ID',
+            defaultValue: 'gitlab-config-repo-ssh-key',
+            description: 'Jenkins credentials ID (SSH Username with private key) for GitLab configuration repository'
         )
         string(
             name: 'CONFIG_REPO_URL_CREDS_ID',
-            defaultValue: 'gitlab-config-repo-https-url',
-            description: 'Jenkins credentials ID (Secret text) containing private GitLab repository HTTPS URL'
+            defaultValue: 'gitlab-config-repo-url',
+            description: 'Jenkins credentials ID (Secret text) containing private GitLab repository SSH URL'
         )
     }
 
@@ -101,8 +101,8 @@ pipeline {
                     env.PARAM_FILE = config.paramFile
                     env.PRIVATE_PARAM_FILE = config.privateParamFile
                     env.APP_NAME = config.appName
-                    env.CONFIG_DEPLOY_TOKEN_CREDS = params.CONFIG_DEPLOY_TOKEN_CREDS_ID?.trim() ?: 'gitlab-config-deploy-token'
-                    env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: 'gitlab-config-repo-https-url'
+                    env.CONFIG_REPO_CREDS = params.CONFIG_REPO_CREDS_ID?.trim() ?: 'gitlab-config-repo-ssh-key'
+                    env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: 'gitlab-config-repo-url'
 
                     // Initial target server and namespace defaults
                     env.TARGET_SERVER = params.OKD_SERVER?.trim() ?: config.defaultServer
@@ -124,8 +124,8 @@ pipeline {
                     echo "Public Param File      : ${env.PARAM_FILE}"
                     echo "Private Param File     : ${env.PRIVATE_PARAM_FILE}"
                     echo "Use Private Config     : ${params.USE_PRIVATE_CONFIG}"
-                    echo "Config Token Creds ID  : ${env.CONFIG_DEPLOY_TOKEN_CREDS}"
-                    echo "Config Repo Creds ID   : ${env.CONFIG_REPO_URL_CREDS}"
+                    echo "Config SSH Creds ID    : ${env.CONFIG_REPO_CREDS}"
+                    echo "Config Repo URL Creds  : ${env.CONFIG_REPO_URL_CREDS}"
                     echo "=========================================================="
                 }
             }
@@ -137,28 +137,19 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Fetching private deployment configuration from GitLab repository..."
+                    echo "Fetching private deployment configuration from GitLab repository via Git SCM..."
                     dir("${env.PRIVATE_CONFIG_DIR}") {
                         deleteDir()
                     }
 
                     withCredentials([
-                        string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL'),
-                        usernamePassword(
-                            credentialsId: env.CONFIG_DEPLOY_TOKEN_CREDS,
-                            usernameVariable: 'GITLAB_USER',
-                            passwordVariable: 'GITLAB_TOKEN'
-                        )
+                        string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL')
                     ]) {
                         dir("${env.PRIVATE_CONFIG_DIR}") {
-                            // Format authenticated HTTPS URL: https://<username>:<token>@<domain>/<group>/<repo>.git
-                            def cleanUrl = env.CONFIG_REPO_URL.replaceFirst('^https?://', '')
-                            def authenticatedUrl = "https://${env.GITLAB_USER}:${env.GITLAB_TOKEN}@${cleanUrl}"
-
-                            // Clone shallowly to retrieve private parameter files
-                            sh """
-                                git clone --depth 1 "${authenticatedUrl}" .
-                            """
+                            // Use Jenkins native Git plugin step with SSH Deploy Key
+                            git credentialsId: env.CONFIG_REPO_CREDS,
+                                url: env.CONFIG_REPO_URL,
+                                branch: 'main'
                         }
                     }
 
