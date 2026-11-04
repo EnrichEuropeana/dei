@@ -73,8 +73,8 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
      ```
    - OKD tokens are stored in Jenkins Credentials as Secret Text (`okd-token` for test / staging and `okd-token-production` for production).
    - OKD API Server URL and Namespace are defined in the private parameter files (`OKD_SERVER=...` and `OKD_NAMESPACE=...` in `env-test-private.params` / `env-prod-private.params` in GitLab).
-   - GitLab SSH Deploy Key for private parameters repository is stored in Jenkins Credentials as SSH Username with private key (`gitlab-config-repo-ssh-key`).
-   - GitLab private repository SSH URL is stored in Jenkins Credentials as Secret Text (`gitlab-config-repo-url`).
+   - GitLab Deploy Token for private parameters repository is stored in Jenkins Credentials as Username/Password (`gitlab-config-deploy-token`).
+   - GitLab private repository HTTPS URL is stored in Jenkins Credentials as Secret Text (`gitlab-config-repo-https-url`).
    - Container registry credentials are stored in Jenkins Credentials as Username/Password (`harbor-creds` or `container-registry-creds`).
 
 ---
@@ -119,8 +119,8 @@ A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supp
    - `OKD_CREDENTIALS_ID` (String, default `''`): Optional override for Jenkins credentials ID (Secret text) for OKD API token (defaults to `okd-token` for test, `okd-token-production` for prod).
    - `OKD_SERVER` (String, default `''`): Optional override for OKD API Server URL (leave empty to resolve from `env-*-private.params` in private GitLab repository).
    - `USE_PRIVATE_CONFIG` (Boolean, default `true`): Whether to fetch and apply private parameters from GitLab.
-   - `CONFIG_REPO_CREDS_ID` (String, default `gitlab-config-repo-ssh-key`): Jenkins credentials ID for GitLab SSH Deploy Key.
-   - `CONFIG_REPO_URL_CREDS_ID` (String, default `gitlab-config-repo-url`): Jenkins credentials ID for GitLab repository SSH URL.
+   - `CONFIG_DEPLOY_TOKEN_CREDS_ID` (String, default `gitlab-config-deploy-token`): Jenkins credentials ID for GitLab Deploy Token.
+   - `CONFIG_REPO_URL_CREDS_ID` (String, default `gitlab-config-repo-https-url`): Jenkins credentials ID for GitLab repository HTTPS URL.
 
 2. **Pipeline Execution:**
    - Authenticates to container registry using `container-registry-creds` and builds/pushes the Docker image.
