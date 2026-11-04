@@ -49,15 +49,25 @@ pipeline {
             defaultValue: true,
             description: 'Whether to fetch and apply private environment parameters from the private GitLab configuration repository'
         )
+        choice(
+            name: 'CONFIG_PROTOCOL',
+            choices: ['HTTPS', 'SSH'],
+            description: 'Protocol to fetch private configuration repository from GitLab (HTTPS with Deploy Token or SSH with Deploy Key)'
+        )
         string(
             name: 'CONFIG_DEPLOY_TOKEN_CREDS_ID',
             defaultValue: 'gitlab-config-deploy-token',
-            description: 'Jenkins credentials ID (Username with password) for GitLab Deploy Token'
+            description: 'Jenkins credentials ID (Username with password) for GitLab Deploy Token (used when CONFIG_PROTOCOL is HTTPS)'
+        )
+        string(
+            name: 'CONFIG_SSH_KEY_CREDS_ID',
+            defaultValue: 'gitlab-config-repo-ssh-key',
+            description: 'Jenkins credentials ID (SSH Username with private key) for GitLab Deploy Key (used when CONFIG_PROTOCOL is SSH)'
         )
         string(
             name: 'CONFIG_REPO_URL_CREDS_ID',
-            defaultValue: 'gitlab-config-repo-https-url',
-            description: 'Jenkins credentials ID (Secret text) containing private GitLab repository HTTPS URL'
+            defaultValue: '',
+            description: 'Optional override for Jenkins credentials ID (Secret text) containing GitLab repo URL (defaults to gitlab-config-repo-https-url for HTTPS or gitlab-config-repo-url for SSH)'
         )
     }
 
@@ -101,8 +111,14 @@ pipeline {
                     env.PARAM_FILE = config.paramFile
                     env.PRIVATE_PARAM_FILE = config.privateParamFile
                     env.APP_NAME = config.appName
+
+                    def configProtocol = params.CONFIG_PROTOCOL ?: 'HTTPS'
+                    env.CONFIG_PROTOCOL = configProtocol
                     env.CONFIG_DEPLOY_TOKEN_CREDS = params.CONFIG_DEPLOY_TOKEN_CREDS_ID?.trim() ?: 'gitlab-config-deploy-token'
-                    env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: 'gitlab-config-repo-https-url'
+                    env.CONFIG_SSH_KEY_CREDS = params.CONFIG_SSH_KEY_CREDS_ID?.trim() ?: 'gitlab-config-repo-ssh-key'
+
+                    def defaultUrlCreds = (configProtocol == 'SSH') ? 'gitlab-config-repo-url' : 'gitlab-config-repo-https-url'
+                    env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: defaultUrlCreds
 
                     // Initial target server and namespace defaults
                     env.TARGET_SERVER = params.OKD_SERVER?.trim() ?: config.defaultServer
@@ -124,7 +140,12 @@ pipeline {
                     echo "Public Param File      : ${env.PARAM_FILE}"
                     echo "Private Param File     : ${env.PRIVATE_PARAM_FILE}"
                     echo "Use Private Config     : ${params.USE_PRIVATE_CONFIG}"
-                    echo "Config Token Creds ID  : ${env.CONFIG_DEPLOY_TOKEN_CREDS}"
+                    echo "Config Protocol        : ${env.CONFIG_PROTOCOL}"
+                    if (env.CONFIG_PROTOCOL == 'SSH') {
+                        echo "Config SSH Creds ID    : ${env.CONFIG_SSH_KEY_CREDS}"
+                    } else {
+                        echo "Config Token Creds ID  : ${env.CONFIG_DEPLOY_TOKEN_CREDS}"
+                    }
                     echo "Config Repo URL Creds  : ${env.CONFIG_REPO_URL_CREDS}"
                     echo "=========================================================="
                 }
@@ -137,17 +158,29 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Fetching private deployment configuration from GitLab repository via Git SCM (HTTPS)..."
+                    echo "Fetching private deployment configuration from GitLab repository via ${env.CONFIG_PROTOCOL}..."
                     dir("${env.PRIVATE_CONFIG_DIR}") {
                         deleteDir()
                     }
 
-                    withCredentials([
-                        string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL')
-                    ]) {
-                        dir("${env.PRIVATE_CONFIG_DIR}") {
-                            // Use Jenkins native Git plugin step with GitLab Deploy Token (Username with password) and skip SSL verification for internal host
-                            withEnv(['GIT_SSL_NO_VERIFY=true']) {
+                    if (env.CONFIG_PROTOCOL == 'SSH') {
+                        echo "Using SSH authentication with credential: ${env.CONFIG_SSH_KEY_CREDS} and URL credential: ${env.CONFIG_REPO_URL_CREDS}"
+                        withCredentials([
+                            string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL')
+                        ]) {
+                            dir("${env.PRIVATE_CONFIG_DIR}") {
+                                git credentialsId: env.CONFIG_SSH_KEY_CREDS,
+                                    url: env.CONFIG_REPO_URL,
+                                    branch: 'main'
+                            }
+                        }
+                    } else {
+                        echo "Using HTTPS authentication with Deploy Token credential: ${env.CONFIG_DEPLOY_TOKEN_CREDS} and URL credential: ${env.CONFIG_REPO_URL_CREDS}"
+                        withCredentials([
+                            string(credentialsId: env.CONFIG_REPO_URL_CREDS, variable: 'CONFIG_REPO_URL')
+                        ]) {
+                            dir("${env.PRIVATE_CONFIG_DIR}") {
+                                // Use Jenkins native Git plugin step with GitLab Deploy Token (Username with password)
                                 git credentialsId: env.CONFIG_DEPLOY_TOKEN_CREDS,
                                     url: env.CONFIG_REPO_URL,
                                     branch: 'main'
