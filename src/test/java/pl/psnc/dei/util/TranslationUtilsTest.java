@@ -17,27 +17,30 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 import javax.xml.xpath.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.StringWriter;
-import java.io.Writer;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
+
+import static org.junit.Assert.*;
 
 public class TranslationUtilsTest {
+
     @Test
     public void test() throws ParserConfigurationException, IOException, SAXException, XPathExpressionException,
             TransformerException {
         DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
         factory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        InputStream inputStream = getClass().getClassLoader().getResourceAsStream("records/69699-nnnnhX2.xml");
+        assertNotNull("Record XML resource should be found", inputStream);
         Document input = factory
                 .newDocumentBuilder()
-                .parse("/home/helin/work/fbc/Europeana/14-18/04082022/69699-nnnnhX2.xml");
+                .parse(inputStream);
         XPath xpath = XPathFactory
                 .newInstance()
                 .newXPath();
         XPathExpression expr = xpath.compile("//*[name()='edm:ProvidedCHO']/*[name()='dc:description']");
         NodeList nodes = (NodeList) expr.evaluate(input, XPathConstants.NODESET);
+        assertEquals(1, nodes.getLength());
         for (int i = 0; i < nodes.getLength(); i++) {
             Element value = (Element) nodes.item(i);
             value.setAttribute("xml:lang", "en");
@@ -46,10 +49,12 @@ public class TranslationUtilsTest {
         transformerFactory.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
         Transformer xformer = transformerFactory.newTransformer();
         xformer.setOutputProperty(OutputKeys.INDENT, "yes");
-        Writer output = new StringWriter();//new FileWriter("/home/helin/work/fbc/Europeana/14-18/04082022/69699-nnnnhX2-transformed.xml");
+        StringWriter output = new StringWriter();
         xformer.transform(new DOMSource(input), new StreamResult(output));
-        Files.writeString(Paths.get("/home/helin/work/fbc/Europeana/14-18", "69699-nnnnhX2-transformed.xml"),
-                output.toString(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+
+        String resultXml = output.toString();
+        assertTrue(resultXml.contains("xml:lang=\"en\""));
+        assertTrue(resultXml.contains("Foto-Postkarte mit Familie Keller"));
     }
 
 }

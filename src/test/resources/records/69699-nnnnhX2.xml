@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF xmlns:doap="http://usefulinc.com/ns/doap#"
+         xmlns:svcs="http://rdfs.org/sioc/services#"
+         xmlns:ebucore="http://www.ebu.ch/metadata/ontologies/ebucore/ebucore#"
+         xmlns:wgs84_pos="http://www.w3.org/2003/01/geo/wgs84_pos#"
+         xmlns:edm="http://www.europeana.eu/schemas/edm/"
+         xmlns:adms="http://www.w3.org/ns/adms#"
+         xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:odrl="http://www.w3.org/ns/odrl/2/"
+         xmlns:ore="http://www.openarchives.org/ore/terms/"
+         xmlns:cc="http://creativecommons.org/ns#"
+         xmlns:owl="http://www.w3.org/2002/07/owl#"
+         xmlns:crm="http://www.cidoc-crm.org/rdfs/cidoc_crm_v5.0.2_english_label.rdfs#"
+         xmlns:rdaGr2="http://rdvocab.info/ElementsGr2/"
+         xmlns:dc="http://purl.org/dc/elements/1.1/"
+         xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+         xmlns:dcat="http://www.w3.org/ns/dcat#"
+         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+         xmlns:dcterms="http://purl.org/dc/terms/"
+         xmlns:skos="http://www.w3.org/2004/02/skos/core#">
+   <edm:ProvidedCHO rdf:about="https://1914-1918.europeana.eu/contributions/116">
+      <dc:contributor rdf:resource="europeana19141918:agent/c2bfd52e2587cd7572eb9610b2bcfded"/>
+      <dc:creator rdf:resource="europeana19141918:agent/ebd4a2bc394c9b7e4ade1448ccdd436f"/>
+      <dc:date>1915</dc:date>
+      <dc:description>Foto-Postkarte mit Familie Keller aus Murrhardt (Württemberg). Absenderin Frau Dr Keller schreibt 1915 an ihren Sohn Erich Keller in Ulm.  Auf dem Foto sieht man zwei Madchen und einen jungen Soldaten in der Uniform des Infanterie Regiments Nr. 248, mit dem Eisernen Kreuz 2. Klasse. Auf dem Tisch stehen viele Zinnfiguren.</dc:description>
+      <dc:identifier>116</dc:identifier>
+      <dc:language>Deutsch</dc:language>
+      <dc:source>UGC</dc:source>
+      <dc:subject xml:lang="en">World War I</dc:subject>
+      <dc:subject>Familie Keller, aus Murrhardt</dc:subject>
+      <dc:subject xml:lang="en">Home Front</dc:subject>
+      <dc:subject xml:lang="en">Women</dc:subject>
+      <dc:subject xml:lang="en">Central Powers</dc:subject>
+      <dc:title>Familie Keller</dc:title>
+      <dc:type xml:lang="en">Story</dc:type>
+      <dc:type>Postcard</dc:type>
+      <dc:type xml:lang="en">Postcard</dc:type>
+      <dcterms:alternative xml:lang="en">Postcard with the Keller family</dcterms:alternative>
+      <dcterms:created>2011-03-23 23:51:36 UTC</dcterms:created>
+      <dcterms:provenance>UNKNOWN</dcterms:provenance>
+      <dcterms:spatial rdf:resource="europeana19141918:place/2ffb0fc8d356a56dfef4d596dab21664"/>
+      <dcterms:temporal rdf:resource="europeana19141918:timespan/87afe5debac5047401f5576d49d6fbe0"/>
+      <edm:type>TEXT</edm:type>
+   </edm:ProvidedCHO>
+   <edm:WebResource rdf:about="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.191.original.tif/full/full/0/default.jpg">
+      <dc:source>UGC</dc:source>
+      <dcterms:created>2011-03-24 00:15:26 UTC</dcterms:created>
+      <edm:rights rdf:resource="http://creativecommons.org/licenses/by-sa/3.0/"/>
+      <svcs:has_service rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.191.original.tif"/>
+   </edm:WebResource>
+   <edm:WebResource rdf:about="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif/full/full/0/default.jpg">
+      <dc:source>UGC</dc:source>
+      <dcterms:created>2011-03-24 00:11:46 UTC</dcterms:created>
+      <edm:rights rdf:resource="http://creativecommons.org/licenses/by-sa/3.0/"/>
+      <svcs:has_service rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif"/>
+   </edm:WebResource>
+   <edm:Agent rdf:about="europeana19141918:agent/c2bfd52e2587cd7572eb9610b2bcfded">
+      <skos:prefLabel>Stephen</skos:prefLabel>
+   </edm:Agent>
+   <edm:Agent rdf:about="europeana19141918:agent/ebd4a2bc394c9b7e4ade1448ccdd436f">
+      <skos:prefLabel>Keller, Frau Dr.</skos:prefLabel>
+   </edm:Agent>
+   <edm:Place rdf:about="europeana19141918:place/2ffb0fc8d356a56dfef4d596dab21664">
+      <wgs84_pos:lat>48.982019588328214</wgs84_pos:lat>
+      <wgs84_pos:long>9.580421447753906</wgs84_pos:long>
+      <skos:prefLabel>Murrhardt (Württemberg)</skos:prefLabel>
+   </edm:Place>
+   <edm:TimeSpan rdf:about="europeana19141918:timespan/87afe5debac5047401f5576d49d6fbe0">
+      <skos:prefLabel>1915</skos:prefLabel>
+      <edm:begin>1915</edm:begin>
+      <edm:end>1915</edm:end>
+   </edm:TimeSpan>
+   <ore:Aggregation rdf:about="europeana19141918:aggregation/contribution/116">
+      <edm:aggregatedCHO rdf:resource="https://1914-1918.europeana.eu/contributions/116"/>
+      <edm:dataProvider>Europeana 1914-1918</edm:dataProvider>
+      <edm:hasView rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif/full/full/0/default.jpg"/>
+      <edm:hasView rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.191.original.tif/full/full/0/default.jpg"/>
+      <edm:isShownBy rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif/full/full/0/default.jpg"/>
+      <edm:object rdf:resource="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif/full/full/0/default.jpg"/>
+      <edm:provider>Europeana 1914-1918</edm:provider>
+      <edm:rights rdf:resource="http://creativecommons.org/publicdomain/zero/1.0/"/>
+      <edm:ugc>true</edm:ugc>
+   </ore:Aggregation>
+   <svcs:Service rdf:about="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.190.original.tif">
+      <dcterms:conformsTo rdf:resource="http://iiif.io/api/image"/>
+      <doap:implements rdf:resource="http://iiif.io/api/image/2/level0.json"/>
+   </svcs:Service>
+   <svcs:Service rdf:about="https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=11/5//2020601/https___1914_1918_europeana_eu_contributions_116/116.191.original.tif">
+      <dcterms:conformsTo rdf:resource="http://iiif.io/api/image"/>
+      <doap:implements rdf:resource="http://iiif.io/api/image/2/level0.json"/>
+   </svcs:Service>
+</rdf:RDF>
