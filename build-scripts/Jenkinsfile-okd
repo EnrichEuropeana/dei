@@ -7,7 +7,7 @@ pipeline {
         choice(
             name: 'ENVIRONMENT',
             choices: ['test', 'prod'],
-            description: 'Deployment target environment (test: staging namespace, prod: production namespace)'
+            description: 'Deployment execution mode (test: deploy to staging, then prompt for manual approval before deploying to production; prod: deploy directly to production)'
         )
         booleanParam(
             name: 'BUILD_IMAGE',
@@ -17,7 +17,7 @@ pipeline {
         string(
             name: 'IMAGE_TAG',
             defaultValue: '',
-            description: 'Image tag to build and/or deploy (e.g. 1.0.0 or build-42). If empty during build, defaults to "build-${BUILD_NUMBER}". Same tag can be deployed to test and prod.'
+            description: 'Image tag to build and/or deploy (e.g. 1.0.0 or build-42). If empty during build, defaults to "build-${BUILD_NUMBER}". Same tag is promoted from staging to production.'
         )
         string(
             name: 'IMAGE_REGISTRY',
@@ -37,7 +37,7 @@ pipeline {
         string(
             name: 'OKD_CREDENTIALS_ID',
             defaultValue: '',
-            description: 'Optional override for Jenkins credentials ID (Secret text) for OKD / OpenShift API token (defaults to okd-token for test, okd-token-production for prod)'
+            description: 'Optional override for Jenkins credentials ID (Secret text) for OKD / OpenShift API token (defaults to okd-token for test and okd-token-production for prod)'
         )
         string(
             name: 'OKD_SERVER',
@@ -83,35 +83,25 @@ pipeline {
         stage('Initialize Environment') {
             steps {
                 script {
-                    // Environment-specific configuration defaults
-                    def envConfigs = [
-                        'test': [
-                            defaultNamespace: 'dei-staging',
-                            defaultServer: 'https://api.okd.example.com:6443/',
-                            credentialsId: params.OKD_CREDENTIALS_ID?.trim() ?: 'okd-token',
-                            paramFile: 'okd/env-test.params',
-                            privateParamFile: 'env-test-private.params',
-                            appName: 'dei-staging'
-                        ],
-                        'prod': [
-                            defaultNamespace: 'dei-production',
-                            defaultServer: 'https://api.okd.example.com:6443/',
-                            credentialsId: params.OKD_CREDENTIALS_ID?.trim() ?: 'okd-token-production',
-                            paramFile: 'okd/env-prod.params',
-                            privateParamFile: 'env-prod-private.params',
-                            appName: 'dei-production'
-                        ]
-                    ]
+                    env.DEPLOY_MODE = params.ENVIRONMENT ?: 'test'
 
-                    def targetEnv = params.ENVIRONMENT ?: 'test'
-                    def config = envConfigs[targetEnv] ?: envConfigs['test']
+                    // Staging configuration defaults
+                    env.STAGING_APP_NAME = 'dei-staging'
+                    env.STAGING_PARAM_FILE = 'okd/env-test.params'
+                    env.STAGING_PRIVATE_PARAM_FILE = 'env-test-private.params'
+                    env.STAGING_OKD_CREDS = (params.ENVIRONMENT == 'test' && params.OKD_CREDENTIALS_ID?.trim()) ? params.OKD_CREDENTIALS_ID.trim() : 'okd-token'
+                    env.STAGING_SERVER = params.OKD_SERVER?.trim() ?: 'https://api.okd.example.com:6443/'
+                    env.STAGING_NAMESPACE = 'dei-staging'
 
-                    env.TARGET_ENV = targetEnv
-                    env.TARGET_OKD_CREDS = config.credentialsId
-                    env.PARAM_FILE = config.paramFile
-                    env.PRIVATE_PARAM_FILE = config.privateParamFile
-                    env.APP_NAME = config.appName
+                    // Production configuration defaults
+                    env.PROD_APP_NAME = 'dei-production'
+                    env.PROD_PARAM_FILE = 'okd/env-prod.params'
+                    env.PROD_PRIVATE_PARAM_FILE = 'env-prod-private.params'
+                    env.PROD_OKD_CREDS = (params.ENVIRONMENT == 'prod' && params.OKD_CREDENTIALS_ID?.trim()) ? params.OKD_CREDENTIALS_ID.trim() : 'okd-token-production'
+                    env.PROD_SERVER = params.OKD_SERVER?.trim() ?: 'https://api.okd.example.com:6443/'
+                    env.PROD_NAMESPACE = 'dei-production'
 
+                    // Protocol and credentials configuration for private config repo
                     def configProtocol = params.CONFIG_PROTOCOL ?: 'HTTPS'
                     env.CONFIG_PROTOCOL = configProtocol
                     env.CONFIG_DEPLOY_TOKEN_CREDS = params.CONFIG_DEPLOY_TOKEN_CREDS_ID?.trim() ?: 'gitlab-config-deploy-token'
@@ -120,25 +110,22 @@ pipeline {
                     def defaultUrlCreds = (configProtocol == 'SSH') ? 'gitlab-config-repo-url' : 'gitlab-config-repo-https-url'
                     env.CONFIG_REPO_URL_CREDS = params.CONFIG_REPO_URL_CREDS_ID?.trim() ?: defaultUrlCreds
 
-                    // Initial target server and namespace defaults
-                    env.TARGET_SERVER = params.OKD_SERVER?.trim() ?: config.defaultServer
-                    env.TARGET_NAMESPACE = config.defaultNamespace
-
-                    // Tag is environment-neutral (e.g. build-123 or explicit tag), allowing identical image promoting to prod
+                    // Unified immutable image tag (used across staging and production promotion)
                     def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : "build-${env.BUILD_NUMBER}"
                     env.DEPLOY_TAG = tag
                     env.FULL_IMAGE = "${params.IMAGE_REGISTRY}/${params.IMAGE_NAME}:${env.DEPLOY_TAG}"
 
-                    echo "================ DEPLOYMENT CONFIGURATION ================"
-                    echo "Target Environment     : ${env.TARGET_ENV}"
-                    echo "Application Name       : ${env.APP_NAME}"
-                    echo "OKD Cluster Server     : ${env.TARGET_SERVER}"
-                    echo "OKD Namespace          : ${env.TARGET_NAMESPACE}"
-                    echo "OKD Token Creds ID     : ${env.TARGET_OKD_CREDS}"
-                    echo "Container Image        : ${env.FULL_IMAGE}"
+                    echo "================ DEPLOYMENT PIPELINE CONFIGURATION ================"
+                    echo "Execution Mode         : ${env.DEPLOY_MODE}"
+                    echo "Target Image           : ${env.FULL_IMAGE}"
+                    echo "Image Tag              : ${env.DEPLOY_TAG}"
                     echo "Build Image Stage      : ${params.BUILD_IMAGE}"
-                    echo "Public Param File      : ${env.PARAM_FILE}"
-                    echo "Private Param File     : ${env.PRIVATE_PARAM_FILE}"
+                    echo "Staging App Name       : ${env.STAGING_APP_NAME}"
+                    echo "Staging Namespace      : ${env.STAGING_NAMESPACE}"
+                    echo "Staging Token Creds ID : ${env.STAGING_OKD_CREDS}"
+                    echo "Production App Name    : ${env.PROD_APP_NAME}"
+                    echo "Production Namespace   : ${env.PROD_NAMESPACE}"
+                    echo "Production Token Creds : ${env.PROD_OKD_CREDS}"
                     echo "Use Private Config     : ${params.USE_PRIVATE_CONFIG}"
                     echo "Config Protocol        : ${env.CONFIG_PROTOCOL}"
                     if (env.CONFIG_PROTOCOL == 'SSH') {
@@ -147,7 +134,7 @@ pipeline {
                         echo "Config Token Creds ID  : ${env.CONFIG_DEPLOY_TOKEN_CREDS}"
                     }
                     echo "Config Repo URL Creds  : ${env.CONFIG_REPO_URL_CREDS}"
-                    echo "=========================================================="
+                    echo "==================================================================="
                 }
             }
         }
@@ -188,31 +175,55 @@ pipeline {
                         }
                     }
 
-                    // Extract OKD_SERVER and OKD_NAMESPACE from private params file if not explicitly overridden via build parameters
-                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PRIVATE_PARAM_FILE}"
-                    if (fileExists(privateParamPath)) {
-                        echo "Extracting infrastructure parameters from private config: ${privateParamPath}"
+                    // Extract Staging infrastructure parameters from private param file
+                    def stagingPrivateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.STAGING_PRIVATE_PARAM_FILE}"
+                    if (fileExists(stagingPrivateParamPath)) {
+                        echo "Extracting Staging parameters from private config: ${stagingPrivateParamPath}"
 
                         if (!params.OKD_SERVER?.trim()) {
                             def extractedServer = sh(
-                                script: "grep -E '^[[:space:]]*OKD_SERVER=' ${privateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                script: "grep -E '^[[:space:]]*OKD_SERVER=' ${stagingPrivateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
                                 returnStdout: true
                             ).trim()
                             if (extractedServer) {
-                                env.TARGET_SERVER = extractedServer
-                                echo "Resolved OKD Server URL from private config: ${env.TARGET_SERVER}"
+                                env.STAGING_SERVER = extractedServer
+                                echo "Resolved Staging OKD Server URL: ${env.STAGING_SERVER}"
                             }
-                        } else {
-                            echo "Using explicit OKD_SERVER parameter override: ${env.TARGET_SERVER}"
                         }
 
                         def extractedNamespace = sh(
-                            script: "grep -E '^[[:space:]]*OKD_NAMESPACE=' ${privateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                            script: "grep -E '^[[:space:]]*OKD_NAMESPACE=' ${stagingPrivateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
                             returnStdout: true
                         ).trim()
                         if (extractedNamespace) {
-                            env.TARGET_NAMESPACE = extractedNamespace
-                            echo "Resolved OKD Namespace from private config: ${env.TARGET_NAMESPACE}"
+                            env.STAGING_NAMESPACE = extractedNamespace
+                            echo "Resolved Staging OKD Namespace: ${env.STAGING_NAMESPACE}"
+                        }
+                    }
+
+                    // Extract Production infrastructure parameters from private param file
+                    def prodPrivateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PROD_PRIVATE_PARAM_FILE}"
+                    if (fileExists(prodPrivateParamPath)) {
+                        echo "Extracting Production parameters from private config: ${prodPrivateParamPath}"
+
+                        if (!params.OKD_SERVER?.trim()) {
+                            def extractedServer = sh(
+                                script: "grep -E '^[[:space:]]*OKD_SERVER=' ${prodPrivateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                            if (extractedServer) {
+                                env.PROD_SERVER = extractedServer
+                                echo "Resolved Production OKD Server URL: ${env.PROD_SERVER}"
+                            }
+                        }
+
+                        def extractedNamespace = sh(
+                            script: "grep -E '^[[:space:]]*OKD_NAMESPACE=' ${prodPrivateParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                            returnStdout: true
+                        ).trim()
+                        if (extractedNamespace) {
+                            env.PROD_NAMESPACE = extractedNamespace
+                            echo "Resolved Production OKD Namespace: ${env.PROD_NAMESPACE}"
                         }
                     }
                 }
@@ -225,8 +236,8 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Building project with Maven for environment: ${env.TARGET_ENV}"
-                    sh "mvn -Dmaven.test.failure.ignore=true install -P ${env.TARGET_ENV}"
+                    echo "Building project with Maven (production profile)..."
+                    sh "mvn -Dmaven.test.failure.ignore=true install -P prod"
                 }
             }
             post {
@@ -244,7 +255,7 @@ pipeline {
                 script {
                     echo "Building and pushing container image: ${env.FULL_IMAGE}"
                     def registryHost = params.IMAGE_REGISTRY.split('/')[0]
-                    def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'container-registry-creds'
+                    def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'harbor-creds'
 
                     withCredentials([usernamePassword(credentialsId: credsId, usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
                         try {
@@ -262,65 +273,146 @@ pipeline {
             }
         }
 
-        stage('Login & Deploy to OKD') {
+        stage('Deploy to Staging') {
+            when {
+                expression { return params.ENVIRONMENT == 'test' }
+            }
             steps {
                 script {
-                    echo "Authenticating to OKD cluster: ${env.TARGET_SERVER} with token credentials ID: ${env.TARGET_OKD_CREDS}"
+                    echo "Authenticating to Staging OKD cluster: ${env.STAGING_SERVER} with token credentials ID: ${env.STAGING_OKD_CREDS}"
 
-                    withCredentials([string(credentialsId: env.TARGET_OKD_CREDS, variable: 'OKD_TOKEN')]) {
+                    withCredentials([string(credentialsId: env.STAGING_OKD_CREDS, variable: 'OKD_TOKEN')]) {
                         sh """
                             oc login --token="\${OKD_TOKEN}" \
-                                     --server="${env.TARGET_SERVER}" \
+                                     --server="${env.STAGING_SERVER}" \
                                      --insecure-skip-tls-verify=true
                         """
                     }
 
-                    // Switch to target namespace
-                    sh "oc project ${env.TARGET_NAMESPACE}"
+                    sh "oc project ${env.STAGING_NAMESPACE}"
 
-                    echo "Processing OpenShift template: ${env.TEMPLATE_FILE}"
+                    echo "Processing OpenShift template for Staging: ${env.TEMPLATE_FILE}"
                     echo "Deploying container image: ${env.FULL_IMAGE}"
 
-                    // Construct template parameters to override
                     def templateParams = [
-                        "-p APP_NAME=${env.APP_NAME}",
-                        "-p ENVIRONMENT=${env.TARGET_ENV}",
+                        "-p APP_NAME=${env.STAGING_APP_NAME}",
+                        "-p ENVIRONMENT=test",
                         "-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY}",
                         "-p IMAGE_NAME=${params.IMAGE_NAME}",
                         "-p IMAGE_TAG=${env.DEPLOY_TAG}"
                     ]
 
                     def paramsString = templateParams.join(' ')
-                    def baseParamArg = fileExists(env.PARAM_FILE) ? "--param-file=${env.PARAM_FILE}" : ""
+                    def baseParamArg = fileExists(env.STAGING_PARAM_FILE) ? "--param-file=${env.STAGING_PARAM_FILE}" : ""
 
-                    // Check for private environment parameter overrides from GitLab
-                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PRIVATE_PARAM_FILE}"
+                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.STAGING_PRIVATE_PARAM_FILE}"
                     def privateParamArg = ""
                     if (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) {
-                        echo "Applying private configuration overrides from: ${privateParamPath}"
+                        echo "Applying Staging private configuration overrides from: ${privateParamPath}"
                         privateParamArg = "--param-file=${privateParamPath}"
                     } else if (params.USE_PRIVATE_CONFIG) {
-                        echo "Notice: Private param file '${env.PRIVATE_PARAM_FILE}' not found in '${env.PRIVATE_CONFIG_DIR}'. Proceeding with base parameter file."
+                        echo "Notice: Staging private param file '${env.STAGING_PRIVATE_PARAM_FILE}' not found. Proceeding with base parameter file."
                     }
 
-                    // Process template with public and private param files (private params override base params), then apply
                     sh """
-                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.TARGET_NAMESPACE} | oc apply -f - -n ${env.TARGET_NAMESPACE}
+                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.STAGING_NAMESPACE} | oc apply -f - -n ${env.STAGING_NAMESPACE}
                     """
                 }
             }
         }
 
-        stage('Verify Rollout') {
+        stage('Verify Staging Rollout') {
+            when {
+                expression { return params.ENVIRONMENT == 'test' }
+            }
             steps {
                 script {
-                    echo "Waiting for deployment rollout to complete: ${env.APP_NAME}"
-                    sh "oc rollout status deployment/${env.APP_NAME} --timeout=5m -n ${env.TARGET_NAMESPACE}"
+                    echo "Waiting for Staging deployment rollout to complete: ${env.STAGING_APP_NAME}"
+                    sh "oc rollout status deployment/${env.STAGING_APP_NAME} --timeout=5m -n ${env.STAGING_NAMESPACE}"
 
-                    // Display exposed route URL
                     sh """
-                        echo "Deployment successful! Route details:"
-                        oc get route ${env.APP_NAME} -n ${env.TARGET_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
+                        echo "Staging deployment successful! Route details:"
+                        oc get route ${env.STAGING_APP_NAME} -n ${env.STAGING_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
+                    """
+                }
+            }
+        }
+
+        stage('Approve Production Deployment') {
+            when {
+                expression { return params.ENVIRONMENT == 'test' }
+            }
+            steps {
+                script {
+                    echo "Staging deployment verified. Waiting for manual approval to promote image '${env.DEPLOY_TAG}' to Production..."
+                }
+                timeout(time: 1, unit: 'DAYS') {
+                    input message: "Promote and deploy container image '${env.DEPLOY_TAG}' to Production (${env.PROD_NAMESPACE})?",
+                          ok: "Deploy to Production"
+                }
+            }
+        }
+
+        stage('Deploy to Production') {
+            when {
+                expression { return params.ENVIRONMENT == 'test' || params.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                script {
+                    echo "Authenticating to Production OKD cluster: ${env.PROD_SERVER} with token credentials ID: ${env.PROD_OKD_CREDS}"
+
+                    withCredentials([string(credentialsId: env.PROD_OKD_CREDS, variable: 'OKD_TOKEN')]) {
+                        sh """
+                            oc login --token="\${OKD_TOKEN}" \
+                                     --server="${env.PROD_SERVER}" \
+                                     --insecure-skip-tls-verify=true
+                        """
+                    }
+
+                    sh "oc project ${env.PROD_NAMESPACE}"
+
+                    echo "Processing OpenShift template for Production: ${env.TEMPLATE_FILE}"
+                    echo "Deploying container image: ${env.FULL_IMAGE}"
+
+                    def templateParams = [
+                        "-p APP_NAME=${env.PROD_APP_NAME}",
+                        "-p ENVIRONMENT=prod",
+                        "-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY}",
+                        "-p IMAGE_NAME=${params.IMAGE_NAME}",
+                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
+                    ]
+
+                    def paramsString = templateParams.join(' ')
+                    def baseParamArg = fileExists(env.PROD_PARAM_FILE) ? "--param-file=${env.PROD_PARAM_FILE}" : ""
+
+                    def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PROD_PRIVATE_PARAM_FILE}"
+                    def privateParamArg = ""
+                    if (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) {
+                        echo "Applying Production private configuration overrides from: ${privateParamPath}"
+                        privateParamArg = "--param-file=${privateParamPath}"
+                    } else if (params.USE_PRIVATE_CONFIG) {
+                        echo "Notice: Production private param file '${env.PROD_PRIVATE_PARAM_FILE}' not found. Proceeding with base parameter file."
+                    }
+
+                    sh """
+                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.PROD_NAMESPACE} | oc apply -f - -n ${env.PROD_NAMESPACE}
+                    """
+                }
+            }
+        }
+
+        stage('Verify Production Rollout') {
+            when {
+                expression { return params.ENVIRONMENT == 'test' || params.ENVIRONMENT == 'prod' }
+            }
+            steps {
+                script {
+                    echo "Waiting for Production deployment rollout to complete: ${env.PROD_APP_NAME}"
+                    sh "oc rollout status deployment/${env.PROD_APP_NAME} --timeout=5m -n ${env.PROD_NAMESPACE}"
+
+                    sh """
+                        echo "Production deployment successful! Route details:"
+                        oc get route ${env.PROD_APP_NAME} -n ${env.PROD_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
                     """
                 }
             }
@@ -336,11 +428,10 @@ pipeline {
             echo "Pipeline execution finished for build #${env.BUILD_NUMBER}"
         }
         success {
-            echo "DEI application successfully deployed to OKD environment: ${env.TARGET_ENV} (${env.TARGET_NAMESPACE}) with image tag: ${env.DEPLOY_TAG}!"
+            echo "DEI application deployment pipeline completed successfully for image tag: ${env.DEPLOY_TAG}!"
         }
         failure {
-            echo "DEI deployment failed. Check logs and OpenShift events."
-            sh "oc get events --sort-by='.metadata.creationTimestamp' -n ${env.TARGET_NAMESPACE} | tail -n 20 || true"
+            echo "DEI deployment pipeline failed. Check logs and OpenShift events."
         }
     }
 }

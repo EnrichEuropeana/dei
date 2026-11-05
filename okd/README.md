@@ -109,16 +109,18 @@ oc process -f okd/template.yaml --param-file=okd/env-prod.params \
 
 ## CI/CD Deployment with Jenkins (`build-scripts/Jenkinsfile-okd`)
 
-A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supports parameterized builds:
+A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supports a single-artifact promotion workflow (Build once → Deploy Staging → Manual Approval → Deploy Production) and parameterized builds:
 
 1. **Job Parameters:**
-   - `ENVIRONMENT` (Choice: `test`, `prod`): Target deployment environment. Automatically selects target namespace (`dei-staging` vs `dei-production`), OKD server, and parameter file.
+   - `ENVIRONMENT` (Choice: `test`, `prod`, default `test`): Deployment execution mode.
+     - `test` (Promotion workflow): Builds image once, deploys to Staging (`dei-staging`), verifies rollout, pauses for manual approval (with a 1-day timeout and automatic abort), then promotes and deploys the identical image tag to Production (`dei-production`).
+     - `prod` (Direct production workflow): Deploys directly to Production (`dei-production`), bypassing Staging and approval.
    - `BUILD_IMAGE` (Boolean, default `true`): Whether to build and push the container image to the registry before deploying. Set to `false` when deploying an existing image tag.
-   - `IMAGE_TAG` (String, default `''`): Tag of the image. Defaults to `build-${BUILD_NUMBER}`.
+   - `IMAGE_TAG` (String, default `''`): Tag of the image. Defaults to `build-${BUILD_NUMBER}`. The same tag is promoted across environments.
    - `IMAGE_REGISTRY` (String, default `registry.example.com/enrich-europeana`): Registry host and namespace.
    - `IMAGE_NAME` (String, default `dei`): Repository name in registry.
-   - `REGISTRY_CREDENTIALS_ID` (String, default `container-registry-creds`): Jenkins credentials ID for robot account in container registry.
-   - `OKD_CREDENTIALS_ID` (String, default `''`): Optional override for Jenkins credentials ID (Secret text) for OKD API token (defaults to `okd-token` for test, `okd-token-production` for prod).
+   - `REGISTRY_CREDENTIALS_ID` (String, default `harbor-creds`): Jenkins credentials ID for robot account in container registry.
+   - `OKD_CREDENTIALS_ID` (String, default `''`): Optional override for Jenkins credentials ID (Secret text) for OKD API token (defaults to `okd-token` for test and `okd-token-production` for prod).
    - `OKD_SERVER` (String, default `''`): Optional override for OKD API Server URL (leave empty to resolve from `env-*-private.params` in private GitLab repository).
    - `USE_PRIVATE_CONFIG` (Boolean, default `true`): Whether to fetch and apply private parameters from GitLab.
    - `CONFIG_PROTOCOL` (Choice: `HTTPS`, `SSH`, default `HTTPS`): Protocol to fetch private configuration repository from GitLab.
@@ -126,13 +128,13 @@ A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supp
    - `CONFIG_SSH_KEY_CREDS_ID` (String, default `gitlab-config-repo-ssh-key`): Jenkins credentials ID for GitLab SSH Deploy Key (used when `CONFIG_PROTOCOL` is `SSH`).
    - `CONFIG_REPO_URL_CREDS_ID` (String, default `''`): Optional override for Jenkins credentials ID (Secret text) containing GitLab repo URL (defaults to `gitlab-config-repo-https-url` for HTTPS or `gitlab-config-repo-url` for SSH).
 
-2. **Pipeline Execution:**
-   - Authenticates to container registry using `container-registry-creds` and builds/pushes the Docker image.
-   - Fetches private environment parameter files (`env-test-private.params` / `env-prod-private.params`) from GitLab into `.private-config/`.
-   - Authenticates to OKD using `okd-token` (test) or `okd-token-production` (prod).
-   - Processes `okd/template.yaml` combining base `okd/env-${ENVIRONMENT}.params` with private parameters and overrides.
-   - Applies resources and waits for rollout to complete.
-   - Cleans up downloaded private configuration files in `post` action.
+2. **Pipeline Execution Flow:**
+   - **Initialize & Fetch Configuration:** Initializes environment targets and fetches private parameter files (`env-test-private.params` and `env-prod-private.params`) from GitLab into `.private-config/`.
+   - **Build & Push (Maven & Docker):** Compiles application with production bundle (`-P prod`), builds container image with unified tag `build-${BUILD_NUMBER}`, and pushes to container registry.
+   - **Staging Deployment:** Logs in with `okd-token`, applies `template.yaml` with test parameters, and verifies Staging rollout.
+   - **Manual Production Approval:** Pauses pipeline for manual testing/approval with a 1-day timeout (`timeout(time: 1, unit: 'DAYS')`). Automatically aborts if rejected or timed out.
+   - **Production Deployment:** Logs in with `okd-token-production`, applies `template.yaml` with production parameters using the exact same tested image tag (`DEPLOY_TAG`), and verifies Production rollout.
+   - **Cleanup:** Securely removes downloaded private configuration files in `post` action.
 
 ---
 
