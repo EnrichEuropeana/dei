@@ -117,8 +117,8 @@ A declarative pipeline is configured in `build-scripts/Jenkinsfile-okd`. It supp
      - `prod` (Direct production workflow): Deploys directly to Production (`dei-production`), bypassing Staging and approval.
    - `BUILD_IMAGE` (Boolean, default `true`): Whether to build and push the container image to the registry before deploying. Set to `false` when deploying an existing image tag.
    - `IMAGE_TAG` (String, default `''`): Tag of the image. Defaults to `build-${BUILD_NUMBER}`. The same tag is promoted across environments.
-   - `IMAGE_REGISTRY` (String, default `registry.example.com/enrich-europeana`): Registry host and namespace.
-   - `IMAGE_NAME` (String, default `dei`): Repository name in registry.
+   - `IMAGE_REGISTRY` (String, default `''`): Optional override for container registry host and namespace (resolved from `env-*-private.params` in private GitLab repository).
+   - `IMAGE_NAME` (String, default `''`): Optional override for repository name in registry (resolved from `env-*-private.params` or defaults to `dei`).
    - `REGISTRY_CREDENTIALS_ID` (String, default `harbor-creds`): Jenkins credentials ID for robot account in container registry.
    - `OKD_CREDENTIALS_ID` (String, default `''`): Optional override for Jenkins credentials ID (Secret text) for OKD API token (defaults to `okd-token` for test and `okd-token-production` for prod).
    - `OKD_SERVER` (String, default `''`): Optional override for OKD API Server URL (leave empty to resolve from `env-*-private.params` in private GitLab repository).

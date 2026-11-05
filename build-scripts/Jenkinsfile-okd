@@ -21,13 +21,13 @@ pipeline {
         )
         string(
             name: 'IMAGE_REGISTRY',
-            defaultValue: 'registry.example.com/enrich-europeana',
-            description: 'Container registry host and organization/project path'
+            defaultValue: '',
+            description: 'Optional override for container registry host and organization/project path (leave empty to resolve from env-*-private.params in private GitLab repository)'
         )
         string(
             name: 'IMAGE_NAME',
-            defaultValue: 'dei',
-            description: 'Container image repository name'
+            defaultValue: '',
+            description: 'Optional override for container image repository name (leave empty to resolve from env-*-private.params or default to "dei")'
         )
         string(
             name: 'REGISTRY_CREDENTIALS_ID',
@@ -113,11 +113,13 @@ pipeline {
                     // Unified immutable image tag (used across staging and production promotion)
                     def tag = params.IMAGE_TAG?.trim() ? params.IMAGE_TAG.trim() : "build-${env.BUILD_NUMBER}"
                     env.DEPLOY_TAG = tag
-                    env.FULL_IMAGE = "${params.IMAGE_REGISTRY}/${params.IMAGE_NAME}:${env.DEPLOY_TAG}"
+                    env.IMAGE_REGISTRY = params.IMAGE_REGISTRY?.trim() ?: ''
+                    env.IMAGE_NAME = params.IMAGE_NAME?.trim() ?: 'dei'
+                    env.FULL_IMAGE = env.IMAGE_REGISTRY ? "${env.IMAGE_REGISTRY}/${env.IMAGE_NAME}:${env.DEPLOY_TAG}" : "${env.IMAGE_NAME}:${env.DEPLOY_TAG}"
 
                     echo "================ DEPLOYMENT PIPELINE CONFIGURATION ================"
                     echo "Execution Mode         : ${env.DEPLOY_MODE}"
-                    echo "Target Image           : ${env.FULL_IMAGE}"
+                    echo "Initial Target Image   : ${env.FULL_IMAGE}"
                     echo "Image Tag              : ${env.DEPLOY_TAG}"
                     echo "Build Image Stage      : ${params.BUILD_IMAGE}"
                     echo "Staging App Name       : ${env.STAGING_APP_NAME}"
@@ -226,6 +228,60 @@ pipeline {
                             echo "Resolved Production OKD Namespace: ${env.PROD_NAMESPACE}"
                         }
                     }
+
+                    // Extract Container Registry and Image Name from private param files
+                    if (!params.IMAGE_REGISTRY?.trim()) {
+                        def primaryParamPath = (params.ENVIRONMENT == 'prod') ? prodPrivateParamPath : stagingPrivateParamPath
+                        def fallbackParamPath = (params.ENVIRONMENT == 'prod') ? stagingPrivateParamPath : prodPrivateParamPath
+
+                        def extractedRegistry = ""
+                        if (fileExists(primaryParamPath)) {
+                            extractedRegistry = sh(
+                                script: "grep -E '^[[:space:]]*IMAGE_REGISTRY=' ${primaryParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                        }
+                        if (!extractedRegistry && fileExists(fallbackParamPath)) {
+                            extractedRegistry = sh(
+                                script: "grep -E '^[[:space:]]*IMAGE_REGISTRY=' ${fallbackParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                        }
+                        if (extractedRegistry) {
+                            env.IMAGE_REGISTRY = extractedRegistry
+                            echo "Resolved Container Image Registry from private config: ${env.IMAGE_REGISTRY}"
+                        }
+                    }
+
+                    if (!params.IMAGE_NAME?.trim()) {
+                        def primaryParamPath = (params.ENVIRONMENT == 'prod') ? prodPrivateParamPath : stagingPrivateParamPath
+                        def fallbackParamPath = (params.ENVIRONMENT == 'prod') ? stagingPrivateParamPath : prodPrivateParamPath
+
+                        def extractedImageName = ""
+                        if (fileExists(primaryParamPath)) {
+                            extractedImageName = sh(
+                                script: "grep -E '^[[:space:]]*IMAGE_NAME=' ${primaryParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                        }
+                        if (!extractedImageName && fileExists(fallbackParamPath)) {
+                            extractedImageName = sh(
+                                script: "grep -E '^[[:space:]]*IMAGE_NAME=' ${fallbackParamPath} | cut -d'=' -f2- | tr -d '\\r' || true",
+                                returnStdout: true
+                            ).trim()
+                        }
+                        if (extractedImageName) {
+                            env.IMAGE_NAME = extractedImageName
+                            echo "Resolved Container Image Name from private config: ${env.IMAGE_NAME}"
+                        }
+                    }
+
+                    if (env.IMAGE_REGISTRY) {
+                        env.FULL_IMAGE = "${env.IMAGE_REGISTRY}/${env.IMAGE_NAME}:${env.DEPLOY_TAG}"
+                    } else {
+                        env.FULL_IMAGE = "${env.IMAGE_NAME}:${env.DEPLOY_TAG}"
+                    }
+                    echo "Resolved Target Container Image: ${env.FULL_IMAGE}"
                 }
             }
         }
@@ -254,19 +310,23 @@ pipeline {
             steps {
                 script {
                     echo "Building and pushing container image: ${env.FULL_IMAGE}"
-                    def registryHost = params.IMAGE_REGISTRY.split('/')[0]
+                    def registryHost = env.IMAGE_REGISTRY.contains('/') ? env.IMAGE_REGISTRY.split('/')[0] : env.IMAGE_REGISTRY
                     def credsId = params.REGISTRY_CREDENTIALS_ID?.trim() ? params.REGISTRY_CREDENTIALS_ID.trim() : 'harbor-creds'
 
                     withCredentials([usernamePassword(credentialsId: credsId, usernameVariable: 'REGISTRY_USER', passwordVariable: 'REGISTRY_PASSWORD')]) {
                         try {
-                            echo "Authenticating to container registry: ${registryHost}"
-                            sh """
-                                echo "\${REGISTRY_PASSWORD}" | docker login "${registryHost}" -u "\${REGISTRY_USER}" --password-stdin
-                            """
+                            if (registryHost) {
+                                echo "Authenticating to container registry: ${registryHost}"
+                                sh """
+                                    echo "\${REGISTRY_PASSWORD}" | docker login "${registryHost}" -u "\${REGISTRY_USER}" --password-stdin
+                                """
+                            }
                             sh "docker build -t ${env.FULL_IMAGE} ."
                             sh "docker push ${env.FULL_IMAGE}"
                         } finally {
-                            sh "docker logout ${registryHost} || true"
+                            if (registryHost) {
+                                sh "docker logout ${registryHost} || true"
+                            }
                         }
                     }
                 }
@@ -297,10 +357,14 @@ pipeline {
                     def templateParams = [
                         "-p APP_NAME=${env.STAGING_APP_NAME}",
                         "-p ENVIRONMENT=test",
-                        "-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY}",
-                        "-p IMAGE_NAME=${params.IMAGE_NAME}",
                         "-p IMAGE_TAG=${env.DEPLOY_TAG}"
                     ]
+                    if (env.IMAGE_REGISTRY) {
+                        templateParams.add("-p IMAGE_REGISTRY=${env.IMAGE_REGISTRY}")
+                    }
+                    if (env.IMAGE_NAME) {
+                        templateParams.add("-p IMAGE_NAME=${env.IMAGE_NAME}")
+                    }
 
                     def paramsString = templateParams.join(' ')
                     def baseParamArg = fileExists(env.STAGING_PARAM_FILE) ? "--param-file=${env.STAGING_PARAM_FILE}" : ""
@@ -377,10 +441,14 @@ pipeline {
                     def templateParams = [
                         "-p APP_NAME=${env.PROD_APP_NAME}",
                         "-p ENVIRONMENT=prod",
-                        "-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY}",
-                        "-p IMAGE_NAME=${params.IMAGE_NAME}",
                         "-p IMAGE_TAG=${env.DEPLOY_TAG}"
                     ]
+                    if (env.IMAGE_REGISTRY) {
+                        templateParams.add("-p IMAGE_REGISTRY=${env.IMAGE_REGISTRY}")
+                    }
+                    if (env.IMAGE_NAME) {
+                        templateParams.add("-p IMAGE_NAME=${env.IMAGE_NAME}")
+                    }
 
                     def paramsString = templateParams.join(' ')
                     def baseParamArg = fileExists(env.PROD_PARAM_FILE) ? "--param-file=${env.PROD_PARAM_FILE}" : ""
