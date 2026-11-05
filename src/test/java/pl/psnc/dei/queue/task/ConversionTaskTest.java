@@ -87,25 +87,32 @@ public class ConversionTaskTest {
     private ContextMediator contextMediator;
 
     @Before
-    public void initProject() {
-        this.project = this.projectsRepository.findAll().get(0);
-    }
+    public void init() {
+        if (this.projectsRepository.count() == 0) {
+            Project p = new Project();
+            p.setName("test-project");
+            p.setProjectId("test-project-id");
+            p.setDatasets(new ArrayList<>());
+            Dataset d = new Dataset();
+            d.setDatasetId("test-dataset-id");
+            d.setName("test-dataset");
+            d.setProject(p);
+            p.getDatasets().add(d);
+            this.project = this.projectsRepository.save(p);
+            this.dataset = this.project.getDatasets().get(0);
+        } else {
+            this.project = this.projectsRepository.findAll().get(0);
+            this.dataset = this.datasetsRepository.findAll().get(0);
+        }
 
-    @Before
-    public void initDataset() {
-        this.dataset = this.datasetsRepository.findAll().get(0);
-    }
-
-    @Before
-    public void initRecord() {
         this.record = new Record();
         this.record.setIdentifier(this.EUROPEANA_RECORD_IDENTIFIER);
         this.record.setAggregator(Aggregator.EUROPEANA);
         this.record.setProject(this.project);
         this.record.setDataset(this.dataset);
         this.record.setTranscriptions(new ArrayList<>());
-        this.record = this.recordsRepository.save(this.record);
         this.record.setState(Record.RecordState.C_PENDING);
+        this.record = this.recordsRepository.save(this.record);
 
         Import anImport = this.importPackageService.createImport("test", this.project.getProjectId(), Set.of(this.record));
         anImport.setProgress(
@@ -113,8 +120,8 @@ public class ConversionTaskTest {
         );
         this.importsRepository.save(anImport);
 
+        this.record = this.recordsRepository.findById(this.record.getId()).get();
         this.record.setAnImport(anImport);
-
         this.qrs.saveRecord(this.record);
     }
 

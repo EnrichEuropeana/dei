@@ -10,7 +10,7 @@ import javax.persistence.Converter;
 public class JsonObjectToStringConverter implements AttributeConverter<JsonObject, String> {
     @Override
     public String convertToDatabaseColumn(JsonObject jsonObject) {
-        return jsonObject.toString();
+        return jsonObject == null ? null : jsonObject.toString();
     }
 
     @Override

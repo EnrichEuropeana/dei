@@ -96,7 +96,7 @@ public class TaskFactoryTest {
     public void canResolveT_PENDING() {
         assertEquals(
                 TranscribeTask.class,
-                this.tasksFactory.getTask(this.T_PENDINGRecord).getClass()
+                this.tasksFactory.getTask(this.T_PENDINGRecord).get(0).getClass()
         );
     }
 
@@ -106,7 +106,7 @@ public class TaskFactoryTest {
     public void canResolveE_PENDING() {
         assertEquals(
                 EnrichTask.class,
-                this.tasksFactory.getTask(this.E_PENDINGRecord).getClass()
+                this.tasksFactory.getTask(this.E_PENDINGRecord).get(0).getClass()
         );
     }
 
@@ -116,7 +116,7 @@ public class TaskFactoryTest {
     public void canResolveU_PENDING() {
         assertEquals(
                 UpdateTask.class,
-                this.tasksFactory.getTask(this.U_PENDINGRecord).getClass()
+                this.tasksFactory.getTask(this.U_PENDINGRecord).get(0).getClass()
         );
     }
 
@@ -126,7 +126,7 @@ public class TaskFactoryTest {
     public void canResolveC_PENGIN() {
         assertEquals(
                 ConversionTask.class,
-                this.tasksFactory.getTask(this.C_PENDINGRecord).getClass()
+                this.tasksFactory.getTask(this.C_PENDINGRecord).get(0).getClass()
         );
     }
 

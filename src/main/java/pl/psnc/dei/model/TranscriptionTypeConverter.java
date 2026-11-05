@@ -7,7 +7,7 @@ import javax.persistence.Converter;
 public class TranscriptionTypeConverter implements AttributeConverter<TranscriptionType, String> {
     @Override
     public String convertToDatabaseColumn(TranscriptionType transcriptionType) {
-        return transcriptionType.name();
+        return transcriptionType == null ? null : transcriptionType.name();
     }
 
     @Override

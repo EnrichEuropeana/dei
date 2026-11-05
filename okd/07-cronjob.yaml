@@ -1,0 +1,63 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dei-rsync-cronjob
+  labels:
+    app: dei
+    environment: test
+spec:
+  schedule: "*/15 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: dei-rsync
+            environment: test
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: rsync
+              image: instrumentisto/rsync-ssh:latest
+              imagePullPolicy: IfNotPresent
+              command:
+                - /bin/sh
+                - /scripts/sync.sh
+              envFrom:
+                - configMapRef:
+                    name: dei-config
+              volumeMounts:
+                - name: conversion-storage
+                  mountPath: /data/conversion
+                  readOnly: true
+                - name: ssh-key-volume
+                  mountPath: /etc/ssh-key
+                  readOnly: true
+                - name: rsync-script
+                  mountPath: /scripts
+                  readOnly: true
+              resources:
+                requests:
+                  cpu: 50m
+                  memory: 64Mi
+                limits:
+                  cpu: 500m
+                  memory: 256Mi
+          volumes:
+            - name: conversion-storage
+              persistentVolumeClaim:
+                claimName: dei-conversion-pvc
+            - name: ssh-key-volume
+              secret:
+                secretName: dei-ssh-secret
+                defaultMode: 256
+            - name: rsync-script
+              configMap:
+                name: dei-config
+                defaultMode: 0755
+                items:
+                  - key: sync.sh
+                    path: sync.sh

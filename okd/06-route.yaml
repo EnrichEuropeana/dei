@@ -1,0 +1,19 @@
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: dei
+  labels:
+    app: dei
+    environment: test
+spec:
+  # host: dei.apps.your-cluster.com # Optional: uncomment to define a fixed domain
+  to:
+    kind: Service
+    name: dei
+    weight: 100
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+  wildcardPolicy: None
