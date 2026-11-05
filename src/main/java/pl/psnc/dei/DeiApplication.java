@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.web.servlet.error.ErrorMvcAutoConf
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -26,6 +27,7 @@ public class DeiApplication extends SpringBootServletInitializer {
         return application.sources(DeiApplication.class);
     }
 
+    @Profile("!integration")
     @Bean
     public CommandLineRunner run(TranscriptionPlatformService transcriptionPlatformService) throws Exception {
         return args -> {

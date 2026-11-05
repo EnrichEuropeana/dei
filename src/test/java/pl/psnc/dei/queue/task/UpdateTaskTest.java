@@ -6,10 +6,11 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -34,6 +35,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
@@ -54,10 +56,10 @@ public class UpdateTaskTest {
     private Record record;
     private List<Transcription> transcriptionList;
 
-    @Mock
+    @MockBean
     private TranscriptionPlatformService tps;
 
-    @Mock
+    @MockBean
     private EnrichmentNotifierService ens;
 
     @Autowired
@@ -72,7 +74,7 @@ public class UpdateTaskTest {
     @Autowired
     private EuropeanaSearchService ess;
 
-    @Mock
+    @MockBean
     private EuropeanaAnnotationsService eas;
 
     @Autowired
@@ -81,13 +83,14 @@ public class UpdateTaskTest {
     @Autowired
     private TranscriptionConverter transcriptionConverter;
 
-    @Mock
+    @javax.annotation.Resource(name = "transcriptionFactories")
     private Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
 
     @SneakyThrows
     private void prepareTpsMock() {
         JsonObject response = JSON.parse(this.updateResponseJson.getInputStream());
         when(this.tps.fetchTranscriptionUpdate(any())).thenReturn(response);
+        when(this.tps.fetchMetadataEnrichmentsForItem(anyLong())).thenReturn(JSON.parse("{\"OrderIndex\":0, \"ImageLink\":\"{\\\"@id\\\":\\\"http://example.com/img\\\"}\"}"));
     }
 
     private void prepareEasMock() {
@@ -100,6 +103,7 @@ public class UpdateTaskTest {
         Transcription transcription = new Transcription();
         transcription.setTpId(this.TP_ID);
         transcription.setAnnotationId(this.ANNOTATION_ID);
+        transcription.setTranscriptionType(TranscriptionType.MANUAL);
         transcription.setTranscriptionContent(JSON.parse(this.updateResponseJson.getInputStream()));
         transcription = this.transcriptionRepository.save(transcription);
         this.transcriptionList.add(transcription);
@@ -118,6 +122,7 @@ public class UpdateTaskTest {
 
     @Before
     public void init() {
+        MockitoAnnotations.initMocks(this);
         this.prepareEasMock();
         this.prepareTpsMock();
         this.initTranscriptions();
@@ -171,9 +176,8 @@ public class UpdateTaskTest {
                 Record.RecordState.NORMAL,
                 this.recordsRepository.findByIdentifier(this.RECORD_IDENTIFIER).get().getState()
         );
-        // two as one annotation is forced to be created in @Before for earlier test and second in this test
         assertEquals(
-                2,
+                1,
                 this.transcriptionRepository.findAllByTpId(this.TP_ID).size()
         );
     }

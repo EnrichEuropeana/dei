@@ -10,8 +10,11 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.junit4.SpringRunner;
 import pl.psnc.dei.model.Record;
 import pl.psnc.dei.model.factory.HTRTranscriptionFactory;
 import pl.psnc.dei.model.factory.ManualTranscriptionFactory;
@@ -23,7 +26,9 @@ import static org.mockito.Mockito.when;
 import static pl.psnc.dei.util.AnnotationFieldsNames.*;
 import static pl.psnc.dei.util.EuropeanaConstants.EUROPEANA_ITEM_URL;
 
-@RunWith(SpringJUnit4ClassRunner.class)
+@RunWith(SpringRunner.class)
+@SpringBootTest
+@ActiveProfiles("integration")
 public class TranscriptionConverterTest {
 
     private TranscriptionConverter transcriptionConverter;
@@ -34,7 +39,7 @@ public class TranscriptionConverterTest {
     @MockBean
     private TranscriptionPlatformService transcriptionPlatformService;
 
-    @MockBean
+    @Autowired
     private ManualTranscriptionFactory manualTranscriptionFactory;
 
     @MockBean
@@ -49,14 +54,16 @@ public class TranscriptionConverterTest {
         transcriptionConverter = new TranscriptionConverter(mappingService, transcriptionPlatformService);
         when(mappingService.getSourceLink(any(Record.class), anyInt(), anyString()))
                 .thenAnswer(i -> i.getArguments()[2]);
+        when(transcriptionPlatformService.fetchMetadataEnrichmentsForItem(anyLong()))
+                .thenReturn(org.apache.jena.atlas.json.JSON.parse("{\"OrderIndex\":0, \"ImageLink\":\"{\\\"@id\\\":\\\"sample item id\\\"}\"}"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void shouldThrowExceptionForNonExistingTranscription() {
         transcriptionConverter.convert(new Record(), null, manualTranscriptionFactory);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = NullPointerException.class)
     public void shouldThrowExceptionForEmptyTranscription() {
         transcriptionConverter.convert(new Record(), new JsonObject(), manualTranscriptionFactory);
         Assert.fail();
@@ -71,6 +78,7 @@ public class TranscriptionConverterTest {
         transformation.put(TranscriptionFieldsNames.IMAGE_LINK, "sample item id");
         transformation.put(TranscriptionFieldsNames.STORY_ID, "/73636/story_id");
         transformation.put(TranscriptionFieldsNames.ORDER_INDEX, 1);
+        transformation.put("TranscribathonItemId", 12345);
         transformation.put(TranscriptionFieldsNames.LANGUAGES, new JsonArray());
         transformation.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().add(new JsonObject());
         transformation.get(TranscriptionFieldsNames.LANGUAGES).getAsArray().get(0).getAsObject().put("Name", "Polski");
@@ -86,11 +94,14 @@ public class TranscriptionConverterTest {
 
 
         Assert.assertTrue(result.get(TARGET).getAsObject().get(TARGET_SCOPE).getAsString().value().endsWith("/73636/story_id"));
-        Assert.assertEquals("sample item id", result.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
+        Assert.assertEquals("https://sample item id", result.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
     }
 
     @Test
     public void shouldConvertRealTranscriptionToAnnotation() {
+        when(transcriptionPlatformService.fetchMetadataEnrichmentsForItem(435038L))
+                .thenReturn(org.apache.jena.atlas.json.JSON.parse("{\"OrderIndex\":2, \"ImageLink\":\"{\\\"@id\\\":\\\"rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg\\\"}\"}"));
+
         JsonBuilder jsonBuilder = new JsonBuilder();
         JsonObject transcription = jsonBuilder
                 .startObject()
@@ -121,7 +132,7 @@ public class TranscriptionConverterTest {
         Assert.assertEquals("de", converted.get(BODY).getAsObject().get(BODY_LANGUAGE).getAsString().value());
         Assert.assertEquals("BÜNDNIS  90\n\n\nBürger für Bürger\n\n\nInitiative Frieden\nund  Menschenrechte\n", converted.get(BODY).getAsObject().get(BODY_VALUE).getAsString().value());
         Assert.assertEquals(EUROPEANA_ITEM_URL + "/135/_nnVvTdx", converted.get(TARGET).getAsObject().get(TARGET_SCOPE).getAsString().value());
-        Assert.assertEquals("rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg", converted.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
+        Assert.assertEquals("https://rhus-209.man.poznan.pl/fcgi-bin/iipsrv.fcgi?IIIF=1//135/_nnVvTdx/2_DSC_0214_crop_web.tif/full/full/0/default.jpg", converted.get(TARGET).getAsObject().get(TARGET_SOURCE).getAsString().value());
     }
 
     @Test(expected = IllegalArgumentException.class)

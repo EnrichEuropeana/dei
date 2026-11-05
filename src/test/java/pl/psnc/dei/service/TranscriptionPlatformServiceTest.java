@@ -43,6 +43,8 @@ import static org.mockito.Mockito.when;
 })
 public class TranscriptionPlatformServiceTest {
 
+    private static final int TEST_READ_TIMEOUT_IN_SECONDS = 1;
+
     @Test
     public void test() {
 
@@ -90,7 +92,7 @@ public class TranscriptionPlatformServiceTest {
 
         @Bean
         public TranscriptionPlatformService tpService(UrlBuilder urlBuilder, WebClient.Builder builder) {
-            return new TranscriptionPlatformService(urlBuilder, builder);
+            return new TranscriptionPlatformService(urlBuilder, builder, TEST_READ_TIMEOUT_IN_SECONDS);
         }
     }
 
@@ -129,7 +131,7 @@ public class TranscriptionPlatformServiceTest {
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
-                        .withFixedDelay((TranscriptionPlatformService.READ_TIMEOUT_IN_SECONDS + 1) * 1000)
+                        .withFixedDelay((TEST_READ_TIMEOUT_IN_SECONDS + 1) * 1000)
                         .withBody("[{\"transcription\":\"test123\",\"target\":\"test321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"},{\"transcription\":\"test12345\",\"target\":\"test54321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"}]")));
         //
         Record testRecord = new Record();
@@ -151,7 +153,6 @@ public class TranscriptionPlatformServiceTest {
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withHeader("Content-Type", "application/json")
-                        .withFixedDelay(3000)
                         .withBody("[{\"transcription\":\"test123\",\"target\":\"test321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"},{\"transcription\":\"test12345\",\"target\":\"test54321\",\"Timestamp\":\"Apr 22, 2019 12:50:57 PM\"}]")));
         //
         Record testRecord = new Record();
@@ -167,7 +168,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
                         .withStatus(200)
-                        .withFixedDelay((TranscriptionPlatformService.READ_TIMEOUT_IN_SECONDS + 1) * 1000)));
+                        .withFixedDelay((TEST_READ_TIMEOUT_IN_SECONDS + 1) * 1000)));
 
         //
         Transcription testTranscription = new Transcription();
@@ -183,8 +184,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.resetAll();
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
-                        .withStatus(201)
-                        .withFixedDelay(3000)));
+                        .withStatus(201)));
         //
         Transcription testTranscription = new Transcription();
         testTranscription.setTpId("sampleIdentifierFromTP");
@@ -197,8 +197,7 @@ public class TranscriptionPlatformServiceTest {
         wireMockRule.resetAll();
         wireMockRule.stubFor(post(urlEqualTo("/enrichments/transcription/sampleIdentifierFromTP"))
                 .willReturn(aResponse()
-                        .withStatus(500)
-                        .withFixedDelay(2000)));
+                        .withStatus(500)));
         //
         Transcription testTranscription = new Transcription();
         testTranscription.setTpId("sampleIdentifierFromTP");
