@@ -201,6 +201,15 @@ pipeline {
                             env.STAGING_NAMESPACE = extractedNamespace
                             echo "Resolved Staging OKD Namespace: ${env.STAGING_NAMESPACE}"
                         }
+
+                        def extractedAppName = sh(
+                            script: "grep -E '^[[:space:]]*(APPLICATION_NAME|APP_NAME)=' ${stagingPrivateParamPath} | head -n 1 | cut -d'=' -f2- | tr -d '\\r' || true",
+                            returnStdout: true
+                        ).trim()
+                        if (extractedAppName) {
+                            env.STAGING_APP_NAME = extractedAppName
+                            echo "Resolved Staging App Name: ${env.STAGING_APP_NAME}"
+                        }
                     }
 
                     // Extract Production infrastructure parameters from private param file
@@ -226,6 +235,15 @@ pipeline {
                         if (extractedNamespace) {
                             env.PROD_NAMESPACE = extractedNamespace
                             echo "Resolved Production OKD Namespace: ${env.PROD_NAMESPACE}"
+                        }
+
+                        def extractedAppName = sh(
+                            script: "grep -E '^[[:space:]]*(APPLICATION_NAME|APP_NAME)=' ${prodPrivateParamPath} | head -n 1 | cut -d'=' -f2- | tr -d '\\r' || true",
+                            returnStdout: true
+                        ).trim()
+                        if (extractedAppName) {
+                            env.PROD_APP_NAME = extractedAppName
+                            echo "Resolved Production App Name: ${env.PROD_APP_NAME}"
                         }
                     }
 
@@ -354,32 +372,64 @@ pipeline {
                     echo "Processing OpenShift template for Staging: ${env.TEMPLATE_FILE}"
                     echo "Deploying container image: ${env.FULL_IMAGE}"
 
-                    def templateParams = [
-                        "-p APP_NAME=${env.STAGING_APP_NAME}",
-                        "-p ENVIRONMENT=test",
-                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
-                    ]
-                    if (env.IMAGE_REGISTRY) {
-                        templateParams.add("-p IMAGE_REGISTRY=${env.IMAGE_REGISTRY}")
-                    }
-                    if (env.IMAGE_NAME) {
-                        templateParams.add("-p IMAGE_NAME=${env.IMAGE_NAME}")
-                    }
-
-                    def paramsString = templateParams.join(' ')
-                    def baseParamArg = fileExists(env.STAGING_PARAM_FILE) ? "--param-file=${env.STAGING_PARAM_FILE}" : ""
-
                     def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.STAGING_PRIVATE_PARAM_FILE}"
-                    def privateParamArg = ""
-                    if (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) {
-                        echo "Applying Staging private configuration overrides from: ${privateParamPath}"
-                        privateParamArg = "--param-file=${privateParamPath}"
+                    def privateParamFileArg = (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) ? "${privateParamPath}" : ""
+                    if (privateParamFileArg) {
+                        echo "Merging and applying Staging private configuration overrides from: ${privateParamPath}"
                     } else if (params.USE_PRIVATE_CONFIG) {
                         echo "Notice: Staging private param file '${env.STAGING_PRIVATE_PARAM_FILE}' not found. Proceeding with base parameter file."
                     }
 
+                    // Dynamically generate merged and filtered effective parameter file for oc process
                     sh """
-                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.STAGING_NAMESPACE} | oc apply -f - -n ${env.STAGING_NAMESPACE}
+                        VALID_PARAMS=\$(grep -E '^[[:space:]]*- name:' "${env.TEMPLATE_FILE}" | awk '{print \$3}' | tr -d '"\\r ')
+
+                        awk -v valid_str="\${VALID_PARAMS}" '
+                        BEGIN {
+                            split(valid_str, vp, /[ \\n\\t]+/);
+                            for (i in vp) {
+                                if (vp[i] != "") valid_keys[vp[i]] = 1;
+                            }
+                        }
+                        {
+                            gsub(/\\r/, "", \$0);
+                            if (\$0 ~ /^[[:space:]]*#/ || \$0 ~ /^[[:space:]]*\$/) next;
+                            eq_idx = index(\$0, "=");
+                            if (eq_idx > 1) {
+                                raw_key = substr(\$0, 1, eq_idx - 1);
+                                gsub(/^[[:space:]]+|[[:space:]]+\$/, "", raw_key);
+                                val = substr(\$0, eq_idx + 1);
+                                if (raw_key == "APPLICATION_NAME") {
+                                    key = "APP_NAME";
+                                } else {
+                                    key = raw_key;
+                                }
+                                if (key in valid_keys) {
+                                    params[key] = val;
+                                }
+                            }
+                        }
+                        END {
+                            for (k in params) {
+                                print k "=" params[k];
+                            }
+                        }
+                        ' "${env.STAGING_PARAM_FILE}" ${privateParamFileArg} | sort > .effective-staging.params
+                    """
+
+                    def extraParams = [
+                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
+                    ]
+                    if (params.IMAGE_REGISTRY?.trim()) {
+                        extraParams.add("-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY.trim()}")
+                    }
+                    if (params.IMAGE_NAME?.trim()) {
+                        extraParams.add("-p IMAGE_NAME=${params.IMAGE_NAME.trim()}")
+                    }
+                    def extraParamsString = extraParams.join(' ')
+
+                    sh """
+                        oc process -f ${env.TEMPLATE_FILE} --param-file=.effective-staging.params ${extraParamsString} -n ${env.STAGING_NAMESPACE} | oc apply -f - -n ${env.STAGING_NAMESPACE}
                     """
                 }
             }
@@ -438,32 +488,64 @@ pipeline {
                     echo "Processing OpenShift template for Production: ${env.TEMPLATE_FILE}"
                     echo "Deploying container image: ${env.FULL_IMAGE}"
 
-                    def templateParams = [
-                        "-p APP_NAME=${env.PROD_APP_NAME}",
-                        "-p ENVIRONMENT=prod",
-                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
-                    ]
-                    if (env.IMAGE_REGISTRY) {
-                        templateParams.add("-p IMAGE_REGISTRY=${env.IMAGE_REGISTRY}")
-                    }
-                    if (env.IMAGE_NAME) {
-                        templateParams.add("-p IMAGE_NAME=${env.IMAGE_NAME}")
-                    }
-
-                    def paramsString = templateParams.join(' ')
-                    def baseParamArg = fileExists(env.PROD_PARAM_FILE) ? "--param-file=${env.PROD_PARAM_FILE}" : ""
-
                     def privateParamPath = "${env.PRIVATE_CONFIG_DIR}/${env.PROD_PRIVATE_PARAM_FILE}"
-                    def privateParamArg = ""
-                    if (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) {
-                        echo "Applying Production private configuration overrides from: ${privateParamPath}"
-                        privateParamArg = "--param-file=${privateParamPath}"
+                    def privateParamFileArg = (params.USE_PRIVATE_CONFIG && fileExists(privateParamPath)) ? "${privateParamPath}" : ""
+                    if (privateParamFileArg) {
+                        echo "Merging and applying Production private configuration overrides from: ${privateParamPath}"
                     } else if (params.USE_PRIVATE_CONFIG) {
                         echo "Notice: Production private param file '${env.PROD_PRIVATE_PARAM_FILE}' not found. Proceeding with base parameter file."
                     }
 
+                    // Dynamically generate merged and filtered effective parameter file for oc process
                     sh """
-                        oc process -f ${env.TEMPLATE_FILE} ${baseParamArg} ${privateParamArg} ${paramsString} -n ${env.PROD_NAMESPACE} | oc apply -f - -n ${env.PROD_NAMESPACE}
+                        VALID_PARAMS=\$(grep -E '^[[:space:]]*- name:' "${env.TEMPLATE_FILE}" | awk '{print \$3}' | tr -d '"\\r ')
+
+                        awk -v valid_str="\${VALID_PARAMS}" '
+                        BEGIN {
+                            split(valid_str, vp, /[ \\n\\t]+/);
+                            for (i in vp) {
+                                if (vp[i] != "") valid_keys[vp[i]] = 1;
+                            }
+                        }
+                        {
+                            gsub(/\\r/, "", \$0);
+                            if (\$0 ~ /^[[:space:]]*#/ || \$0 ~ /^[[:space:]]*\$/) next;
+                            eq_idx = index(\$0, "=");
+                            if (eq_idx > 1) {
+                                raw_key = substr(\$0, 1, eq_idx - 1);
+                                gsub(/^[[:space:]]+|[[:space:]]+\$/, "", raw_key);
+                                val = substr(\$0, eq_idx + 1);
+                                if (raw_key == "APPLICATION_NAME") {
+                                    key = "APP_NAME";
+                                } else {
+                                    key = raw_key;
+                                }
+                                if (key in valid_keys) {
+                                    params[key] = val;
+                                }
+                            }
+                        }
+                        END {
+                            for (k in params) {
+                                print k "=" params[k];
+                            }
+                        }
+                        ' "${env.PROD_PARAM_FILE}" ${privateParamFileArg} | sort > .effective-prod.params
+                    """
+
+                    def extraParams = [
+                        "-p IMAGE_TAG=${env.DEPLOY_TAG}"
+                    ]
+                    if (params.IMAGE_REGISTRY?.trim()) {
+                        extraParams.add("-p IMAGE_REGISTRY=${params.IMAGE_REGISTRY.trim()}")
+                    }
+                    if (params.IMAGE_NAME?.trim()) {
+                        extraParams.add("-p IMAGE_NAME=${params.IMAGE_NAME.trim()}")
+                    }
+                    def extraParamsString = extraParams.join(' ')
+
+                    sh """
+                        oc process -f ${env.TEMPLATE_FILE} --param-file=.effective-prod.params ${extraParamsString} -n ${env.PROD_NAMESPACE} | oc apply -f - -n ${env.PROD_NAMESPACE}
                     """
                 }
             }
@@ -489,10 +571,11 @@ pipeline {
 
     post {
         always {
-            // Securely clean up private configuration files from agent workspace
+            // Securely clean up private configuration and temporary parameter files from agent workspace
             dir("${env.PRIVATE_CONFIG_DIR}") {
                 deleteDir()
             }
+            sh "rm -f .effective-*.params || true"
             echo "Pipeline execution finished for build #${env.BUILD_NUMBER}"
         }
         success {
