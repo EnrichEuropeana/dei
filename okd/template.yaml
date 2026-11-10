@@ -199,6 +199,8 @@ objects:
       labels:
         app: ${APP_NAME}
         environment: ${ENVIRONMENT}
+      annotations:
+        haproxy.router.openshift.io/ip_whitelist: "${ROUTE_IP_WHITELIST}"
     spec:
       to:
         kind: Service
@@ -265,7 +267,7 @@ objects:
                 - name: ssh-key-volume
                   secret:
                     secretName: ${RSYNC_SSH_SECRET_NAME}
-                    defaultMode: 256
+                    defaultMode: 0444
                 - name: rsync-script
                   configMap:
                     name: ${APP_NAME}-config
@@ -446,3 +448,9 @@ parameters:
     description: "SSH port on the remote server"
     value: "22"
     required: true
+
+  - name: ROUTE_IP_WHITELIST
+    displayName: Route IP Whitelist
+    description: "Space-separated list of allowed IP addresses or CIDR blocks for OpenShift Route (empty allows all traffic)"
+    value: ""
+    required: false

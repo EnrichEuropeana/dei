@@ -5,6 +5,8 @@ metadata:
   labels:
     app: dei
     environment: test
+  # annotations:
+  #   haproxy.router.openshift.io/ip_whitelist: 150.254.0.0/16 192.168.1.50 # Optional: space-separated list of allowed IPs/CIDRs
 spec:
   # host: dei.apps.your-cluster.com # Optional: uncomment to define a fixed domain
   to:

@@ -53,7 +53,7 @@ spec:
             - name: ssh-key-volume
               secret:
                 secretName: dei-ssh-secret
-                defaultMode: 256
+                defaultMode: 0444
             - name: rsync-script
               configMap:
                 name: dei-config
