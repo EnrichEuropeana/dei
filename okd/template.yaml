@@ -191,7 +191,7 @@ objects:
       selector:
         app: ${APP_NAME}
 
-  # 5. Route with SSL termination
+  # 5. Primary Route with SSL termination
   - apiVersion: route.openshift.io/v1
     kind: Route
     metadata:
@@ -211,7 +211,29 @@ objects:
         termination: edge
         insecureEdgeTerminationPolicy: Redirect
 
-  # 6. Rsync CronJob for synchronizing conversion output files to external server
+  # 6. Public Route for manifest access (open whitelist)
+  - apiVersion: route.openshift.io/v1
+    kind: Route
+    metadata:
+      name: public-manifest-access
+      labels:
+        app: ${APP_NAME}
+        environment: ${ENVIRONMENT}
+      annotations:
+        haproxy.router.openshift.io/ip_whitelist: "${PUBLIC_ROUTE_IP_WHITELIST}"
+    spec:
+      host: "${ROUTE_HOST}"
+      path: "${PUBLIC_MANIFEST_PATH}"
+      to:
+        kind: Service
+        name: ${APP_NAME}
+      port:
+        targetPort: http
+      tls:
+        termination: edge
+        insecureEdgeTerminationPolicy: Redirect
+
+  # 7. Rsync CronJob for synchronizing conversion output files to external server
   - apiVersion: batch/v1
     kind: CronJob
     metadata:
@@ -449,8 +471,26 @@ parameters:
     value: "22"
     required: true
 
+  - name: ROUTE_HOST
+    displayName: Route Host
+    description: "Host / domain name for the OpenShift Routes (e.g. dei.apps.example.com)"
+    value: ""
+    required: false
+
   - name: ROUTE_IP_WHITELIST
     displayName: Route IP Whitelist
-    description: "Space-separated list of allowed IP addresses or CIDR blocks for OpenShift Route (empty allows all traffic)"
+    description: "Space-separated list of allowed IP addresses or CIDR blocks for primary OpenShift Route (empty allows all traffic)"
+    value: ""
+    required: false
+
+  - name: PUBLIC_MANIFEST_PATH
+    displayName: Public Manifest Route Path
+    description: "Path for public manifest access route (e.g. /dei-test/api/transcription/iiif/manifest)"
+    value: ""
+    required: false
+
+  - name: PUBLIC_ROUTE_IP_WHITELIST
+    displayName: Public Route IP Whitelist
+    description: "Space-separated list of allowed IP addresses or CIDR blocks for public manifest route (dynamically includes 0.0.0.0/0)"
     value: ""
     required: false

@@ -14,7 +14,7 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
 - `03-secret.yaml.example` – Example `Secret` definition for sensitive credentials (database credentials and API tokens). To be applied manually or created in OKD Console.
 - `04-deployment.yaml` – Application `Deployment` configured with `Recreate` strategy and health probes.
 - `05-service.yaml` – Internal cluster `Service` (`ClusterIP`).
-- `06-route.yaml` – OpenShift `Route` with SSL termination (`edge`).
+- `06-route.yaml` – OpenShift `Route` definitions: primary Route (whitelisted access) and public Route (`public-manifest-access`) with path routing for manifest access.
 - `07-cronjob.yaml` – `CronJob` (`dei-rsync-cronjob`) executing periodic synchronization (every 15 minutes) of conversion output files to the remote IIIF server via `rsync` over SSH (executes `/scripts/sync.sh` mounted from ConfigMap).
 - `dei-all.yaml` – Consolidated static manifest containing individual non-sensitive objects (including the rsync CronJob).
 
@@ -73,7 +73,9 @@ This directory contains manifests and OpenShift Templates for deploying the **DE
      ```
    - OKD tokens are stored in Jenkins Credentials as Secret Text (`okd-token` for test / staging and `okd-token-production` for production).
    - OKD API Server URL and Namespace are defined in the private parameter files (`OKD_SERVER=...` and `OKD_NAMESPACE=...` in `env-test-private.params` / `env-prod-private.params` in GitLab).
-   - OpenShift Route IP Whitelist can be customized per environment in the private parameter files (`ROUTE_IP_WHITELIST="150.254.0.0/16 192.168.1.50"` in `env-test-private.params` / `env-prod-private.params` in GitLab).
+   - OpenShift Route Host is populated from the private repository via `ROUTE_HOST` (e.g. `ROUTE_HOST="dei.apps.example.com"`).
+   - OpenShift Route IP Whitelist can be customized per environment in the private parameter files (`ROUTE_IP_WHITELIST="150.254.0.0/16 192.168.1.50"`).
+   - Public Manifest Route: OpenShift Route `public-manifest-access` exposes the specific manifest path (`PUBLIC_MANIFEST_PATH`, e.g. `/dei-test/api/transcription/iiif/manifest`) publicly by dynamically extending the IP whitelist with `0.0.0.0/0` (`PUBLIC_ROUTE_IP_WHITELIST`).
    - GitLab Deploy Token for HTTPS access is stored in Jenkins Credentials as Username/Password (`gitlab-config-deploy-token`).
    - GitLab repository HTTPS URL is stored in Jenkins Credentials as Secret Text (`gitlab-config-repo-https-url`).
    - GitLab Deploy Key for SSH access is stored in Jenkins Credentials as SSH Username with private key (`gitlab-config-repo-ssh-key`).

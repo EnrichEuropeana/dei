@@ -401,6 +401,12 @@ pipeline {
                                 val = substr(\$0, eq_idx + 1);
                                 if (raw_key == "APPLICATION_NAME") {
                                     key = "APP_NAME";
+                                } else if (raw_key == "HOST" || raw_key == "ROUTE_HOSTNAME" || raw_key == "APPLICATION_HOST" || raw_key == "APP_HOST") {
+                                    key = "ROUTE_HOST";
+                                } else if (raw_key == "IP_WHITELIST" || raw_key == "WHITELIST") {
+                                    key = "ROUTE_IP_WHITELIST";
+                                } else if (raw_key == "MANIFEST_PATH" || raw_key == "PUBLIC_ROUTE_PATH" || raw_key == "ROUTE_PATH" || raw_key == "PUBLIC_PATH" || raw_key == "MANIFEST_ACCESS_PATH") {
+                                    key = "PUBLIC_MANIFEST_PATH";
                                 } else {
                                     key = raw_key;
                                 }
@@ -410,6 +416,23 @@ pipeline {
                             }
                         }
                         END {
+                            if ("PUBLIC_ROUTE_IP_WHITELIST" in valid_keys) {
+                                pub_wl = params["PUBLIC_ROUTE_IP_WHITELIST"];
+                                gsub(/^[[:space:]]+|[[:space:]]+\$/, "", pub_wl);
+                                if (pub_wl == "") {
+                                    base_wl = params["ROUTE_IP_WHITELIST"];
+                                    gsub(/^[[:space:]]+|[[:space:]]+\$/, "", base_wl);
+                                    if (base_wl == "") {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = "0.0.0.0/0";
+                                    } else if (index(base_wl, "0.0.0.0/0") > 0) {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = base_wl;
+                                    } else {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = base_wl " 0.0.0.0/0";
+                                    }
+                                } else if (index(pub_wl, "0.0.0.0/0") == 0) {
+                                    params["PUBLIC_ROUTE_IP_WHITELIST"] = pub_wl " 0.0.0.0/0";
+                                }
+                            }
                             for (k in params) {
                                 print k "=" params[k];
                             }
@@ -446,7 +469,10 @@ pipeline {
 
                     sh """
                         echo "Staging deployment successful! Route details:"
+                        echo "Primary Route:"
                         oc get route ${env.STAGING_APP_NAME} -n ${env.STAGING_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
+                        echo "Public Manifest Route:"
+                        oc get route public-manifest-access -n ${env.STAGING_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{.spec.path}{"\\n"}' || true
                     """
                 }
             }
@@ -517,6 +543,12 @@ pipeline {
                                 val = substr(\$0, eq_idx + 1);
                                 if (raw_key == "APPLICATION_NAME") {
                                     key = "APP_NAME";
+                                } else if (raw_key == "HOST" || raw_key == "ROUTE_HOSTNAME" || raw_key == "APPLICATION_HOST" || raw_key == "APP_HOST") {
+                                    key = "ROUTE_HOST";
+                                } else if (raw_key == "IP_WHITELIST" || raw_key == "WHITELIST") {
+                                    key = "ROUTE_IP_WHITELIST";
+                                } else if (raw_key == "MANIFEST_PATH" || raw_key == "PUBLIC_ROUTE_PATH" || raw_key == "ROUTE_PATH" || raw_key == "PUBLIC_PATH" || raw_key == "MANIFEST_ACCESS_PATH") {
+                                    key = "PUBLIC_MANIFEST_PATH";
                                 } else {
                                     key = raw_key;
                                 }
@@ -526,6 +558,23 @@ pipeline {
                             }
                         }
                         END {
+                            if ("PUBLIC_ROUTE_IP_WHITELIST" in valid_keys) {
+                                pub_wl = params["PUBLIC_ROUTE_IP_WHITELIST"];
+                                gsub(/^[[:space:]]+|[[:space:]]+\$/, "", pub_wl);
+                                if (pub_wl == "") {
+                                    base_wl = params["ROUTE_IP_WHITELIST"];
+                                    gsub(/^[[:space:]]+|[[:space:]]+\$/, "", base_wl);
+                                    if (base_wl == "") {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = "0.0.0.0/0";
+                                    } else if (index(base_wl, "0.0.0.0/0") > 0) {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = base_wl;
+                                    } else {
+                                        params["PUBLIC_ROUTE_IP_WHITELIST"] = base_wl " 0.0.0.0/0";
+                                    }
+                                } else if (index(pub_wl, "0.0.0.0/0") == 0) {
+                                    params["PUBLIC_ROUTE_IP_WHITELIST"] = pub_wl " 0.0.0.0/0";
+                                }
+                            }
                             for (k in params) {
                                 print k "=" params[k];
                             }
@@ -562,7 +611,10 @@ pipeline {
 
                     sh """
                         echo "Production deployment successful! Route details:"
+                        echo "Primary Route:"
                         oc get route ${env.PROD_APP_NAME} -n ${env.PROD_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{"\\n"}' || true
+                        echo "Public Manifest Route:"
+                        oc get route public-manifest-access -n ${env.PROD_NAMESPACE} -o jsonpath='{"https://"}{.spec.host}{.spec.path}{"\\n"}' || true
                     """
                 }
             }
