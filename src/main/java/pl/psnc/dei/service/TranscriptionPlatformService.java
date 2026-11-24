@@ -100,10 +100,17 @@ public class TranscriptionPlatformService {
     private WebClient webClient;
 
 
+    @Autowired
     public TranscriptionPlatformService(UrlBuilder urlBuilder,
             WebClient.Builder webClientBuilder) {
+        this(urlBuilder, webClientBuilder, READ_TIMEOUT_IN_SECONDS);
+    }
+
+    public TranscriptionPlatformService(UrlBuilder urlBuilder,
+            WebClient.Builder webClientBuilder,
+            int readTimeoutInSeconds) {
         this.urlBuilder = urlBuilder;
-        configureWebClient(urlBuilder, webClientBuilder);
+        configureWebClient(urlBuilder, webClientBuilder, readTimeoutInSeconds);
     }
 
     /**
@@ -111,11 +118,12 @@ public class TranscriptionPlatformService {
      *
      * @param urlBuilder       service for assemblation of links
      * @param webClientBuilder web client builder
+     * @param readTimeoutInSeconds read timeout in seconds
      */
-    private void configureWebClient(UrlBuilder urlBuilder, WebClient.Builder webClientBuilder) {
+    private void configureWebClient(UrlBuilder urlBuilder, WebClient.Builder webClientBuilder, int readTimeoutInSeconds) {
         TcpClient tcpClient = TcpClient.create()
                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, CONNECTION_TIMEOUT_IN_SECONDS * 1000)
-                .doOnConnected(con -> con.addHandlerLast(new ReadTimeoutHandler(READ_TIMEOUT_IN_SECONDS))
+                .doOnConnected(con -> con.addHandlerLast(new ReadTimeoutHandler(readTimeoutInSeconds))
                         .addHandlerLast(new WriteTimeoutHandler(WRITE_TIMEOUT_IN_SECONDS)));
 
         this.webClient = webClientBuilder

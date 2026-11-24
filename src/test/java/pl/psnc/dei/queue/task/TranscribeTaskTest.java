@@ -4,10 +4,11 @@ import lombok.SneakyThrows;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.MockitoAnnotations;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
@@ -26,6 +27,8 @@ import pl.psnc.dei.util.IIIFManifestValidator;
 import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest
@@ -72,14 +75,13 @@ public class TranscribeTaskTest {
     @Autowired
     private QueueRecordService qrs;
 
-    @Qualifier("transcriptionPlatformService")
-    @Autowired
+    @MockBean
     private TranscriptionPlatformService tps;
 
-    @Autowired
+    @MockBean
     private EuropeanaSearchService ess;
 
-    @Autowired
+    @MockBean
     private EuropeanaAnnotationsService eas;
 
     @Autowired
@@ -88,7 +90,7 @@ public class TranscribeTaskTest {
     @Autowired
     private TasksFactory tasksFactory;
 
-    @Autowired
+    @MockBean
     private Converter converter;
 
     @Autowired
@@ -107,9 +109,55 @@ public class TranscribeTaskTest {
     GeneralRestRequestService grrs;
 
     @Before
+    public void prepareMocks() throws Exception {
+        MockitoAnnotations.initMocks(this);
+        doNothing().when(this.tps).sendRecord(any(), any());
+        doNothing().when(this.tps).updateImportState(any());
+        doNothing().when(this.eas).postCallToAction(any());
+
+        org.apache.jena.atlas.json.JsonObject nonIiifJson = org.apache.jena.atlas.json.JSON.parse("{\"@graph\":[]}");
+        org.apache.jena.atlas.json.JsonObject iiifJson = org.apache.jena.atlas.json.JSON.parse("{\"@graph\":[{\"@type\":\"svcs:Service\",\"conformsTo\":\"http://iiif.io/api/image\",\"@id\":\"http://iiif.service/1\"},{\"@type\":\"edm:WebResource\",\"svcs:has_service\":{\"@id\":\"http://iiif.service/1\"},\"dcterms:isReferencedBy\":{\"@id\":\"https://iiif.test/manifest\"}}]}");
+        org.apache.jena.atlas.json.JsonObject rawJson = org.apache.jena.atlas.json.JSON.parse("{}");
+
+        org.mockito.Mockito.when(this.ess.retrieveRecordAndConvertToJsonLd(org.mockito.ArgumentMatchers.eq(NON_IIIF_RECORD_IDENTIFIER)))
+                .thenReturn(nonIiifJson);
+        org.mockito.Mockito.when(this.ess.retrieveRecordAndConvertToJsonLd(org.mockito.ArgumentMatchers.eq(IIIF_RECORD_IDENTIFIER)))
+                .thenReturn(iiifJson);
+        org.mockito.Mockito.when(this.ess.retrieveRecordInJson(any()))
+                .thenReturn(rawJson);
+
+        org.mockito.Mockito.doAnswer(inv -> {
+            Record r = inv.getArgument(0);
+            r.setIiifManifest("https://example.com/manifest");
+            return null;
+        }).when(this.converter).convertAndGenerateManifest(any(), any(), any());
+    }
+
+    @Before
     public void prepareDatasets() {
-        this.nonIiifDataset = this.datasetsRepository.findAll().get(0);
-        this.iiifDataset = this.datasetsRepository.findAll().get(0);
+        if (this.projectsRepository.count() == 0) {
+            Project p = new Project();
+            p.setName("test-project");
+            p.setProjectId("test-project-id");
+            p.setDatasets(new java.util.ArrayList<>());
+            this.project = this.projectsRepository.save(p);
+        } else {
+            this.project = this.projectsRepository.findAll().get(0);
+        }
+
+        if (this.datasetsRepository.count() == 0) {
+            Dataset d = new Dataset();
+            d.setDatasetId("test-dataset-id");
+            d.setName("test-dataset");
+            d.setProject(this.project);
+            this.nonIiifDataset = this.datasetsRepository.save(d);
+            this.iiifDataset = this.nonIiifDataset;
+            this.project.getDatasets().add(this.nonIiifDataset);
+            this.projectsRepository.save(this.project);
+        } else {
+            this.nonIiifDataset = this.datasetsRepository.findAll().get(0);
+            this.iiifDataset = this.datasetsRepository.findAll().get(0);
+        }
     }
 
     @Before
@@ -122,6 +170,7 @@ public class TranscribeTaskTest {
         this.recordWithoutIIIF.setProject(this.project);
         this.recordWithoutIIIF.setDataset(this.nonIiifDataset);
         this.recordWithoutIIIF.setState(Record.RecordState.T_PENDING);
+        this.recordWithoutIIIF.setValidated(true);
         this.recordWithoutIIIF = this.recordsRepository.save(this.recordWithoutIIIF);
         this.nonIiifImport = this.importPackageService.createImport(this.NON_IIIF_IMPORT_NAME, this.nonIiifDataset.getProject().getProjectId(), Set.of(this.recordWithoutIIIF));
         this.nonIiifImport.setProgress(this.importProgressService.initImportProgress(1));
@@ -138,6 +187,7 @@ public class TranscribeTaskTest {
         this.recordWithIIIF.setProject(this.project);
         this.recordWithIIIF.setDataset(this.iiifDataset);
         this.recordWithIIIF.setState(Record.RecordState.T_PENDING);
+        this.recordWithIIIF.setValidated(true);
         this.recordWithIIIF = this.recordsRepository.save(this.recordWithIIIF);
         this.iiifImport = this.importPackageService.createImport(this.IIIF_IMPORT_NAME, this.iiifDataset.getProject().getProjectId(), Set.of(this.recordWithIIIF));
         this.iiifImport.setProgress(this.importProgressService.initImportProgress(1));

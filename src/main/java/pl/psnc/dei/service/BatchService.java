@@ -538,11 +538,15 @@ public class BatchService {
         log.info("Found {} records with manifest (divided into {} pages)", records.getTotalElements(),
                 records.getTotalPages());
 
-        do {
-            log.info("Processing page {}", records.getPageable().getPageNumber());
+        while (true) {
+            log.info("Processing page {}", records.getNumber());
             records.forEach(record -> fixManifest(response, oldUrl, record));
-            records = recordsRepository.findAllByIiifManifestNotNull(records.nextPageable());
-        } while (records.hasNext());
+            if (records.hasNext()) {
+                records = recordsRepository.findAllByIiifManifestNotNull(records.nextPageable());
+            } else {
+                break;
+            }
+        }
         log.info("Finished fixing manifests.");
 
         return response;
@@ -611,8 +615,8 @@ public class BatchService {
         Page<Record> records = recordsRepository.findAllByStoryIdNotNull(PageRequest.of(0, PAGE_SIZE));
         log.info("Starting sending Call to action for {} records (divided into {} pages)", records.getTotalElements(),
                 records.getTotalPages());
-        do {
-            log.info("Sending Call to action for page {} of records", records.getPageable().getPageNumber());
+        while (true) {
+            log.info("Sending Call to action for page {} of records", records.getNumber());
             records.filter(record -> includeRecords == recordsIds.contains(record.getIdentifier())).forEach(record -> {
                 try {
                     if (!validateManifest || validateManifest(record)) {
@@ -629,8 +633,12 @@ public class BatchService {
                     response.getSkipped().add(record.getIdentifier());
                 }
             });
-            records = recordsRepository.findAllByStoryIdNotNull(records.nextPageable());
-        } while (records.hasNext());
+            if (records.hasNext()) {
+                records = recordsRepository.findAllByStoryIdNotNull(records.nextPageable());
+            } else {
+                break;
+            }
+        }
         return response;
     }
 
@@ -676,8 +684,8 @@ public class BatchService {
         Page<Record> records = recordsRepository.findAllByStoryIdNull(PageRequest.of(0, PAGE_SIZE));
         log.info("Found {} records without story id (divided into {} pages)", records.getTotalElements(),
                 records.getTotalPages());
-        do {
-            log.info("Updating story id for page {} of records", records.getPageable().getPageNumber());
+        while (true) {
+            log.info("Updating story id for page {} of records", records.getNumber());
             records.filter(record -> includeRecords == recordsIds.contains(record.getIdentifier())).forEach(record -> {
                 try {
                     record.setStoryId(transcriptionPlatformService.retrieveStoryId(record));
@@ -687,8 +695,12 @@ public class BatchService {
                     log.warn("StoryId not found for record {}. Skipping.", record.getIdentifier());
                 }
             });
-            records = recordsRepository.findAllByStoryIdNull(records.nextPageable());
-        } while (records.hasNext());
+            if (records.hasNext()) {
+                records = recordsRepository.findAllByStoryIdNull(records.nextPageable());
+            } else {
+                break;
+            }
+        }
         log.info("Story id updated");
         return updated.get();
     }

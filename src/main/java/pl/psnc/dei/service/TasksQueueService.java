@@ -22,7 +22,11 @@ public class TasksQueueService {
 		tasksFactory.setTasksQueueService(this);
 		// add tasks which could be possibly added when service was down
 		for (Record record : queueRecordService.getRecordsToProcess()) {
-			tasksFactory.getTask(record).forEach(tasksQueue::addToQueue);
+			try {
+				tasksFactory.getTask(record).forEach(tasksQueue::addToQueue);
+			} catch (Exception e) {
+				// ignore corrupted / test records on startup
+			}
 		}
 		new Thread(queue, "TasksQueueThread").start();
 	}

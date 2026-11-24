@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dei
+  labels:
+    app: dei
+    environment: test
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: dei
+  template:
+    metadata:
+      labels:
+        app: dei
+        environment: test
+    spec:
+      containers:
+        - name: dei-app
+          # Image URL in the external container registry
+          image: registry.example.com/enrich-europeana/dei:${IMAGE_TAG}
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: dei-config
+            - secretRef:
+                name: dei-secret
+          volumeMounts:
+            - name: conversion-storage
+              mountPath: /data/conversion
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "1Gi"
+            limits:
+              cpu: "2000m"
+              memory: "2Gi"
+          readinessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          livenessProbe:
+            tcpSocket:
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: conversion-storage
+          persistentVolumeClaim:
+            claimName: dei-conversion-pvc

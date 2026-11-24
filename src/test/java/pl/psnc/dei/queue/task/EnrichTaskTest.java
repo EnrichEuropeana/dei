@@ -7,10 +7,10 @@ import org.apache.jena.atlas.json.JsonObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.core.io.Resource;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.test.context.ActiveProfiles;
@@ -54,7 +54,7 @@ public class EnrichTaskTest {
     @Autowired
     private EuropeanaSearchService ess;
 
-    @Autowired
+    @MockBean
     private EuropeanaAnnotationsService eas;
 
     @Autowired
@@ -63,22 +63,17 @@ public class EnrichTaskTest {
     @Autowired
     private ContextMediator contextMediator;
 
-    @Mock
+    @javax.annotation.Resource(name = "transcriptionFactories")
     private Map<TranscriptionType, TranscriptionFactory> transcriptionFactories;
 
-
-    //    @Qualifier("transcriptionPlatformService")
-//    @Autowired
-//    private TranscriptionPlatformService tps;
     @Autowired
     private TranscriptionConverter tc;
 
-    @Mock
-    // mocked as Transcribathon dev platform not always work, sometimes drop records, or returns 5xx codes
+    @MockBean
     private TranscriptionPlatformService tps;
     private EnrichTask enrichTask;
 
-    @Mock
+    @MockBean
     private EnrichmentNotifierService ens;
 
     @SneakyThrows
@@ -92,6 +87,10 @@ public class EnrichTaskTest {
     @Before
     public void prepareMock() {
         when(tps.fetchTranscriptionsFor(any())).thenReturn(this.transcribathonResponse);
+        when(tps.isHTRenabled()).thenReturn(false);
+        when(tps.fetchMetadataEnrichmentsForItem(anyLong())).thenReturn(JSON.parse("{\"OrderIndex\":0, \"ImageLink\":\"{\\\"@id\\\":\\\"http://example.com/img\\\"}\"}"));
+        doNothing().when(tps).sendAnnotationUrl(any());
+        when(eas.postTranscription(any())).thenReturn("12345");
         doNothing().when(ens).notifyPublishers(any());
     }
 
